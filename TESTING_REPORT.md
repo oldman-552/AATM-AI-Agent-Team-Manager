@@ -1,5 +1,11 @@
 # Testing Report
 
+## 2026-11-13 16:57 UTC — Hosted PostgreSQL verification
+
+- PR CI run `43467593617` completed successfully: backend suite, frontend verification, and the PostgreSQL 16 migration/run-lock smoke all passed.
+- PostgreSQL job applied all Alembic migrations and verified cross-session lock acquire/contention/release. This is a PostgreSQL smoke, not full application/backup integration.
+- Updated Actions to Node 24-compatible major versions after GitHub warned the previous Action majors were running under forced Node 24. The refreshed workflow has not run yet.
+
 ## 2026-11-13 16:55 UTC — PostgreSQL integration CI job
 
 - Added a conditional PostgreSQL smoke test that applies all migrations and exercises shared database-lock acquisition/contention/release. Extended GitHub Actions with a PostgreSQL 16 service job.

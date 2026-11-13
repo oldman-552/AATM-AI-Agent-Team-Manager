@@ -38,7 +38,7 @@ AATM BLOCKERS AND ENVIRONMENT LIMITATIONS
    Current status: GATED — by design, not a defect.
 
 Additional verification limits:
-- PostgreSQL is configurable and the psycopg driver is included, but there is no PostgreSQL server available here and its integration is untested.
+- PostgreSQL is configurable and the psycopg driver is included. A PostgreSQL 16 CI smoke has verified the migrations and database run-lock contention, but full application integration, performance testing, and PostgreSQL backup/restore remain unverified; no local PostgreSQL server is available.
 - The full UI has not had browser-based visual/E2E testing; only production build, Vitest resource tests, and HTTP/Vite-proxy smoke checks were run. Playwright is not installed in this environment.
 - Visual RTL layout (Arabic/Persian alignment, spacing, mixed technical content, dates and numbers) is unverified; only translation completeness, parity and direction are unit-tested.
 

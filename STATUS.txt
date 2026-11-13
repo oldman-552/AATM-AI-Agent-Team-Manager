@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 16:55 UTC
+2026-11-13 16:57 UTC
 
 Overall Project Status:
 Testing
@@ -46,10 +46,10 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Phase 32 API run coordination and CI scaffold completed locally: 261 backend tests passed locally (one PostgreSQL-only test skipped); 20 frontend tests, TypeScript, production build and RTL checks passed. Lease renewal and database-wide run locking are tested. One upstream Starlette/httpx deprecation warning remains. Backend/frontend GitHub Actions passed on revision c04cea9; a PostgreSQL service job was added and awaits its first hosted run.
+- Phase 33 distributed worker scheduling remains open. Latest local verification: 261 backend passed, one PostgreSQL-only test skipped locally; 20 frontend tests, TypeScript, production build and RTL checks passed. The hosted backend, frontend, and PostgreSQL jobs all passed on revision ef94f36. Actions were upgraded to Node 24-compatible major versions; the refreshed run is pending.
 
 Upcoming Tasks:
-- Distributed task-worker scheduling and per-worktree isolation for same-project tasks; first hosted CI run after the branch is pushed.
+- Distributed task-worker scheduling and per-worktree isolation for same-project tasks; verify the refreshed Node 24-compatible CI actions.
 - The consent/accounting surface that must precede any paid provider call; wiring an authorized model call into the executor.
 - GitHub push/PR execution behind an approval (recorded plans exist; execution does not).
 - Pixel-level browser visual testing once a display-capable environment exists.

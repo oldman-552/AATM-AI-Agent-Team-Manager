@@ -1,0 +1,422 @@
+AATM DEVELOPMENT HISTORY
+========================
+
+[2026-11-13 10:20 UTC] Phase 1 — Repository inspection
+Task: Establish the real repository state before implementation.
+Action performed: Inspected branch, status, tracked files, README, recent history, runtime versions, and available container tooling. Repository was clean and contained only README.md; Python 3.11 and Node.js 22 are available; Docker is not installed.
+Files created: None.
+Files modified: None.
+Tests executed: Environment/version checks only.
+Results: Confirmed there was no pre-existing application to preserve and no uncommitted work.
+Problems: No Docker installation; Windows cannot be exercised in this Linux session.
+Solutions: Plan a local-first, no-Docker development path; keep Windows validation explicitly pending.
+
+[2026-11-13 10:22 UTC] Phase 1 — Specification preservation
+Task: Save the user's complete AATM master development prompt in the repository.
+Action performed: Added AATM_MASTER_DEVELOPMENT_PROMPT.md with the full product specification and execution instructions.
+Files created: AATM_MASTER_DEVELOPMENT_PROMPT.md, STATUS.txt, PROGRESS_LOG.txt.
+Files modified: None.
+Tests executed: Not yet; prompt file will be checked with the implementation review.
+Results: Prompt and initial progress state are now present in the working tree.
+Problems: None.
+Solutions: None.
+
+[2026-11-13 10:28 UTC] Phase 1 — Foundation scaffold
+Task: Establish a runnable local backend/frontend baseline and cross-platform setup entry points.
+Action performed: Added FastAPI routes for live health/dashboard data and project/agent/task records; SQLAlchemy persistence models; 20 role templates; React/TypeScript/Vite views; English, Arabic, and Persian resources with RTL direction; local install/start/stop scripts; initial architecture and security documentation.
+Files created: backend/app/*, backend/tests/test_api.py, backend/requirements.txt, web/*, scripts/*, .env.example, .gitignore, and initial product documentation.
+Files modified: README.md, STATUS.txt, IMPLEMENTATION_STATUS.md, NEXT_ACTIONS.txt.
+Tests executed: None yet; dependency installation and test/build verification are next.
+Results: Initial source foundation is present; no provider integration or agent execution is claimed.
+Problems: External dependencies are not installed yet; Windows runtime verification is unavailable here.
+Solutions: Test on the available Linux/Node environment first; retain the Windows path as explicitly pending.
+
+[2026-11-13 10:35 UTC] Phase 1 — First verification and reliability additions
+Task: Exercise the first API/UI vertical slice and make database/progress setup durable.
+Action performed: Installed backend/frontend dependencies; corrected frontend type-check failures; added explicit Alembic schema migration, live API/Vite proxy checks, SQLite file-persistence coverage, SQLite foreign-key enforcement, and an atomic secret-redacting status/event heartbeat tool with tests.
+Files created: backend/app/migrate.py, backend/app/progress.py, backend/migrations/*, backend/tests/test_progress.py, scripts/progress_reporter.py.
+Files modified: backend/app/main.py, backend/app/api.py, backend/app/db.py, backend/tests/test_api.py, web/src/App.tsx, web/src/i18n.ts, web/src/styles.css, web/vite.config.ts, scripts/install.sh, scripts/install.ps1, backend/requirements.txt, backend/alembic.ini.
+Tests executed: Initial API tests (5 passed); initial frontend TypeScript/Vite production build (passed); live API health/dashboard/role-count and Vite proxy smoke checks (passed). The newly added tests are pending.
+Results: Real API state is served through the relative frontend API path; migration ran on application startup. No AI execution/provider call is implemented.
+Problems: Initial TypeScript build failed on unused imports and an interpolation type; a Starlette/httpx deprecation warning was emitted by TestClient.
+Solutions: Fixed the TypeScript errors; warnings are documented for follow-up, and the runtime/test path remains functional.
+
+[2026-11-13 10:39 UTC] Phase 2 — Provider discovery and compliance review
+Task: Inspect the actual Arena Local Bridge repository and determine a verified, permitted integration boundary before implementing any adapter.
+Action performed: Shallow-cloned the public upstream repository into ignored `.aatm/research/arena-local-bridge`, inspected README/SKILL/security/config/server/bridge/browser/session code at commit `403122cf575b82aa519cad7c81a4cfe7d224d474`, and documented actual local OpenAI-compatible endpoints, auth/session behavior, limitations, and the AATM no-bypass decision.
+Files created: PROVIDER_RESEARCH.md.
+Files modified: BLOCKERS.txt, NEXT_ACTIONS.txt, IMPLEMENTATION_STATUS.md, STATUS.txt.
+Tests executed: Static source/documentation inspection; no live Arena bridge or account was used.
+Results: Protocol details are now sourced, but the inspected version includes browser-based web automation, CAPTCHA token generation, and anti-automation masking; no provider call or adapter was made because that conflicts with the user's explicit no-bypass requirement.
+Problems: Arena integration cannot proceed safely without a compliant supported path; no account credentials were available or requested.
+Solutions: Documented a concrete blocker and will continue independent work rather than bypassing protections.
+
+[2026-11-13 10:43 UTC] Phase 1 — Foundation — Final regression verification and provider-policy review
+Task: Final regression verification and provider-policy review
+Action performed: Completed backend/API, frontend build, installation/startup smoke checks, progress reporter checks, and Arena Local Bridge source inspection.
+Files created: None
+Files modified: STATUS.txt, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, BLOCKERS.txt, PROVIDER_RESEARCH.md
+Tests executed: 9 passed; TypeScript/Vite build passed; pip check, npm audit, shell syntax and Python compile passed.
+Results: Local API/Vite proxy and Linux start/stop smoke checks passed. Arena runtime not called due CAPTCHA/anti-automation policy conflict.
+Problems: Windows, PostgreSQL, full RTL/browser E2E remain untested; Starlette emitted one TestClient/httpx deprecation warning.
+Solutions: Documented limitations and preserved a no-bypass boundary; all executed foundation checks passed.
+
+[2026-11-13 10:47 UTC] Phase 1 — Foundation — Final regression and startup configuration verification
+Task: Final regression and startup configuration verification
+Action performed: Re-ran the 9-test backend suite, TypeScript/Vite build, shell/Python/dependency checks, and npm audit. Confirmed startup scripts honor .env/runtime ports and the UI proxy reaches the API.
+Files created: None
+Files modified: STATUS.txt, TESTING_REPORT.md, NEXT_ACTIONS.txt
+Tests executed: 9 passed (one Starlette/httpx deprecation warning); frontend build passed; pip check passed; npm audit reported 0 vulnerabilities; shell syntax/Python compile passed.
+Results: Alternate-port startup and relative API proxy passed; temporary .env test passed and was cleaned up.
+Problems: Windows, PostgreSQL, full RTL/browser E2E remain untested; Arena integration remains blocked by anti-bot/CAPTCHA conflict.
+Solutions: Retained a local-only default and documented all unverified capabilities; no Arena account or CAPTCHA endpoint was used.
+
+[2026-11-13 10:48 UTC] Phase 1 — Foundation — Publish the prompt and tested foundation to the current GitHub branch
+Task: Publish the prompt and tested foundation to the current GitHub branch
+Action performed: Final verification passed: 9 backend tests; frontend production build; Linux install/start/stop and .env/proxy smoke; progress reporter unit/CLI; shell syntax; Python compilation; pip check; npm audit.
+Files created: backend/app and migration foundation, web React/Vite shell and i18n resources, cross-platform scripts and progress reporter, progress, architecture, installation, security, API, provider research and test documentation
+Files modified: README.md
+Tests executed: 9 passed; build passed; pip check passed; npm audit reported 0 vulnerabilities; shell/Python checks passed.
+Results: AATM UI/API smoke and local start/stop tests passed. Arena integration remains disabled due no-bypass conflict.
+Problems: One Starlette/httpx deprecation warning; Windows/PostgreSQL/visual E2E untested.
+Solutions: Recorded limitations; no Arena credentials or CAPTCHA flow used.
+
+[2026-11-13 10:49 UTC] Phase 1 — Foundation — Commit and publish the verified prompt and local-first foundation
+Task: Commit and publish the verified prompt and local-first foundation
+Action performed: Completed a 1,505-line master prompt content review, refreshed final verification timestamps, reviewed staged paths/modes/size and ignored build/runtime artifacts, and ran a staged credential-pattern scan; only a deliberate test fixture secret placeholder matched.
+Files created: None
+Files modified: STATUS.txt, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md
+Tests executed: Latest run: 9 backend tests passed with one Starlette/httpx deprecation warning; frontend build, shell/Python checks, pip check and npm audit passed.
+Results: No .env, build outputs, local databases, node_modules or virtualenv are staged; staged changes contain no real credentials.
+Problems: Windows/PostgreSQL/visual browser E2E are unverified; Arena bridge remains blocked by anti-CAPTCHA compliance.
+Solutions: Review confined to intended source/docs; test-only fake secret value is included to verify redaction.
+
+[2026-11-13 10:50 UTC] Phase 1 — Foundation published — Continue autonomous development on the next safe product slice
+Task: Continue autonomous development on the next safe product slice
+Action performed: Committed the master prompt, 61 additional repository foundation/docs/test files (62 files total) as 8b2badfd0e22be70984a80c4fc22f2f81f8386a0; pushed only arena/28ecf5c8-aatm-ai-agent-team-manager and verified origin points to the same commit.
+Files created: None
+Files modified: STATUS.txt, NEXT_ACTIONS.txt
+Tests executed: The pushed commit contains the final verified tree: 9 backend tests passed with one deprecation warning; frontend build, shell/Python checks, pip check, npm audit and local startup/proxy smoke passed.
+Results: GitHub branch push succeeded; remote SHA matches local commit. No pull request was opened.
+Problems: Windows, PostgreSQL and browser E2E remain unverified; no compliant Arena integration route has been established.
+Solutions: Kept provider capability disabled and documented the blocker; continuing independent local-first work.
+
+[2026-11-13 12:50 UTC] Phase 1 — Provider boundary & workflow state machine — P0 safe provider abstraction boundary
+Task: P0 safe provider abstraction boundary
+Action performed: Implemented and verified the offline provider boundary plus a task workflow state machine
+Files created: backend/app/providers/__init__.py, backend/app/providers/contracts.py, backend/app/providers/credentials.py, backend/app/providers/pricing.py, backend/app/providers/budgets.py, backend/app/providers/context.py, backend/app/providers/adapters.py, backend/app/providers/routing.py, backend/app/providers/registry.py, backend/app/provider_store.py, backend/app/provider_api.py, backend/app/workflow.py, backend/app/workflow_api.py, backend/app/audit.py, backend/migrations/versions/0002_provider_boundary.py, backend/tests/test_provider_boundary.py, backend/tests/test_provider_api.py, backend/tests/test_workflow.py, web/src/ProvidersView.tsx, web/src/i18n.test.ts, web/vitest.config.ts
+Files modified: backend/app/models.py, backend/app/schemas.py, backend/app/api.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, web/package.json
+Tests executed: Backend pytest 29 passed; frontend vitest 5 passed; tsc --noEmit; vite build
+Results: All suite runs passed. Live smoke test: task assigned→running→completed with replay-safe transitions, provider dry-run routing with no usage record.
+Problems: Initial TypeScript build error (missing icon import, assertion typing) and one budget test threshold error; both fixed.
+Solutions: Fixed imports/assertions; one upstream Starlette/httpx deprecation warning remains.
+
+[2026-11-13 12:55 UTC] Phase 5 — Orchestration — P1 durable orchestrator with leases and crash recovery
+Task: P1 durable orchestrator with leases and crash recovery
+Action performed: Implemented and verified lease-based durable orchestration with bounded concurrency, backoff retries and crash recovery
+Files created: backend/app/orchestrator.py, backend/app/orchestrator_api.py, backend/migrations/versions/0003_task_leases.py, backend/tests/test_orchestrator.py
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, IMPLEMENTATION_STATUS.md, API_DOCUMENTATION.md, ARCHITECTURE.md, TESTING_REPORT.md, CHANGELOG.md, NEXT_ACTIONS.txt
+Tests executed: Backend pytest 44 passed; frontend vitest 5 passed; tsc --noEmit; vite build; migration 0003 up/down/re-up verified
+Results: All suites pass. Verified recovery after simulated crash and after process restart, bounded concurrency, backoff gating, evidence enforcement, and that executor exceptions never leak messages into task records.
+Problems: Initial recovery logic double-counted an attempt, causing an idempotency-key collision; fixed by letting the failure transition own retry_count and testing it.
+Solutions: Corrected recovery accounting; added explicit claim-rejection tests.
+
+[2026-11-13 12:57 UTC] Phase 8/9 — QA reviews and approvals — P2 independent QA reviews and approval gates
+Task: P2 independent QA reviews and approval gates
+Action performed: Implemented and verified evidence-gated independent reviews plus audited approval gates
+Files created: backend/app/quality.py, backend/app/quality_api.py, backend/migrations/versions/0004_reviews_approvals.py, backend/tests/test_quality.py, web/src/ApprovalsView.tsx
+Files modified: backend/app/models.py, backend/app/schemas.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, NEXT_ACTIONS.txt
+Tests executed: Backend pytest 51 passed; frontend vitest 5 passed; tsc --noEmit; vite build; migration 0004 up/down/re-up; live HTTP review+approval smoke
+Results: All suites pass. Reviewer separation, evidence requirements, replay safety, double-decision rejection and non-execution of gated actions verified in tests and live.
+Problems: None beyond an earlier documentation-script variable typo, corrected before writing.
+Solutions: Re-ran the documentation edits scoped correctly.
+
+[2026-11-13 13:00 UTC] Phase 6/7 — Project workspaces and Git isolation — Isolated local Git workspaces per project
+Task: Isolated local Git workspaces per project
+Action performed: Implemented and verified isolated local Git workspaces with branch creation, read-only status and audited removal
+Files created: backend/app/workspaces.py, backend/app/workspace_api.py, backend/migrations/versions/0005_project_workspaces.py, backend/tests/test_workspaces.py, web/src/components/WorkspacePanel.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, .gitignore, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 58 passed; frontend vitest 5 passed; tsc --noEmit; vite build; migration 0005 up/down/re-up
+Results: All suites pass. Real repositories cloned into isolated workspaces, source repos left clean, traversal and protected-branch attempts rejected, removal audited.
+Problems: The stored-path lookup re-derived the directory slug from the project title, so a branch operation failed after creation; branch names like 'refs//head' also passed validation.
+Solutions: Persisted workspace_path is now authoritative and re-validated against the root; branch validation rejects '//', trailing '/' and trailing dots.
+
+[2026-11-13 13:11 UTC] Phase 13 — Security — Local authentication and CSRF hardening
+Task: Local authentication and CSRF hardening
+Action performed: Implemented and verified opt-in local bearer-token auth with server-side proxy token injection and cross-origin mutation blocking
+Files created: backend/app/auth.py, backend/tests/test_auth.py
+Files modified: backend/app/main.py, web/vite.config.ts, scripts/start.sh, .env.example, README.md, SECURITY.md, CONFIGURATION.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 66 passed; frontend vitest 5 passed; tsc --noEmit; vite build; live proxy auth smoke
+Results: Token mode enforces 401 without a token and 200 with it; the Vite proxy injects the token with no browser exposure; hostile-origin mutations return 403.
+Problems: None; the middleware is default-off so existing tests and local workflows are unaffected.
+Solutions: Added both-mode coverage (off and token) plus a bundle scan for the token value.
+
+[2026-11-13 13:13 UTC] Phase 6 — Projects and Memory — Project-isolated memory with versioning and retrieval
+Task: Project-isolated memory with versioning and retrieval
+Action performed: Implemented and verified project-isolated, versioned memory with local keyword retrieval
+Files created: backend/app/memory.py, backend/app/memory_api.py, backend/migrations/versions/0006_memory.py, backend/tests/test_memory.py, web/src/MemoryView.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 72 passed; frontend vitest 5 passed; tsc --noEmit; vite build; migration 0006 up/down/re-up; live isolation smoke
+Results: Cross-project isolation verified for list, search, direct lookup, delete and rollback; versioning and rollback-as-new-version verified; global entries shared deliberately.
+Problems: A blank search query returned 200 instead of a validation error.
+Solutions: Rejected blank queries explicitly in the API and covered it with a test.
+
+[2026-11-13 13:14 UTC] Phase 10 — Cost and Resources — Local resource monitoring and adaptive concurrency guidance
+Task: Local resource monitoring and adaptive concurrency guidance
+Action performed: Implemented and verified local CPU/memory/disk telemetry with a bounded advisory concurrency recommendation
+Files created: backend/app/resources.py, backend/app/system_api.py, backend/tests/test_resources.py
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 78 passed; frontend vitest 5 passed; tsc --noEmit; vite build; live proxy resource smoke
+Results: Real local measurements returned; recommendation stayed bounded and explicitly advisory.
+Problems: An unused helper remained after an early draft.
+Solutions: Removed it and hoisted the datetime import; pyflakes is clean.
+
+[2026-11-13 13:16 UTC] Phase 9 — Recovery and Continuity — Verified backup and guarded restore
+Task: Verified backup and guarded restore
+Action performed: Implemented and verified consistent SQLite backup, integrity verification and guarded restore
+Files created: backend/app/backup.py, backend/tests/test_backup.py, scripts/backup.py
+Files modified: BACKUP_AND_RESTORE.md, CONFIGURATION.md, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 86 passed; CLI create/list/verify/restore/prune exercised at /tmp/bk
+Results: Restore brought back a deleted project row; previous database preserved as db.pre-restore-20261113T131548Z.sqlite3; verify reports integrity_check: ok.
+Problems: A blank backup name was replaced with a generated name, and a tampered file raised instead of failing verification.
+Solutions: Blank names are now rejected and unreadable files return ok=false with a diagnostic check; both covered by tests.
+
+[2026-11-13 13:18 UTC] Phase 9 — Recovery and Continuity — Durable task checkpoints and resume planning
+Task: Durable task checkpoints and resume planning
+Action performed: Implemented and verified append-only task checkpoints with credential rejection and an advisory resume plan
+Files created: backend/app/checkpoints.py, backend/app/checkpoint_api.py, backend/migrations/versions/0007_task_checkpoints.py, backend/tests/test_checkpoints.py, web/src/components/CheckpointPanel.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 92 passed; frontend vitest 5; tsc --noEmit; vite build; migration 0007 up/down/re-up; live proxy checkpoint smoke
+Results: Sequences 1 and 2 recorded, resume plan listed concrete actions with resumed_automatically=false, a credential-shaped payload was rejected with 422, DELETE preflight now allowed.
+Problems: DELETE was absent from the CORS allow-methods list, so a browser-originated delete would fail preflight.
+Solutions: Added DELETE to allowed methods and verified the preflight response.
+
+[2026-11-13 13:19 UTC] Phase 15 — Documentation Sync — Refresh live status and remaining-work registers
+Task: Refresh live status and remaining-work registers
+Action performed: Reconciled STATUS, IMPLEMENTATION_STATUS, NEXT_ACTIONS and BLOCKERS with verified work
+Files created: None
+Files modified: STATUS.txt, IMPLEMENTATION_STATUS.md, NEXT_ACTIONS.txt, BLOCKERS.txt
+Tests executed: No code change; documentation-only. Backend 92 tests and frontend build last verified at 13:18 UTC.
+Results: Status files now state 92 backend tests, 321 i18n keys and the real state of phases 6, 9 and 13.
+Problems: STATUS.txt still described the 9-test foundation slice from the first session.
+Solutions: Rewrote the recently-completed, upcoming and test sections to match measured results.
+
+[2026-11-13 13:21 UTC] Phase 7 — GitHub and Workspaces — Approval-gated pull-request plans
+Task: Approval-gated pull-request plans
+Action performed: Implemented and verified pull-request planning with approval gating and an honest execute refusal
+Files created: backend/app/github_plans.py, backend/app/github_api.py, backend/migrations/versions/0008_github_plans.py, backend/tests/test_github_plans.py, web/src/components/PullRequestPlans.tsx
+Files modified: backend/app/models.py, backend/app/quality.py, backend/app/schemas.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 99 passed; frontend vitest 5; tsc --noEmit; vite build; migration 0008 up/down/re-up; live proxy plan smoke
+Results: Plan recorded with linked pending approval, execute returned 409 with a reason, approval moved the plan to approved_not_executed while executed stayed false.
+Problems: The approvals list is wrapped in an approvals key, so the first test indexed the wrapper.
+Solutions: Unwrapped the payload in the test; behaviour of the endpoint was correct.
+
+[2026-11-13 13:22 UTC] Phase 11 — Dashboard and Interface — Evidence-based delivery analytics
+Task: Evidence-based delivery analytics
+Action performed: Implemented and verified analytics derived only from persisted rows
+Files created: backend/app/analytics.py, backend/app/analytics_api.py, backend/tests/test_analytics.py, web/src/AnalyticsView.tsx
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 103 passed; frontend vitest 5; tsc --noEmit; vite build; live analytics smoke with range guards
+Results: Live counts matched stored rows exactly; absent metrics returned null rather than zero.
+Problems: The first assertions assumed an empty database, but startup seeds one Manager agent and an audit event, and an assigned task counts as active.
+Solutions: Corrected the assertions to the real seeded and assigned semantics instead of weakening the analytics.
+
+[2026-11-13 13:24 UTC] Phase 11 — Dashboard and Interface — Derived notifications with persisted read state
+Task: Derived notifications with persisted read state
+Action performed: Implemented and verified in-app notifications derived from real pending work
+Files created: backend/app/notifications.py, backend/app/notification_api.py, backend/migrations/versions/0009_notification_reads.py, backend/tests/test_notifications.py, web/src/components/NotificationCenter.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 110 passed; frontend vitest 5; tsc --noEmit; vite build; migration 0009 up/down/re-up; live notification smoke
+Results: Two derived unread items, mark-one dropped unread to 1, and deciding the approval removed its item.
+Problems: The approvals POST returns a wrapped payload and decisions use PATCH, so the first tests used the wrong shapes.
+Solutions: Corrected the tests to the real API contract; behaviour itself was right.
+
+[2026-11-13 13:26 UTC] Phase 11 — Dashboard and Interface — Settings page for validated local preferences
+Task: Settings page for validated local preferences
+Action performed: Implemented and verified persisted non-secret preferences with strict validation
+Files created: backend/app/app_settings.py, backend/app/settings_api.py, backend/tests/test_settings.py, web/src/SettingsView.tsx
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 116 passed; frontend vitest 5; tsc --noEmit; vite build; live settings smoke
+Results: Values persisted across processes, api_key was rejected with 422 extra_forbidden, and reset restored defaults.
+Problems: The draft state initially included server metadata (updated_at), which broke the TypeScript draft type.
+Solutions: Split an editable Draft type from the server payload so only preference fields are edited.
+
+[2026-11-13 13:28 UTC] Phase 5 — Orchestration — Deterministic Manager planning
+Task: Deterministic Manager planning
+Action performed: Implemented and verified rule-based planning with reviewable, explicitly applied proposals
+Files created: backend/app/planning.py, backend/app/planning_api.py, backend/tests/test_planning.py, web/src/components/ManagerPlanPanel.tsx
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 123 passed; frontend vitest 5; tsc --noEmit; vite build; live proposals+apply smoke
+Results: Two queued tasks were proposed to two distinct agents and both became assigned only after an explicit apply.
+Problems: The planner initially filtered agents by project_id, which does not exist on agents.
+Solutions: Treated agents as the shared worker pool they actually are and documented the scope limitation.
+
+[2026-11-13 13:31 UTC] Phase 3 — Agent Management — Agent lifecycle and permission scopes
+Task: Agent lifecycle and permission scopes
+Action performed: Implemented and verified lifecycle validation, assignment gates and deny-by-default scopes
+Files created: backend/app/agents.py, backend/app/agent_api.py, backend/migrations/versions/0010_agent_permissions.py, backend/tests/test_agent_lifecycle.py, web/src/components/AgentControls.tsx
+Files modified: backend/app/models.py, backend/app/schemas.py, backend/app/api.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 129 passed; frontend vitest 5; tsc --noEmit; vite build; migration 0010 up/down/re-up; live lifecycle smoke
+Results: Illegal transitions 409, paused agent refused work with 409 agent_paused, unknown scope 422 and Manager disabling refused.
+Problems: A new router registered before the core router shadowed PATCH /agents/{id}/state with GET /agents, which silently ignored the body.
+Solutions: Registered the specific router first, added a comment explaining the ordering, and re-verified every transition live.
+
+[2026-11-13 13:34 UTC] Phase 12 — Internationalization — Translation coverage for every UI key
+Task: Translation coverage for every UI key
+Action performed: Fixed a missing translation and added a guard that fails when any used key is untranslated
+Files created: web/src/vite-env.d.ts
+Files modified: web/src/i18n.ts, web/src/i18n.test.ts, TESTING_REPORT.md, CHANGELOG.md, README.md, ARCHITECTURE.md
+Tests executed: Vitest 6 passed; tsc --noEmit clean; vite build passed; guard proven to fail when a key is removed
+Results: No statically referenced translation key is missing in English, Arabic or Persian.
+Problems: The agent permission controls used t('save') before the key existed, so the UI would render a raw key.
+Solutions: Added the key and a source-scanning test that catches this class of defect instead of relying on review.
+
+[2026-11-13 13:35 UTC] Phase 13 — Reliability and Security — Full-stack regression pass across all slices
+Task: Full-stack regression pass across all slices
+Action performed: Verified every read endpoint and one end-to-end flow spanning workspaces, memory, workflow, QA and plans
+Files created: None
+Files modified: TESTING_REPORT.md
+Tests executed: 19 read endpoints 200; end-to-end flow verified: workspace, checkpoint, memory, transitions, review gates, PR plan, analytics
+Results: Self-review, approval without checks and approval without recorded output were correctly refused; replay was idempotent.
+Problems: A first scripted review attempt returned 409 because the task had no recorded output.
+Solutions: Corrected the flow to record output before review, which is the documented evidence requirement, not a defect.
+
+[2026-11-13 13:36 UTC] Phase 14 — Cross-Platform Delivery — Start/stop script correctness
+Task: Start/stop script correctness
+Action performed: Fixed a misleading startup URL and verified both the success and busy-port paths
+Files created: None
+Files modified: scripts/start.sh, TROUBLESHOOTING.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Free port: UI 5211 200, API 8127 200, exit 0. Occupied port: clear error, no false URL.
+Results: The printed UI URL now always corresponds to a server that answered.
+Problems: Vite silently moved to the next port while the script printed the requested one.
+Solutions: strictPort plus a readiness check before printing; failure exits non-zero with the log path and an AATM_UI_PORT hint.
+
+[2026-11-13 13:41 UTC] Phase 4 — Browser Profiles — Isolated browser profiles and Browser Wall
+Task: Isolated browser profiles and Browser Wall
+Action performed: Implemented and verified real profile isolation, exclusivity and a truthful wall
+Files created: backend/app/browser_profiles.py, backend/app/browser_api.py, backend/migrations/versions/0011_browser_profiles.py, backend/tests/test_browser_profiles.py, web/src/BrowserWallView.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, CONFIGURATION.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 137 passed; vitest 6; tsc; vite build; migration 0011 up/down/re-up; live lock/delete smoke
+Results: Directory created and later removed on disk; second lock and locked deletion both refused; unconfirmed deletion refused with 422.
+Problems: The credential-leak test matched the explanatory note rather than a data field.
+Solutions: Asserted on field names instead of free text, so the honest note can still mention cookies.
+
+[2026-11-13 13:47 UTC] Phase 15 — Execution timeline and cooperative cancellation — Timeline projection and two-step cancellation
+Task: Timeline projection and two-step cancellation
+Action performed: Implemented timeline + cancel protocol, wired into orchestrator, UI, docs
+Files created: backend/app/timeline.py, backend/app/cancellation.py, backend/app/timeline_api.py, backend/migrations/versions/0012_task_cancellation.py, backend/tests/test_timeline_cancel.py, web/src/TaskTimelineView.tsx
+Files modified: backend/app/main.py, backend/app/models.py, backend/app/schemas.py, backend/app/workflow.py, backend/app/orchestrator.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 144 passed, 1 warning; vitest 6 passed; tsc clean; vite build OK; live API smoke: 9 timeline entries, cancel applied at safe boundary, re-cancel 409, blank reason 422
+Results: Backend 137 -> 144 tests; i18n 450 -> 476 keys x3; migration 0012 applied live on the running API
+Problems: None
+Solutions: None
+
+[2026-11-13 13:50 UTC] Phase 16 — Live Agent Control Center — Live per-agent state, instructions and guarded reassignment
+Task: Live per-agent state, instructions and guarded reassignment
+Action performed: Implemented agent control center backend, endpoints, UI view, migration 0013, tests and docs
+Files created: backend/app/agent_center.py, backend/migrations/versions/0013_agent_instructions.py, backend/tests/test_agent_center.py, web/src/AgentCenterView.tsx
+Files modified: backend/app/models.py, backend/app/agent_api.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 153 passed, 1 warning; vitest 6 passed; tsc clean; build OK (JS 449.76 kB, CSS 44.51 kB); live smoke: center 200 with 14 agents, instruction 201 delivered=false, reassign 200 and new holder sees the task
+Results: Backend 144 -> 153 tests; i18n 476 -> 511 keys x3; migration 0013 applied live on the running API
+Problems: None
+Solutions: None
+
+[2026-11-13 13:53 UTC] Phase 17 — AI Project Builder — Deterministic blueprint generation with review-gated apply
+Task: Deterministic blueprint generation with review-gated apply
+Action performed: Added blueprint engine, apply endpoint, builder UI, tests and docs
+Files created: backend/app/blueprints.py, backend/app/blueprint_api.py, backend/tests/test_blueprints.py, web/src/ProjectBuilderView.tsx
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 166 passed, 1 warning; vitest 6 passed; tsc clean; build OK (JS 468.14 kB, CSS 45.85 kB); live smoke: propose 200 with packs [accounts, uploads, analytics] and 14 tasks, apply unconfirmed 409, apply confirmed created 14 dependency-linked tasks
+Results: Backend 153 -> 166 tests; i18n 511 -> 557 keys x3
+Problems: None
+Solutions: None
+
+[2026-11-13 13:56 UTC] Phase 18 — RTL and locale verification — Programmatic RTL invariants and locale-correct formatting
+Task: Programmatic RTL invariants and locale-correct formatting
+Action performed: Found and fixed Arabic digit rendering and unlocalized formatters; added shared formatter, CSS RTL checker and 7 tests
+Files created: web/src/format.ts, web/scripts/check-rtl-css.mjs, web/src/rtl.test.ts
+Files modified: web/src/App.tsx, web/src/ApprovalsView.tsx, web/src/AgentCenterView.tsx, web/src/BrowserWallView.tsx, web/src/ProvidersView.tsx, web/src/SettingsView.tsx, web/src/TaskTimelineView.tsx, web/src/components/CheckpointPanel.tsx, web/src/components/NotificationCenter.tsx, web/package.json
+Tests executed: npm run verify green: tsc clean, vitest 13 passed, build OK, RTL check 0 physical in source and bundle; pytest 166 passed
+Results: Frontend tests 6 -> 13; Arabic digits fixed (١٣/١١/٢٠٢٦); RTL guard proven to fail on 3 injected defects
+Problems: None
+Solutions: None
+
+[2026-11-13 13:59 UTC] Phase 19 — Reliability and performance — Request hardening, security headers and an N+1 fix
+Task: Request hardening, security headers and an N+1 fix
+Action performed: Added ASGI body cap and security headers, fixed quadratic project timeline, added hardening and performance tests
+Files created: backend/app/hardening.py, backend/tests/test_hardening.py, backend/tests/test_performance.py
+Files modified: backend/app/main.py, backend/app/timeline.py
+Tests executed: pytest 178 passed, 1 warning; pyflakes clean; measured medians: tasks 5.6ms, dashboard 5.2ms, center 17.1ms, task timeline 6.0ms, project timeline 12.1ms, blueprint 5.0ms
+Results: Backend 166 -> 178 tests; project timeline 7.8x faster; oversized bodies refused with 413
+Problems: None
+Solutions: None
+
+[2026-11-13 14:01 UTC] Phase 20 — Permission levels — Complete the nine specification permission levels
+Task: Complete the nine specification permission levels
+Action performed: Extended scopes to cover all nine named levels with a named enforcement boundary for each
+Files created: None
+Files modified: backend/app/agents.py, backend/app/agent_api.py, backend/app/planning.py, backend/tests/test_agent_lifecycle.py, backend/tests/test_planning.py, web/src/api.ts, web/src/components/AgentControls.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 181 passed; vitest 13 passed; tsc clean; build OK; RTL check 0 physical
+Results: Backend 178 -> 181 tests; i18n 557 -> 563 keys x3
+Problems: None
+Solutions: None
+
+[2026-11-13 14:09 UTC] Phase 21 — Self-healing and recovery — Recovery capability, classified database errors and proxy-correct 413
+Task: Recovery capability, classified database errors and proxy-correct 413
+Action performed: Added recovery module and endpoints, rollback-before-close sessions, global DB error handler, health degradation, and body draining
+Files created: backend/app/recovery.py, backend/app/recovery_api.py, backend/tests/test_recovery.py, web/src/RecoveryPanel.tsx
+Files modified: backend/app/db.py, backend/app/api.py, backend/app/main.py, backend/app/hardening.py, backend/tests/test_hardening.py, web/src/api.ts, web/src/SettingsView.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 195 passed, 1 warning; pyflakes clean; vitest 13 passed; tsc clean; build OK (JS 476.30 kB); RTL check 0 physical; live: recovery 200 with 5 detected/2 automatic, oversized body 413 through both API and proxy
+Results: Backend 181 -> 195 tests; i18n 563 -> 583 keys x3; proxy 500 -> correct 413
+Problems: None
+Solutions: None
+
+[2026-11-13 14:11 UTC] Phase 22 — Memory context and summarization — Budgeted context selection with extractive summaries
+Task: Budgeted context selection with extractive summaries
+Action performed: Added memory_context module, context and summarize endpoints, Memory view panel and tests
+Files created: backend/app/memory_context.py, web/src/MemoryContextPanel.tsx
+Files modified: backend/app/memory_api.py, backend/tests/test_memory.py, web/src/api.ts, web/src/MemoryView.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 201 passed, 1 warning; pyflakes clean; vitest 13 passed; tsc clean; build OK (JS 482.87 kB); RTL 0 physical; live: context 40/40 words, 1 exclusion with reason, extractive summary 13 words
+Results: Backend 195 -> 201 tests; i18n 583 -> 597 keys x3
+Problems: None
+Solutions: None
+
+[2026-11-13 14:13 UTC] Phase 23 — AI Team Intelligence Center — Fair, measured agent performance with labelled rule-based assessments
+Task: Fair, measured agent performance with labelled rule-based assessments
+Action performed: Added intelligence module and endpoint, Analytics panel, fairness guarantees and 11 tests
+Files created: backend/app/intelligence.py, backend/app/intelligence_api.py, backend/tests/test_intelligence.py, web/src/IntelligencePanel.tsx
+Files modified: backend/app/main.py, web/src/api.ts, web/src/AnalyticsView.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 212 passed, 1 warning; pyflakes clean; vitest 13 passed; tsc clean; build OK (JS 492.39 kB); RTL 0 physical; live: rates 1.0 vs 0.333, equal complexity points, 3 rule-based assessments
+Results: Backend 201 -> 212 tests; i18n 597 -> 621 keys x3; found and fixed a success-rate denominator bug
+Problems: None
+Solutions: None
+
+[2026-11-13 14:15 UTC] Phase 24 — Operations view and bundle splitting — Expose audit log, usage and resources; split the vendor bundle
+Task: Expose audit log, usage and resources; split the vendor bundle
+Action performed: Added OpsView with three panels, navigation entry, and manualChunks vendor split
+Files created: web/src/OpsView.tsx
+Files modified: web/src/App.tsx, web/src/i18n.ts, web/src/styles.css, web/vite.config.ts
+Tests executed: pytest 212 passed; vitest 13 passed; tsc clean; build OK with no chunk warnings (react 181.21 kB, data 87.39 kB, app 231.82 kB, CSS 50.41 kB); RTL 0 physical; six endpoints 200 through the Vite proxy
+Results: i18n 621 -> 638 keys x3; no chunk exceeds 500 kB
+Problems: None
+Solutions: None
+
+[2026-11-13 14:19 UTC] Phase 25 — UI render smoke test — Prove views render, not just that endpoints respond
+Task: Prove views render, not just that endpoints respond
+Action performed: Added a jsdom render test that mounts the real app with mocked API data and clicks every navigation entry, plus three anti-vacuity guards
+Files created: web/src/App.render.test.tsx
+Files modified: web/vitest.config.ts, web/package.json
+Tests executed: vitest 16 passed (3 render + 7 RTL + 6 i18n); pytest 212 passed; tsc clean; build OK; deliberate-crash probe confirmed the test fails as intended
+Results: Frontend 13 -> 16 tests; closed a verification gap where a crashing view could ship undetected
+Problems: None
+Solutions: None
+
+[2026-11-13 14:24 UTC] Phase 26 — Live event stream (SSE) — Real-time updates, implemented honestly for a local SQLite build
+Task: Real-time updates, implemented honestly for a local SQLite build
+Action performed: Added an SSE audit stream with keyset cursor, bounded lifetime, heartbeat and own session, plus a resuming client panel and 11 tests
+Files created: backend/app/events.py, backend/tests/test_events.py, web/src/EventStreamPanel.tsx, web/src/EventStreamPanel.test.tsx
+Files modified: backend/app/main.py, web/src/api.ts, web/src/OpsView.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 219 passed (7 new event tests, 10.7 s); vitest 20 passed (4 new stream tests); tsc clean; build OK; live curl showed audit frame for a project created mid-stream then a clean close
+Results: Backend 212 -> 219; frontend 16 -> 20; i18n 638 -> 646 keys x3; timestamp-cursor bug found and fixed
+Problems: None
+Solutions: None

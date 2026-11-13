@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 18:39 UTC
+2026-11-13 18:43 UTC
 
 Overall Project Status:
 Testing
@@ -21,7 +21,7 @@ Current Activity:
 API run requests sharing a database are serialized by an expiring row lock, and active task/run leases are heartbeated by the orchestrator. The opt-in local executor prepares an owned, detached Git worktree per task, enabling same-project concurrency without writes to the shared source workspace; unsupported/non-Git workspaces remain serialized. PR #11 added read-only task diff preview and on-demand Tasks UI. The current implementation also previews small contained UTF-8 untracked files with strict file-count/size limits; binary files, symlinks, and unsafe paths remain content-free. No changes are merged. Distributed worker scheduling and automatic task-worktree integration are not implemented.
 
 Recently Completed (most recent first):
-- Safe untracked task-file previews: only contained regular UTF-8 files no larger than 32 KiB are previewed, with 32-file and 128 KiB aggregate caps; binary files, symlinks, unsafe paths, and oversized/non-regular files have no content exposed. Local checks: 262 backend passed, one PostgreSQL-only test skipped, eight focused workspace tests passed; frontend verify passed (21 tests, TypeScript, production build, RTL checks).
+- Safe untracked task-file previews: only contained regular UTF-8 files no larger than 32 KiB are previewed, with 32-file and 128 KiB aggregate caps; binary files, symlinks, unsafe paths, and oversized/non-regular files have no content exposed. PR #12 (`a0ef398`) is open; all three CI jobs passed on run `43485091743`. Local checks: 262 backend passed, one PostgreSQL-only test skipped, eight focused workspace tests passed; frontend verify passed (21 tests, TypeScript, production build, RTL checks).
 - Bounded task-worktree diff preview and on-demand Tasks UI: PR #11 landed in main at `0f7bab9`; main CI run `43482226737` passed backend, frontend and PostgreSQL migration/lock jobs. The preview is capped, read-only, project-scoped, and has explicit missing/truncated states in English/Arabic/Persian. Its initial version omitted untracked file contents.
 - Read-only task-worktree review metadata: `GET /api/v1/projects/{project_id}/workspace/tasks/{task_id}` checks task/project scope and AATM worktree ownership, then reports base/head commits, changed paths and diffstat without file contents or mutations. Missing worktrees are reported honestly; cross-project IDs are hidden as 404 and malformed ownership metadata is rejected. Full backend verification: 262 passed, 1 PostgreSQL-only test skipped locally.
 - Same-project task worktree isolation: the opt-in local executor creates or safely reuses a detached Git worktree per task on the orchestrator thread, then executes in that worktree. Two real tasks from one project were verified to run in distinct directories without writing to the source workspace. Non-Git workspaces remain serialized by project; worktree changes are preserved for inspection/retry but are not automatically merged back. Backend suite, frontend verify, and hosted PostgreSQL smoke all passed on main after merge.
@@ -50,7 +50,7 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Phase 33 distributed worker scheduling and a reviewed task-worktree integration path remain open. A safe untracked-text preview is now locally tested; no automatic changes are applied or merged. Local verification: 262 backend passed, one PostgreSQL-only test skipped; focused workspace tests 8 passed; frontend verify passed (21 tests, TypeScript, production build, RTL checks). Main baseline PR #11 is merged at `0f7bab9`, with all CI jobs passing on run `43482226737`.
+- PR #12 adds safe untracked-text previews and is open with all three CI jobs passing (run `43485091743`); no task worktree changes are automatically applied or merged. Phase 33 distributed worker scheduling and a reviewed task-worktree integration path remain open.
 
 Upcoming Tasks:
 - Distributed task-worker scheduling, safe review/integration of task-worktree changes, and expanded PostgreSQL coverage beyond migration/lock smoke; Windows CI verification and release packaging.
@@ -79,7 +79,8 @@ Python/npm dependencies installed (@types/node added for the RTL checker). No pr
 
 Tests:
 - Latest local branch verification at 2026-11-13 18:38 UTC: 262 backend passed, one PostgreSQL-only integration smoke skipped locally; focused workspace tests 8 passed; frontend verify 21 tests, TypeScript, production build, RTL source/bundle checks all passed. One upstream Starlette/httpx deprecation warning.
-- Hosted CI on main merge commit `0f7bab9` passed backend, frontend, and PostgreSQL migration/lock smoke (run `43482226737`), covering the tracked patch preview and Tasks UI.
+- PR #12 hosted CI run `43485091743` passed backend, frontend, and PostgreSQL migration/lock jobs for the safe untracked-preview extension.
+- Hosted CI on main merge commit `0f7bab9` passed the same three jobs (run `43482226737`), covering the tracked patch preview and Tasks UI.
 - `npm ci` reported six development-dependency audit findings; `npm audit --omit=dev` reported zero production dependency vulnerabilities. No forced dependency upgrades were applied.
 - Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
 - Pending: full PostgreSQL application/backup testing, Windows/PowerShell, Docker, Playwright E2E, pixel-level RTL rendering.
@@ -94,7 +95,7 @@ Last Successful Build:
 2026-11-13 16:34 UTC — `npm run verify`: TypeScript, 20 Vitest tests, Vite production build, and RTL checker.
 
 Last Successful Test:
-2026-11-13 18:38 UTC — 262 backend tests passed, one PostgreSQL-only test skipped locally; frontend verify passed (21 tests, typecheck, production build, RTL checker). Main baseline CI run `43482226737` passed all three jobs; hosted CI for the current untracked-preview extension is pending.
+2026-11-13 18:44 UTC — PR #12 CI run `43485091743` passed backend tests, frontend verification, and PostgreSQL migration/lock smoke. Local verification: 262 backend passed, one PostgreSQL-only test skipped; frontend verify passed (21 tests, typecheck, production build, RTL checker).
 
 Remaining Work:
 - Gated by design: live provider execution behind consent/accounting (a task now runs a local command, never a model), GitHub push/PR execution, per-user authorization.

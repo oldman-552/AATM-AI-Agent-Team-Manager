@@ -9,7 +9,7 @@ Overall Project Status:
 Developing
 
 Overall Completion:
-~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
+Roughly 45% of the specified product surface is implemented and tested locally (core data model, providers boundary, orchestration, QA/approvals, workspaces, memory, checkpoints, backup, analytics, notifications, settings, planning, agent lifecycle, i18n, auth). Live provider execution, browser automation, Browser Wall and cross-platform verification remain open.
 
 Current Phase:
 Phase 14 — Cross-Platform Delivery
@@ -21,6 +21,9 @@ Current Activity:
 Added --strictPort, a readiness poll and an actionable failure message; documented troubleshooting
 
 Recently Completed (most recent first):
+- Fixed scripts/start.sh printing a UI URL that was not serving (strictPort + readiness check).
+- Full-stack regression pass: 19 read endpoints and one end-to-end flow across all slices.
+- Added a Vitest guard failing on any untranslated UI key; fixed the missing `save` key.
 - Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.
 - Verified SQLite backup/restore CLI with SHA-256 manifests, guarded restore and retention.
 - Local CPU/memory/disk telemetry with a bounded advisory concurrency recommendation.
@@ -73,7 +76,7 @@ Last Successful Test:
 2026-11-13 10:47 UTC — 9 backend tests plus dependency/syntax checks.
 
 Estimated Remaining Work:
-Large multi-phase product; no reliable completion date can be estimated from this early foundation.
+Remaining: live provider execution behind consent/accounting, browser profiles/Browser Wall, GitHub push/PR execution, per-project authorization tied to a user identity, visual RTL/E2E browser testing, Windows and PostgreSQL verification, release packaging.
 
 Next Action:
 Implement the next unstarted capability (approval-gated GitHub workflow or analytics) with tests, keeping Arena integration blocked pending a verified compliant route.

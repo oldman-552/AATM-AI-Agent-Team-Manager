@@ -270,3 +270,13 @@ Tests executed: Vitest 6 passed; tsc --noEmit clean; vite build passed; guard pr
 Results: No statically referenced translation key is missing in English, Arabic or Persian.
 Problems: The agent permission controls used t('save') before the key existed, so the UI would render a raw key.
 Solutions: Added the key and a source-scanning test that catches this class of defect instead of relying on review.
+
+[2026-11-13 13:35 UTC] Phase 13 — Reliability and Security — Full-stack regression pass across all slices
+Task: Full-stack regression pass across all slices
+Action performed: Verified every read endpoint and one end-to-end flow spanning workspaces, memory, workflow, QA and plans
+Files created: None
+Files modified: TESTING_REPORT.md
+Tests executed: 19 read endpoints 200; end-to-end flow verified: workspace, checkpoint, memory, transitions, review gates, PR plan, analytics
+Results: Self-review, approval without checks and approval without recorded output were correctly refused; replay was idempotent.
+Problems: A first scripted review attempt returned 409 because the task had no recorded output.
+Solutions: Corrected the flow to record output before review, which is the documented evidence requirement, not a defect.

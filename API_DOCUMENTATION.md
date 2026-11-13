@@ -233,7 +233,7 @@ Returns read-only metadata for an AATM-owned per-task Git worktree: `available`,
 
 ### `GET /projects/{project_id}/workspace/tasks/{task_id}/diff`
 
-Returns a text patch from the task worktree's recorded base commit; the diff command itself is capped at 256 KiB of output and 15 seconds of runtime. The response includes `truncated` and `max_bytes`; untracked files are omitted (their names remain in the metadata endpoint). External diff and text-conversion helpers are disabled. No task/project ownership is bypassed, and the endpoint performs no write, commit, merge, or delete.
+Returns a text patch from the task worktree's recorded base commit; the diff command itself is capped at 256 KiB of output and 15 seconds of runtime. The response includes `truncated` and `max_bytes`. Untracked paths are listed separately with previews only for contained regular UTF-8 text files no larger than 32 KiB; binary files, symlinks, unsafe paths, non-regular files, and oversized files have no content preview. Untracked previews are limited to 32 files and 128 KiB total; file enumeration is capped at 64 KiB and five seconds. External diff and text-conversion helpers are disabled. No task/project ownership is bypassed, and the endpoint performs no write, commit, merge, or delete.
 
 ### `POST /projects/{project_id}/workspace` → 201
 

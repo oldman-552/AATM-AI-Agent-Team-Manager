@@ -1,8 +1,11 @@
 AATM — PRIORITIZED NEXT ACTIONS
 ===============================
 
-IN PROGRESS — Bounded task-worktree diff preview and Tasks UI (2026-11-13 18:20 UTC)
-Result: Added a read-only Git patch preview from each AATM worktree's recorded base, with a 256 KiB output cap, 15-second diff-command timeout, external diff/textconv disabled, and untracked content explicitly omitted. The Tasks UI fetches it only on operator request and displays an honest truncation notice in English/Arabic/Persian. Local checks: 262 backend passed, 1 PostgreSQL-only test skipped; 8 focused workspace tests passed; frontend verify passed (21 tests, TypeScript, production build, RTL checks). Not yet merged; hosted CI for this slice is pending.
+COMPLETED LOCALLY — Safe text previews for untracked task-worktree files (2026-11-13 18:39 UTC)
+Result: Extended the merged diff preview with separate snippets for contained regular UTF-8 untracked files, bounded to 32 paths, 32 KiB/file, 128 KiB aggregate, 64 KiB path enumeration and five seconds. Binary files, symlinks, unsafe paths, non-regular and oversized files have no contents exposed. Local checks: 262 backend passed, 1 PostgreSQL-only test skipped; 8 focused workspace tests passed; frontend verify passed (21 tests, TypeScript, production build, RTL checks). Current branch remains unmerged; hosted CI pending.
+
+COMPLETED — Bounded task-worktree diff preview and Tasks UI (2026-11-13 18:21 UTC)
+Result: Added a read-only Git patch preview from each AATM worktree's recorded base, with a 256 KiB output cap, 15-second diff-command timeout, external diff/textconv disabled. The Tasks UI fetches it only on operator request and displays honest truncation and missing-worktree states in English/Arabic/Persian. Local verification: 262 backend passed, 1 PostgreSQL-only test skipped; 21 frontend tests, TypeScript, production build, RTL checks passed. PR #11 merged in main commit `0f7bab9`; all backend, frontend, and PostgreSQL migration/lock jobs passed on CI run `43482226737`.
 
 COMPLETED — Read-only inspection for task worktrees (2026-11-13 17:43 UTC)
 Result: Added a project/task-scoped API that validates task ownership and the persisted AATM worktree record, then reports base/head commit, cleanliness, changed paths and diffstat without exposing file contents or modifying the worktree. Missing worktrees remain explicit; cross-project task IDs are hidden as 404 and invalid metadata is rejected. Verification: full backend suite 262 passed, one PostgreSQL-only test skipped locally; one Starlette/httpx deprecation warning. PR #9 merged to main as `59d25bd`; backend, frontend, and PostgreSQL migration/lock CI jobs passed on main (run `43475967793`).

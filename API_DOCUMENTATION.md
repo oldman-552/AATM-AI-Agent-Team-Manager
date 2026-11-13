@@ -254,6 +254,15 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Task checkpoints and resume plans
+
+- `POST /tasks/{task_id}/checkpoints` → 201 — `{label, state, note}`. Sequences are monotonic per task and history is append-only. Values that look like credentials (a key named like a token/password, or a value matching a known key shape) are rejected with 422 so secrets never reach the database or its backups.
+- `GET /tasks/{task_id}/checkpoints` — ordered checkpoints.
+- `GET /tasks/{task_id}/resume-plan` — `next_actions` guidance plus `latest_checkpoint`, `lease_expires_at` and `checkpoint_count`. `resumed_automatically` is always `false`: AATM never claims work resumed on its own.
+- `DELETE /tasks/{task_id}/checkpoints?keep=20` — retention trimming for one task.
+
+`CORS` now allows `DELETE` so a browser-originated retention call is not blocked by preflight.
+
 ## Backup and restore (CLI)
 
 Backup is a local operator command, not an HTTP endpoint — destructive operations are deliberately not exposed over the API.

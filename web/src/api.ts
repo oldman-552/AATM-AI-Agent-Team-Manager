@@ -40,6 +40,27 @@ export type Task = {
   updated_at: string
 }
 
+export type TaskCheckpoint = {
+  id: string
+  task_id: string
+  sequence: number
+  label: string
+  state: Record<string, unknown>
+  note: string
+  created_at: string
+}
+
+export type ResumePlan = {
+  task_id: string
+  state: string
+  retry_count: number
+  lease_expires_at: string | null
+  checkpoint_count: number
+  latest_checkpoint: TaskCheckpoint | null
+  next_actions: string[]
+  resumed_automatically: false
+}
+
 export type AuditEvent = {
   id: string
   entity_type: string
@@ -361,6 +382,13 @@ export const api = {
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
   resources: (configuredMax = 2) => request<ResourceReport>(`/api/v1/system/resources?configured_max=${configuredMax}`),
+  checkpoints: (taskId: string) => request<{ task_id: string; checkpoints: TaskCheckpoint[] }>(`/api/v1/tasks/${taskId}/checkpoints`),
+  createCheckpoint: (taskId: string, payload: { label: string; note?: string; state?: Record<string, unknown> }) =>
+    request<{ checkpoint: TaskCheckpoint; created: boolean }>(`/api/v1/tasks/${taskId}/checkpoints`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  resumePlan: (taskId: string) => request<ResumePlan>(`/api/v1/tasks/${taskId}/resume-plan`),
   recoverLeases: () => request<{ recovered: string[]; count: number; note: string }>('/api/v1/orchestrator/recover', { method: 'POST' }),
   taskReviews: (taskId: string) => request<{ reviews: Review[]; note: string }>(`/api/v1/tasks/${taskId}/reviews`),
   createReview: (

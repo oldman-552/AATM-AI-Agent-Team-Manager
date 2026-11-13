@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next'
 import { api, type Agent, type AuditEvent, type Project, type Task, type WorkflowDefinition } from './api'
 import ApprovalsView from './ApprovalsView'
 import MemoryView from './MemoryView'
+import { CheckpointPanel } from './components/CheckpointPanel'
 import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
@@ -802,6 +803,7 @@ function TaskRow({ task, projects, agents, language, workflow }: { task: Task; p
       <div className="task-secondary"><span>{project?.name ?? t('noProject')}</span><span>{agent?.name ?? t('noAssignee')}</span><span>{t('transitionRetryCount')}: {task.retry_count}</span><time>{formatDate(task.created_at, language)}</time></div>
       <div className="task-actions">
         <ReviewForm task={task} agents={agents} />
+        <CheckpointPanel task={task} />
         {nextStates.length ? (
           <>
             <label className="task-note-field">

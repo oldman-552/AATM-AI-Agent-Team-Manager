@@ -170,3 +170,13 @@ Tests executed: Backend pytest 78 passed; frontend vitest 5 passed; tsc --noEmit
 Results: Real local measurements returned; recommendation stayed bounded and explicitly advisory.
 Problems: An unused helper remained after an early draft.
 Solutions: Removed it and hoisted the datetime import; pyflakes is clean.
+
+[2026-11-13 13:16 UTC] Phase 9 — Recovery and Continuity — Verified backup and guarded restore
+Task: Verified backup and guarded restore
+Action performed: Implemented and verified consistent SQLite backup, integrity verification and guarded restore
+Files created: backend/app/backup.py, backend/tests/test_backup.py, scripts/backup.py
+Files modified: BACKUP_AND_RESTORE.md, CONFIGURATION.md, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 86 passed; CLI create/list/verify/restore/prune exercised at /tmp/bk
+Results: Restore brought back a deleted project row; previous database preserved as db.pre-restore-20261113T131548Z.sqlite3; verify reports integrity_check: ok.
+Problems: A blank backup name was replaced with a generated name, and a tampered file raised instead of failing verification.
+Solutions: Blank names are now rejected and unreadable files return ok=false with a diagnostic check; both covered by tests.

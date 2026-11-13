@@ -162,6 +162,29 @@ class TaskTransition(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
 
 
+class TaskCheckpoint(Base):
+    """A durable resume point for interrupted work.
+
+    Checkpoints are append-only observations written *before* risky work and at
+    meaningful milestones. They never store credentials: `state` is a small,
+    structured snapshot (counters, ids, paths) and `note` is free text that the
+    caller is responsible for keeping secret-free.
+    """
+
+    __tablename__ = "task_checkpoints"
+    __table_args__ = (
+        UniqueConstraint("task_id", "sequence", name="uq_task_checkpoint_sequence"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id"), nullable=False, index=True)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    label: Mapped[str] = mapped_column(String(120), nullable=False)
+    state: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    note: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
+
+
 class ReviewRecord(Base):
     """An independent review verdict with explicit evidence.
 

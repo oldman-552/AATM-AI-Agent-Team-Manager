@@ -8,7 +8,8 @@
 ## 2026-11-13 12:57 UTC — Backend tests (current)
 
 - Latest command: `cd backend && ../.venv/bin/python -m pytest`.
-- Result: **86 passed, 1 warning** (77 new tests across this session).
+- Result: **92 passed, 1 warning** (83 new tests across this session).
+- `tests/test_checkpoints.py` (6 tests): monotonic, append-only checkpoint sequences; credential-shaped state/notes rejected (422) and nothing persisted; label/note/size/404 validation; the resume plan is guidance only (`resumed_automatically: false`) and distinguishes expired from live leases; retention keeps the newest checkpoints.
 - `tests/test_backup.py` (8 tests): create → verify → mutate → restore round-trip against real SQLite files; restore refuses without `allow_overwrite`; path-traversal and oversized names rejected; duplicate names rejected; a tampered backup fails verification and its restore is refused; a missing database and a non-SQLite URL are rejected; pruning keeps the newest entries; a backup taken while the application holds an open connection is consistent.
 - `tests/test_resources.py` (6 tests): recommendation bounded by the CPU ceiling rather than the configured max; memory/disk pressure force the floor; high load per core halves the recommendation; in-flight work is reported without changing configuration; the local sample returns plausible values with no network; the HTTP endpoint validates `configured_max` and never marks the recommendation as applied.
 - `tests/test_memory.py` (6 tests): strict cross-project isolation for list/search/get/delete/rollback; deliberate global sharing with `include_global=false` opt-out; scope binding validation (project/agent/task requirements, unknown project, blank content); keyed versioning (v1 → v2 with the same id and `created: false`); rollback-as-new-version; version history; ranked keyword retrieval; blank-query rejection; JSON export; audit events.
@@ -19,6 +20,7 @@
 - Migration `0003_task_leases` verified: upgrade → columns present → downgrade to `0002_provider_boundary` → columns removed → re-upgrade → columns restored (file-backed SQLite).
 - Migration `0004_reviews_approvals` verified the same way (upgrade → `review_records`/`approval_requests` present → downgrade to `0003_task_leases` → removed → re-upgrade → present).
 - Migration `0005_project_workspaces` verified the same way (upgrade → table present → downgrade to `0004_reviews_approvals` → removed → re-upgrade → present).
+- Migration `0007_task_checkpoints` verified the same way (upgrade → `task_checkpoints` present → downgrade to `0006_memory` → removed → re-upgrade → present, head `0007_task_checkpoints`).
 - Migration `0006_memory` verified the same way (upgrade → `memory_entries`/`memory_versions` present → downgrade to `0005_project_workspaces` → removed → re-upgrade → present).
 - New coverage this slice:
   - `tests/test_provider_boundary.py` (10 tests): credential-reference validation and secret redaction; configurable pricing marked as estimate-only; budget consent/no-limit/limit-exceeded/idempotent-commit behaviour; monthly and per-scope limits; Arena hard block; Claude execution gating (disabled without explicit authorization, produces no call without consent, records usage once on replay, blocks when the global switch is off); credential redaction in provider errors; routing that never selects a paid provider without consent and never records usage; deterministic policies; and a socket-blocking test proving health/routing open no sockets.
@@ -31,8 +33,8 @@
 ## 2026-11-13 12:57 UTC — Frontend tests and build (current)
 
 - `cd web && npm test` (Vitest 2.1.9) → **5 passed**.
-  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (314 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
-- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1649 modules, `dist/assets/index-miHmjQHE.css` 32.25 kB, `dist/assets/index-amzqQyuR.js` 362.99 kB.
+  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (321 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
+- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1650 modules, `dist/assets/index-D3quBYcN.css` 33.50 kB, `dist/assets/index-Cr-MVuqe.js` 366.91 kB.
 - First TypeScript run failed twice: a missing `Send` icon import in `ProvidersView.tsx` and an invalid Vitest assertion overload in `i18n.test.ts`. Both were fixed before the passing run.
 
 ## 2026-11-13 — Frontend build (historical)
@@ -68,6 +70,7 @@
 - Cleanup: `.aatm-home` (git-ignored smoke database) only; no credentials, no provider traffic.
 - Notable: binding uvicorn to `0.0.0.0` makes the API reject the preview Host with 400 (by design). Only Vite is exposed for previews; the API stays loopback-bound.
 - Orchestrator endpoints were re-verified on a restarted server: startup applied migration `0003_task_leases`, `/api/v1/orchestrator/status` reported `executor.configured: false` with the refusal reason, and the same payload was served through the Vite proxy.
+- Checkpoints verified live through the Vite proxy: two checkpoints with sequences 1 and 2, a resume plan listing concrete next actions with `resumed_automatically: false`, a credential-shaped payload rejected with 422, and a `DELETE` preflight now advertising `DELETE`.
 - Backup CLI verified end to end at `/tmp/bk`: create (282,624 bytes), `verify` → `sha256 matches manifest, integrity_check: ok`, restore refused without `--yes` (exit 2) and without `allow_overwrite` (exit 1), then a real restore that brought back a deleted project row and kept the replaced database as `db.pre-restore-20261113T131548Z.sqlite3`.
 - Resource telemetry verified live through the Vite proxy: real CPU/memory/disk values, a bounded recommendation, and `applied_automatically: false`.
 - Memory isolation verified live: versioned writes (v1→v2, same id), a global entry visible everywhere, Alpha's private entry absent from Beta's list and search, and the same payload served through the Vite proxy.

@@ -28,6 +28,7 @@ from app.agent_api import router as agent_router
 from app.browser_api import router as browser_router
 from app.timeline_api import router as timeline_router
 from app.blueprint_api import router as blueprint_router
+from app.hardening import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.workspace_api import router as workspace_router
 from app.provider_api import ops_router, provider_router
 from app.provider_store import seed_provider_defaults
@@ -125,6 +126,10 @@ def create_app(
     app.include_router(planning_router)
     resolved_origins = allowed_origins or settings.cors_origins
     app.add_middleware(LocalAuthMiddleware, config=AuthConfig.from_settings(resolved_origins))
+    # Outermost: bound the body before any parser or handler touches it, and
+    # stamp hardening headers on every response including middleware rejections.
+    app.add_middleware(BodySizeLimitMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
 
     @app.get("/", include_in_schema=False)
     def root() -> dict[str, str]:

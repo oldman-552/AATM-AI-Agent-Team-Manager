@@ -9,6 +9,14 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Hardened in the reliability and performance slice
+
+- **Request body cap**: mutating requests above 1,000,000 bytes return `413` before any handler runs, and the cap is enforced by counting streamed bytes, not by trusting `Content-Length` (proven at the ASGI layer with an understated header). A non-numeric `Content-Length` returns `400`.
+- **Security headers** on every response, including middleware rejections: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cross-Origin-Resource-Policy: same-origin`, a restrictive `Permissions-Policy`, and `default-src 'none'; frame-ancestors 'none'` CSP for the JSON API. Headers are never duplicated.
+- **Fixed an N+1 query** in `project_timeline`: it called the per-task builder for every task, issuing five queries per row. It now reads each table once for the whole project. Measured on 120 tasks: **94.1 ms → 12.1 ms**.
+- Added `tests/test_performance.py` (list/dashboard/timeline/blueprint ceilings with median timing) and `tests/test_hardening.py` (7 tests). Backend tests 173 → 178.
+- Measured on this machine (median of 7, 120 tasks, 25 checkpoints): tasks list 5.6 ms, dashboard 5.2 ms, agents/center 17.1 ms, task timeline 6.0 ms, project timeline 12.1 ms, blueprint 5.0 ms.
+
 ### Fixed and hardened in the RTL verification slice
 
 - **Arabic was rendering Latin digits.** `Intl` reports Latin digits for the bare `ar` locale in this ICU build, so Arabic dates and numbers looked like `13/11/2026` while Persian localized correctly. All formatting now goes through `web/src/format.ts`, which requests `ar-u-nu-arab`: Arabic shows `١٣/١١/٢٠٢٦` and `١٬٢٣٤٫٥`.

@@ -147,3 +147,30 @@ Two real defects were found and fixed by writing these tests rather than assumin
 2. Three components formatted with the browser locale or an inline `Intl` call, independent of the chosen UI language.
 
 The checker's detection power was proven with a probe file containing `margin-left`, an asymmetric `left`/`right` pair, and a lone `left`: all three were reported and the script exited 1.
+
+## Reliability and performance (2026-11-13)
+
+### Hardening tests (`tests/test_hardening.py`, 7 tests)
+
+| Case | Expected | Result |
+| --- | --- | --- |
+| 1 MB + 10 byte POST | `413`, nothing written | pass |
+| Valid form under the cap | `201` | pass |
+| Understated `Content-Length` with a streaming body | `413` (bytes counted, header not trusted) | pass |
+| Non-numeric `Content-Length` | `400` | pass |
+| Headers on 200 and 404 responses | all six present | pass |
+| Header duplication | none | pass |
+
+### Measured latency (median of 7 runs, 120 tasks, 25 checkpoints, SQLite, this machine)
+
+| Endpoint | Median |
+| --- | --- |
+| `GET /api/v1/tasks` (120 rows) | 5.6 ms |
+| `GET /api/v1/dashboard` | 5.2 ms |
+| `GET /api/v1/agents/center` | 17.1 ms |
+| `GET /api/v1/tasks/{id}/timeline` | 6.0 ms |
+| `GET /api/v1/projects/{id}/timeline` (before fix) | 94.1 ms |
+| `GET /api/v1/projects/{id}/timeline` (after fix) | 12.1 ms |
+| `POST /api/v1/blueprints` | 5.0 ms |
+
+The project-timeline figure exposed a real N+1 query: the code called the per-task builder once per task, so query count grew with the number of tasks. It now issues one query per table for the whole project. The regression test asserts a generous ceiling, so it catches a return to quadratic behaviour without being flaky.

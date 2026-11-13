@@ -340,3 +340,13 @@ Tests executed: npm run verify green: tsc clean, vitest 13 passed, build OK, RTL
 Results: Frontend tests 6 -> 13; Arabic digits fixed (١٣/١١/٢٠٢٦); RTL guard proven to fail on 3 injected defects
 Problems: None
 Solutions: None
+
+[2026-11-13 13:59 UTC] Phase 19 — Reliability and performance — Request hardening, security headers and an N+1 fix
+Task: Request hardening, security headers and an N+1 fix
+Action performed: Added ASGI body cap and security headers, fixed quadratic project timeline, added hardening and performance tests
+Files created: backend/app/hardening.py, backend/tests/test_hardening.py, backend/tests/test_performance.py
+Files modified: backend/app/main.py, backend/app/timeline.py
+Tests executed: pytest 178 passed, 1 warning; pyflakes clean; measured medians: tasks 5.6ms, dashboard 5.2ms, center 17.1ms, task timeline 6.0ms, project timeline 12.1ms, blueprint 5.0ms
+Results: Backend 166 -> 178 tests; project timeline 7.8x faster; oversized bodies refused with 413
+Problems: None
+Solutions: None

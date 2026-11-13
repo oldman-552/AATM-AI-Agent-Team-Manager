@@ -5,6 +5,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app import __version__
+from app.agents import AgentError, is_assignable, validate_scopes
 from app.audit import add_event
 from app.models import Agent, AuditEvent, Project, Task
 from app.roles import DEFAULT_AGENT_ROLES
@@ -119,6 +120,11 @@ def create_agent(payload: AgentCreate, db: Session = Depends(get_session)) -> Ag
     if worker_count >= 20:
         raise HTTPException(status_code=409, detail="The maximum of 20 registered worker agents has been reached.")
 
+    try:
+        permissions = validate_scopes(payload.permissions)
+    except AgentError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     agent = Agent(
         name=payload.name,
         role=payload.role,
@@ -127,6 +133,7 @@ def create_agent(payload: AgentCreate, db: Session = Depends(get_session)) -> Ag
         provider=payload.provider,
         model=payload.model,
         status="idle",
+        permissions=permissions,
         is_manager=False,
     )
     db.add(agent)
@@ -149,8 +156,13 @@ def list_tasks(
 def create_task(payload: TaskCreate, db: Session = Depends(get_session)) -> Task:
     if payload.project_id is not None and db.get(Project, payload.project_id) is None:
         raise HTTPException(status_code=404, detail="Project not found.")
-    if payload.assigned_agent_id is not None and db.get(Agent, payload.assigned_agent_id) is None:
-        raise HTTPException(status_code=404, detail="Agent not found.")
+    if payload.assigned_agent_id is not None:
+        candidate = db.get(Agent, payload.assigned_agent_id)
+        if candidate is None:
+            raise HTTPException(status_code=404, detail="Agent not found.")
+        allowed, reason = is_assignable(candidate)
+        if not allowed:
+            raise HTTPException(status_code=409, detail=f"This agent cannot take work ({reason}).")
     if len(set(payload.dependencies)) != len(payload.dependencies):
         raise HTTPException(status_code=422, detail="Task dependencies must not contain duplicates.")
     if payload.dependencies:
@@ -186,6 +198,9 @@ def assign_task(task_id: str, payload: TaskAssignment, db: Session = Depends(get
         agent = db.get(Agent, payload.assigned_agent_id)
         if agent is None:
             raise HTTPException(status_code=404, detail="Agent not found.")
+        allowed, reason = is_assignable(agent)
+        if not allowed:
+            raise HTTPException(status_code=409, detail=f"This agent cannot take work ({reason}).")
         task.assigned_agent_id = agent.id
         task.state = "assigned"
         summary = f"Task assigned to {agent.name}: {task.title}"

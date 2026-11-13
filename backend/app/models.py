@@ -41,6 +41,7 @@ class Agent(Base):
     provider: Mapped[str] = mapped_column(String(64), nullable=False, default="unconfigured")
     model: Mapped[str | None] = mapped_column(String(120), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="idle")
+    permissions: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     is_manager: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)

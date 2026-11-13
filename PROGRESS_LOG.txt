@@ -240,3 +240,13 @@ Tests executed: Backend pytest 116 passed; frontend vitest 5; tsc --noEmit; vite
 Results: Values persisted across processes, api_key was rejected with 422 extra_forbidden, and reset restored defaults.
 Problems: The draft state initially included server metadata (updated_at), which broke the TypeScript draft type.
 Solutions: Split an editable Draft type from the server payload so only preference fields are edited.
+
+[2026-11-13 13:28 UTC] Phase 5 — Orchestration — Deterministic Manager planning
+Task: Deterministic Manager planning
+Action performed: Implemented and verified rule-based planning with reviewable, explicitly applied proposals
+Files created: backend/app/planning.py, backend/app/planning_api.py, backend/tests/test_planning.py, web/src/components/ManagerPlanPanel.tsx
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 123 passed; frontend vitest 5; tsc --noEmit; vite build; live proposals+apply smoke
+Results: Two queued tasks were proposed to two distinct agents and both became assigned only after an explicit apply.
+Problems: The planner initially filtered agents by project_id, which does not exist on agents.
+Solutions: Treated agents as the shared worker pool they actually are and documented the scope limitation.

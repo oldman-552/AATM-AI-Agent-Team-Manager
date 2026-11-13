@@ -36,7 +36,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [ ] Manager agent execution/planning — **TESTED for deterministic planning**: rule-based findings, least-loaded assignment proposals, dependency ordering with cycle detection, and an apply step that re-validates every proposal and records a reason for skipped ones. **No model is called**; LLM-driven planning remains **NOT STARTED** and is gated on the provider consent surface.
 - [ ] Up to 20 independently configured worker agents — **IN PROGRESS** (registration metadata and cap exist; lifecycle/provider execution not implemented).
 - [ ] Default role templates and custom roles — **IMPLEMENTED** (20 templates; full localized role UX/management still pending).
-- [ ] Agent lifecycle and granular permissions — **NOT STARTED**.
+- [ ] Agent lifecycle and granular permissions — **TESTED** for lifecycle and scopes: validated `idle/active/paused/disabled` transitions, the Manager identity protected from disabling, assignment refused for unavailable agents (enforced on both create and reassign), deny-by-default scopes with a Manager-only `task:assign`, blocked-agent reporting, and audit events. Per-project authorisation tied to a user identity remains **NOT STARTED**.
 
 ## Phase 4 — Browser Profiles
 

@@ -254,6 +254,17 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Agent lifecycle and permissions (`/agents`)
+
+**Lifecycle** `idle → active → paused → active`; any state → `disabled` (and `disabled` is terminal until re-enabled out of band). Illegal jumps are 409, the Manager identity cannot be disabled, and an agent that is paused, disabled, offline or the Manager cannot receive work — that is enforced on both `POST /tasks` and `PATCH /tasks/{id}/assignment`, not just in the UI. Work already held is **not** silently dropped; `GET /agents/blocked` reports agents holding open work while unavailable.
+
+- `GET /agents/scopes` — the scope list and the `deny` default.
+- `PATCH /agents/{id}/state` — `{target_state, note}` (409 on an illegal transition, 404 unknown agent).
+- `PATCH /agents/{id}/permissions` — replaces the scope list; unknown scopes are 422, duplicates are collapsed, and changes are audited.
+- `GET /agents/blocked` — agents with open work but a non-working state.
+
+Scopes: `task:read`, `task:write`, `task:assign` (Manager-only, enforced by `require_scope`), `review:submit`, `memory:write`, `workspace:write`. Agents are created with no scopes unless explicitly granted.
+
 ## Manager planning (`/planning`)
 
 Deterministic rules over persisted rows — **no model is called**, and nothing is written by `proposals`.

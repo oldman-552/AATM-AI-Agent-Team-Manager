@@ -56,6 +56,7 @@ class AgentCreate(BaseModel):
     system_instructions: str = Field(default="", max_length=20_000)
     provider: str = Field(default="unconfigured", min_length=1, max_length=64)
     model: str | None = Field(default=None, max_length=120)
+    permissions: list[str] = Field(default_factory=list, max_length=6)
 
     @field_validator("name", "role")
     @classmethod
@@ -75,6 +76,7 @@ class AgentRead(ORMModel):
     provider: str
     model: str | None
     status: str
+    permissions: list[str] = Field(default_factory=list)
     is_manager: bool
     created_at: datetime
     updated_at: datetime

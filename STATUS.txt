@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:26 UTC
+2026-11-13 13:28 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 11 — Dashboard and Interface
+Phase 5 — Orchestration
 
 Current Task:
-Settings page for validated local preferences
+Deterministic Manager planning
 
 Current Activity:
-Added settings service/API, Settings view in navigation and 6 tests
+Added planning service/API, dashboard plan panel and 7 tests
 
 Recently Completed (most recent first):
 - Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.

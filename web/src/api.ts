@@ -16,6 +16,7 @@ export type Agent = {
   provider: string
   model: string | null
   status: string
+  permissions: string[]
   is_manager: boolean
   created_at: string
   updated_at: string
@@ -151,6 +152,8 @@ export type ManagerPlan = {
   applies_automatically: false
   plan_id: string
 }
+
+export type AgentScopeList = { scopes: string[]; default: string; note: string }
 
 export type AuditEvent = {
   id: string
@@ -472,6 +475,17 @@ export const api = {
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
+  agentScopes: () => request<AgentScopeList>('/api/v1/agents/scopes'),
+  changeAgentState: (agentId: string, targetState: string) =>
+    request<{ agent_id: string; status: string }>(`/api/v1/agents/${agentId}/state`, {
+      method: 'PATCH',
+      body: JSON.stringify({ target_state: targetState }),
+    }),
+  changeAgentPermissions: (agentId: string, permissions: string[]) =>
+    request<{ agent_id: string; permissions: string[] }>(`/api/v1/agents/${agentId}/permissions`, {
+      method: 'PATCH',
+      body: JSON.stringify({ permissions }),
+    }),
   managerPlan: (projectId?: string) =>
     request<ManagerPlan>(`/api/v1/planning/proposals${projectId ? `?project_id=${projectId}` : ''}`),
   applyManagerPlan: (plan: Record<string, unknown>, actor = 'manager') =>

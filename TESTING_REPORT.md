@@ -8,7 +8,8 @@
 ## 2026-11-13 12:57 UTC — Backend tests (current)
 
 - Latest command: `cd backend && ../.venv/bin/python -m pytest`.
-- Result: **123 passed, 1 warning** (114 new tests across this session).
+- Result: **129 passed, 1 warning** (120 new tests across this session).
+- `tests/test_agent_lifecycle.py` (6 tests): illegal jumps are 409 while legal ones work; paused agents cannot take new work on either assignment path while existing assignments are preserved; the Manager cannot be disabled or assigned; permissions start empty, unknown scopes are 422, duplicates collapse, and changes are audited; the Manager-only scope is refused even when granted; blocked agents are reported with their open-task count.
 - `tests/test_planning.py` (7 tests): least-loaded proposals are balanced across agents and never auto-applied, with an explicit "no model was called" marker; dependency ordering respects blockers and blocked tasks are not proposed; already-assigned tasks are not re-proposed; applying writes assignments and audits both the assignment and the application; a stale plan is skipped (not forced) when someone assigned the task first; a plan without an id is 422 and unknown projects are 404; a plan retargeted at another project is refused.
 - `tests/test_settings.py` (6 tests): defaults before any change; partial updates merge and persist across a restart; credential-named and unknown settings are rejected; value bounds enforced; reset and export work and the export contains no credential keys; changes are audited without storing secret values.
 - `tests/test_notifications.py` (7 tests): an empty database produces no notifications; pending approvals become items and disappear once decided; read state survives an application restart; failed/rework tasks are reported with severity and target view; expired leases notify while live leases do not; malformed ids and retention bounds are rejected; `read-all` is idempotent.
@@ -25,6 +26,7 @@
 - Migration `0003_task_leases` verified: upgrade → columns present → downgrade to `0002_provider_boundary` → columns removed → re-upgrade → columns restored (file-backed SQLite).
 - Migration `0004_reviews_approvals` verified the same way (upgrade → `review_records`/`approval_requests` present → downgrade to `0003_task_leases` → removed → re-upgrade → present).
 - Migration `0005_project_workspaces` verified the same way (upgrade → table present → downgrade to `0004_reviews_approvals` → removed → re-upgrade → present).
+- Migration `0010_agent_permissions` verified the same way (upgrade → `agents.permissions` present → downgrade to `0009_notification_reads` → removed → re-upgrade → present, head `0010_agent_permissions`).
 - Migration `0009_notification_reads` verified the same way (upgrade → `notification_reads` present → downgrade to `0008_github_plans` → removed → re-upgrade → present, head `0009_notification_reads`).
 - Migration `0008_github_plans` verified the same way (upgrade → `github_pull_requests` present → downgrade to `0007_task_checkpoints` → removed → re-upgrade → present, head `0008_github_plans`).
 - Migration `0007_task_checkpoints` verified the same way (upgrade → `task_checkpoints` present → downgrade to `0006_memory` → removed → re-upgrade → present, head `0007_task_checkpoints`).
@@ -40,8 +42,8 @@
 ## 2026-11-13 12:57 UTC — Frontend tests and build (current)
 
 - `cd web && npm test` (Vitest 2.1.9) → **5 passed**.
-  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (406 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
-- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1660 modules, `dist/assets/index-CSd1Z8U6.css` 39.22 kB, `dist/assets/index-DJWYzAQQ.js` 407.31 kB.
+  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (421 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
+- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1662 modules, `dist/assets/index-C4Qz_Y5p.css` 39.99 kB, `dist/assets/index-C_LDMw1b.js` 413.68 kB.
 - First TypeScript run failed twice: a missing `Send` icon import in `ProvidersView.tsx` and an invalid Vitest assertion overload in `i18n.test.ts`. Both were fixed before the passing run.
 
 ## 2026-11-13 — Frontend build (historical)
@@ -77,6 +79,7 @@
 - Cleanup: `.aatm-home` (git-ignored smoke database) only; no credentials, no provider traffic.
 - Notable: binding uvicorn to `0.0.0.0` makes the API reject the preview Host with 400 (by design). Only Vite is exposed for previews; the API stays loopback-bound.
 - Orchestrator endpoints were re-verified on a restarted server: startup applied migration `0003_task_leases`, `/api/v1/orchestrator/status` reported `executor.configured: false` with the refusal reason, and the same payload was served through the Vite proxy.
+- Agent lifecycle verified live through the Vite proxy: `idle → paused` rejected with 409 and the allowed set listed, `active`/`paused` accepted, assignment to the paused agent refused with 409 `agent_paused`, an unknown scope refused with 422, and disabling the Manager refused with 409.
 - Manager planning verified live through the Vite proxy: two unassigned tasks were proposed to two different agents, apply wrote both assignments, and both tasks moved to `assigned`.
 - Preferences verified live through the Vite proxy: defaults returned, `{language: fa, theme: light, page_size: 50}` persisted and read back through a direct API call, `api_key` rejected with 422 `extra_forbidden`, and reset restored `en`/`dark`.
 - Notifications verified live through the Vite proxy: an approval created two unread items, marking one read dropped unread to 1 and the state was visible through a direct API read, and deciding the approval removed its derived item.

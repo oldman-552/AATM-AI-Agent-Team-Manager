@@ -38,6 +38,7 @@
 - Derived notifications (pending approvals, failed/rework tasks, expired leases) with persisted read state, mark-all, retention, a topbar bell and translated messages; migration `0009_notification_reads`.
 - A real Settings page backed by validated, non-secret preferences (language, theme, page size, notification polling, retention) with reset, export and audit events.
 - Deterministic Manager planning: rule-based findings, balanced assignment proposals, dependency ordering with cycle detection, and an explicit apply step that re-validates proposals and audits results.
-- Backend tests 9 → 123; Vitest resource tests added (5).
+- Agent lifecycle states with validated transitions, Manager protection, assignment refused for unavailable agents on both create and reassign, deny-by-default permission scopes (Manager-only `task:assign`), blocked-agent reporting and lifecycle/permission audit events; migration `0010_agent_permissions`.
+- Backend tests 9 → 129; Vitest resource tests added (5).
 
 - Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, backup/restore, authentication, and Windows verification remain incomplete. Approval gates record decisions but do not perform the gated operations.

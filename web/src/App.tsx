@@ -35,6 +35,7 @@ import AnalyticsView from './AnalyticsView'
 import { NotificationCenter } from './components/NotificationCenter'
 import SettingsView from './SettingsView'
 import { ManagerPlanPanel } from './components/ManagerPlanPanel'
+import { AgentControls } from './components/AgentControls'
 import { CheckpointPanel } from './components/CheckpointPanel'
 import { PullRequestPlans } from './components/PullRequestPlans'
 import WorkspacePanel from './components/WorkspacePanel'
@@ -533,11 +534,12 @@ function AgentsView() {
 
 function AgentCard({ agent }: { agent: Agent }) {
   const { t } = useTranslation()
-  const agentStatusKey: Record<string, string> = { idle: 'statusIdle', paused: 'statusPaused', running: 'statusRunning', error: 'statusError' }
+  const agentStatusKey: Record<string, string> = { idle: 'statusIdle', active: 'statusActiveAgent', paused: 'statusPaused', running: 'statusRunning', error: 'statusError', disabled: 'statusDisabled', offline: 'statusOffline' }
   return (
     <article className={`record-card agent-card ${agent.is_manager ? 'manager-card' : ''}`}>
       <div className="record-card-top"><span className={`record-icon ${agent.is_manager ? 'violet' : 'cyan'}`}><Bot size={18} /></span><span className="status-chip"><span className={`status-dot ${agent.status === 'idle' ? 'online' : 'checking'}`} />{t(agentStatusKey[agent.status] ?? agent.status)}</span></div>
       <div className="agent-name-row"><h3>{agent.is_manager ? t('manager') : agent.name}</h3>{agent.is_manager && <span className="manager-tag">{t('manager')}</span>}</div>
+      <AgentControls agent={agent} />
       <p className="agent-role">{agent.is_manager ? t('managerAgentRole') : t(roleTranslationByName[agent.role] ?? agent.role)}</p>
       <p className="record-description">{agent.is_manager ? t('managerUnconfiguredDetail') : agent.description || t('noAgentsDetail')}</p>
       <div className="record-meta"><span>{t('provider')}: {agent.provider === 'unconfigured' ? t('unconfigured') : agent.provider}</span><span>{t('status')}: {agent.status === 'idle' ? t('statusIdle') : agent.status}</span></div>

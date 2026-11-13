@@ -296,6 +296,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .decision-reasons { margin: 0 0 11px; padding-inline-start: 17px; color: var(--text-soft); font-size: 9px; line-height: 1.6; }
 .candidate-list { display: grid; gap: 6px; }
 .candidate-list .panel-kicker { margin-bottom: 2px; }
+.agent-controls { display: grid; gap: 7px; margin-top: 9px; }
+.agent-control-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.agent-scope-list { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.agent-scope { display: inline-flex; align-items: center; gap: 3px; padding: 2px 6px; border: 1px solid var(--border-soft); border-radius: 999px; color: var(--text-soft); font-size: 8.5px; }
+.agent-scope.empty { border-style: dashed; color: var(--muted); }
+.agent-scope-editor { display: grid; gap: 5px; padding: 9px 10px; border: 1px solid var(--border-soft); border-radius: 8px; background: var(--surface-soft); }
+.agent-scope-editor label { display: flex; align-items: center; gap: 7px; color: var(--text-soft); font-size: 10px; }
+.agent-scope-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 3px; }
+
 .manager-plan { margin-bottom: 16px; }
 .plan-findings { display: grid; gap: 5px; margin: 0 0 12px; padding: 0; list-style: none; }
 .plan-finding { display: flex; align-items: baseline; gap: 8px; padding: 7px 9px; border: 1px solid var(--border-soft); border-radius: 8px; color: var(--text-soft); font-size: 10.5px; }

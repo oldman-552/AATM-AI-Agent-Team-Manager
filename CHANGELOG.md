@@ -39,6 +39,7 @@
 - A real Settings page backed by validated, non-secret preferences (language, theme, page size, notification polling, retention) with reset, export and audit events.
 - Deterministic Manager planning: rule-based findings, balanced assignment proposals, dependency ordering with cycle detection, and an explicit apply step that re-validates proposals and audits results.
 - Agent lifecycle states with validated transitions, Manager protection, assignment refused for unavailable agents on both create and reassign, deny-by-default permission scopes (Manager-only `task:assign`), blocked-agent reporting and lifecycle/permission audit events; migration `0010_agent_permissions`.
+- Fixed `scripts/start.sh` reporting a UI URL that was not serving: Vite now runs with `--strictPort` and the script verifies the UI responds before printing, exiting with guidance when the port is busy.
 - Fixed a missing `save` translation that the new agent controls used; a Vitest guard now fails the build when any `t('key')` used in the UI is absent from English, Arabic or Persian.
 - Backend tests 9 → 129; Vitest tests 6.
 

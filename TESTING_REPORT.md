@@ -117,6 +117,15 @@ One end-to-end flow exercised every slice in sequence on the same project:
 | Pull-request plan | `awaiting_approval`, `executed: false` |
 | Analytics | throughput and review counts included the completed work |
 
+## 2026-11-13 13:40 UTC — Start/stop script verification
+
+`scripts/start.sh` and `scripts/stop.sh` were exercised on alternate ports with a throwaway `AATM_HOME`.
+
+- **Defect found:** when the UI port was busy, Vite silently bound the next free port, so the script printed `http://127.0.0.1:5173` while the app was actually on `5174`. The advertised URL was wrong.
+- **Fix 1:** `--strictPort`, so Vite fails instead of drifting.
+- **Fix 2:** the script polls the UI for up to ~15 s and prints the URL only when it actually serves; otherwise it exits non-zero with the log path and an `AATM_UI_PORT=…` hint.
+- **Verified:** a free port starts and serves (UI `5211` → 200, API `8127` → 200, exit 0); an occupied port now reports the busy-port error rather than a false URL.
+
 ## Not yet tested
 
 - Windows 11 PowerShell path; no Windows host is available.

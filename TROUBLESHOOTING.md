@@ -23,3 +23,19 @@ Docker is optional for the current local SQLite development setup.
 ## Windows verification
 
 Windows scripts cannot be executed from the current Linux environment. Passing shell-script checks does not prove PowerShell scripts work. See `BLOCKERS.txt`.
+
+## The UI URL printed by `scripts/start.sh` does not load
+
+The script now verifies the UI actually responds before printing a URL. If you see:
+
+```
+ERROR: the UI did not start on port 5173 (usually the port is busy).
+```
+
+another process holds the port. Either stop it or start AATM elsewhere:
+
+```bash
+AATM_UI_PORT=5174 scripts/start.sh
+```
+
+The frontend log is at `.aatm/logs/frontend.log`; look for `Port ... is already in use`.

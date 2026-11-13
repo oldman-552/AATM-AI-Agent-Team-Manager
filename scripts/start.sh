@@ -37,6 +37,22 @@ start_service backend .venv/bin/python -m uvicorn app.main:app --app-dir backend
   # The auth token (if enabled) is read by the Vite process and injected into
   # proxied /api requests; it never reaches the browser bundle.
   AATM_API_TARGET="http://127.0.0.1:${PORT}" AATM_AUTH_TOKEN="${AATM_AUTH_TOKEN:-}" \
-    start_service frontend ./node_modules/.bin/vite --host "$UI_HOST" --port "$UI_PORT"
+    # --strictPort: fail loudly instead of silently binding another port, which
+    # used to make the printed UI URL wrong.
+    start_service frontend ./node_modules/.bin/vite --host "$UI_HOST" --port "$UI_PORT" --strictPort
 )
-printf '\nAATM UI:  http://%s:%s\nAATM API: http://%s:%s/api/v1/health\nStop with: scripts/stop.sh\n' "$UI_HOST" "$UI_PORT" "$HOST" "$PORT"
+# --strictPort makes Vite fail rather than drift to another port. Wait briefly, then
+# report the real state instead of printing a URL that may not be serving.
+ui_ready=0
+for _ in $(seq 1 30); do
+  if curl -fsS -o /dev/null "http://$UI_HOST:$UI_PORT/" 2>/dev/null; then ui_ready=1; break; fi
+  sleep 0.5
+done
+if [[ "$ui_ready" -eq 1 ]]; then
+  printf '\nAATM UI:  http://%s:%s\nAATM API: http://%s:%s/api/v1/health\nStop with: scripts/stop.sh\n' "$UI_HOST" "$UI_PORT" "$HOST" "$PORT"
+else
+  echo "ERROR: the UI did not start on port $UI_PORT (usually the port is busy)." >&2
+  echo "       Set AATM_UI_PORT to a free port and rerun, e.g. AATM_UI_PORT=5174 scripts/start.sh" >&2
+  echo "       Frontend log: .aatm/logs/frontend.log" >&2
+  exit 1
+fi

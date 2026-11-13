@@ -310,3 +310,13 @@ Tests executed: pytest 144 passed, 1 warning; vitest 6 passed; tsc clean; vite b
 Results: Backend 137 -> 144 tests; i18n 450 -> 476 keys x3; migration 0012 applied live on the running API
 Problems: None
 Solutions: None
+
+[2026-11-13 13:50 UTC] Phase 16 — Live Agent Control Center — Live per-agent state, instructions and guarded reassignment
+Task: Live per-agent state, instructions and guarded reassignment
+Action performed: Implemented agent control center backend, endpoints, UI view, migration 0013, tests and docs
+Files created: backend/app/agent_center.py, backend/migrations/versions/0013_agent_instructions.py, backend/tests/test_agent_center.py, web/src/AgentCenterView.tsx
+Files modified: backend/app/models.py, backend/app/agent_api.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 153 passed, 1 warning; vitest 6 passed; tsc clean; build OK (JS 449.76 kB, CSS 44.51 kB); live smoke: center 200 with 14 agents, instruction 201 delivered=false, reassign 200 and new holder sees the task
+Results: Backend 144 -> 153 tests; i18n 476 -> 511 keys x3; migration 0013 applied live on the running API
+Problems: None
+Solutions: None

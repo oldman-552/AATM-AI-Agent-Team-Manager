@@ -12,6 +12,7 @@ import {
   Check,
   CircleAlert,
   CircleDot,
+  Gauge,
   Clock3,
   Command,
   Cpu,
@@ -37,6 +38,7 @@ import { NotificationCenter } from './components/NotificationCenter'
 import SettingsView from './SettingsView'
 import BrowserWallView from './BrowserWallView'
 import TaskTimelineView, { CancelControls } from './TaskTimelineView'
+import AgentCenterView from './AgentCenterView'
 import { ManagerPlanPanel } from './components/ManagerPlanPanel'
 import { AgentControls } from './components/AgentControls'
 import { CheckpointPanel } from './components/CheckpointPanel'
@@ -44,12 +46,13 @@ import { PullRequestPlans } from './components/PullRequestPlans'
 import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
-type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'memory' | 'analytics' | 'browsers' | 'approvals' | 'providers' | 'settings'
+type View = 'dashboard' | 'projects' | 'agents' | 'center' | 'tasks' | 'memory' | 'analytics' | 'browsers' | 'approvals' | 'providers' | 'settings'
 
 const navigation: { id: View; label: string; icon: typeof Activity }[] = [
   { id: 'dashboard', label: 'dashboard', icon: Activity },
   { id: 'projects', label: 'projects', icon: FolderKanban },
   { id: 'agents', label: 'agents', icon: UsersRound },
+  { id: 'center', label: 'agentCenterSection', icon: Gauge },
   { id: 'tasks', label: 'tasks', icon: ListTodo },
   { id: 'memory', label: 'memorySection', icon: BookOpen },
   { id: 'analytics', label: 'analyticsSection', icon: BarChart3 },
@@ -219,6 +222,7 @@ function App() {
           {view === 'dashboard' && <DashboardView onNavigate={setView} />}
           {view === 'projects' && <ProjectsView />}
           {view === 'agents' && <AgentsView />}
+          {view === 'center' && <AgentCenterView />}
           {view === 'tasks' && <TasksView />}
           {view === 'memory' && <MemoryView />}
           {view === 'analytics' && <AnalyticsView />}

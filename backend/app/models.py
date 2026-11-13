@@ -345,3 +345,21 @@ class MemoryVersion(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+class AgentInstruction(Base):
+    """An operator instruction recorded for an agent.
+
+    ``delivered`` stays false unless a real executor reports that it consumed the
+    instruction; AATM never claims delivery on its own.
+    """
+
+    __tablename__ = "agent_instructions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    agent_id: Mapped[str] = mapped_column(String(36), ForeignKey("agents.id"), nullable=False, index=True)
+    task_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("tasks.id"), nullable=True)
+    instruction: Mapped[str] = mapped_column(Text, nullable=False)
+    issued_by: Mapped[str] = mapped_column(String(120), nullable=False, default="local-user")
+    delivered: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)

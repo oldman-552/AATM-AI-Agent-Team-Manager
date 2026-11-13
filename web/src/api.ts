@@ -24,6 +24,38 @@ export type Agent = {
 
 export type AgentRole = { id: string; name: string; description: string }
 
+export type AgentCenterEntry = {
+  agent_id: string
+  name: string
+  role: string
+  is_manager: boolean
+  status: string
+  provider: string
+  model: string | null
+  current_task: { task_id: string; title: string; state: string; priority: string; updated_at: string; lease_owner: string | null } | null
+  open_task_count: number
+  open_tasks: { task_id: string; title: string; state: string; priority: string }[]
+  latest_activity: { at: string; event_type: string; summary: string; entity_type: string; entity_id: string } | null
+  execution_time: { seconds: number | null; basis: string }
+  usage: { records: number; estimated_cost_usd: number; confirmed_cost_usd: number; confirmed_records: number; input_tokens: number; output_tokens: number; cost_source: string }
+  leases: { held: boolean; task_id: string | null; owner: string | null; expires_at: string | null }
+  browser: { profiles: number; names: string[]; automation_available: boolean; note: string }
+  authentication: { registered: boolean; provider_configured: boolean; model: string | null; note: string }
+  errors: { task_id: string; state: string; error: string | null }[]
+  history: { task_id: string; title: string; state: string; updated_at: string }[]
+  controls: Record<string, boolean | string | null>
+  honesty: Record<string, string | boolean>
+}
+
+export type AgentInstruction = {
+  id: string
+  task_id: string | null
+  instruction: string
+  issued_by: string
+  delivered: boolean
+  created_at: string
+}
+
 export type Task = {
   id: string
   project_id: string | null
@@ -500,6 +532,20 @@ export const api = {
   createProject: (payload: Pick<Project, 'name' | 'description'>) =>
     request<Project>('/api/v1/projects', { method: 'POST', body: JSON.stringify(payload) }),
   agents: () => request<Agent[]>('/api/v1/agents'),
+  agentCenter: () => request<{ agents: AgentCenterEntry[]; total: number; note: string }>('/api/v1/agents/center'),
+  agentCenterEntry: (id: string) => request<AgentCenterEntry>(`/api/v1/agents/${id}/center`),
+  agentInstructions: (id: string) =>
+    request<{ instructions: AgentInstruction[]; delivery_note: string }>(`/api/v1/agents/${id}/instructions`),
+  issueInstruction: (id: string, instruction: string, taskId?: string | null) =>
+    request<{ id: string; delivered: boolean; note: string }>(`/api/v1/agents/${id}/instructions`, {
+      method: 'POST',
+      body: JSON.stringify({ instruction, task_id: taskId ?? null }),
+    }),
+  reassignTask: (agentId: string, taskId: string, toAgentId: string | null, note: string) =>
+    request<{ task_id: string; from_agent_id: string | null; to_agent_id: string | null; state: string }>(
+      `/api/v1/agents/${agentId}/reassign`,
+      { method: 'POST', body: JSON.stringify({ task_id: taskId, to_agent_id: toAgentId, note }) },
+    ),
   agentRoles: () => request<AgentRole[]>('/api/v1/agent-roles'),
   createAgent: (payload: { name: string; role: string; description: string }) =>
     request<Agent>('/api/v1/agents', { method: 'POST', body: JSON.stringify(payload) }),

@@ -381,3 +381,17 @@ Newest-first across the project's tasks; each entry also carries `task_id` and `
 `Orchestrator.run_once` honours pending cancellations **before** claiming anything, and reports them in `cancelled[]`; a cancelled task is therefore never started. The workflow itself requires a reason note for any `cancelled` transition (a `409` without one), and `reviewing → cancelled` is now a legal transition.
 
 Audit events added: `task.cancel_requested`, `task.cancel_withdrawn`, `task.cancelled`.
+
+## Live Agent Control Center
+
+Every field is read from a stored row at request time, or is `null`. There is no simulated progress anywhere.
+
+- `GET /agents/center` — all agents with their live state; `GET /agents/{id}/center` — one agent.
+- Payload per agent: `status`, `current_task` (newest open task or `null`), `open_tasks`, `latest_activity` (newest `audit_events` row about the agent or its tasks), `execution_time` (wall clock, explicitly labelled `wall_clock_not_cpu`), `usage` (estimated vs confirmed cost, `cost_source`: `none` | `estimate_only` | `mixed`), `leases`, `browser` (`automation_available: false`), `authentication` (never a credential), `errors`, `history`, plus `controls` describing what the backend can actually do and an `honesty` block restating the provenance.
+- `POST /agents/{id}/instructions` — records an operator instruction (optionally tied to one of that agent's tasks, `409` otherwise). `delivered` is `false` until a real executor reports consuming it; none is configured.
+- `GET /agents/{id}/instructions` — recorded instructions with `delivery_note`.
+- `POST /agents/{id}/reassign` — moves a task to another worker or back to the queue. Refuses the Manager, paused/disabled/offline targets, tasks not held by that agent, finished work, and a leased running task. Audited as `task.reassigned`.
+
+The Control Center view in the UI renders these values with the same rules: missing data shows as "no recorded data", estimated cost is labelled unconfirmed, and "open browser" is shown as unavailable rather than as a dead button.
+
+Audit events added: `agent.instruction_issued`, `task.reassigned`.

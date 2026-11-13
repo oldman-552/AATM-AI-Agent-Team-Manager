@@ -9,6 +9,15 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Added in the Live Agent Control Center slice
+
+- `GET /api/v1/agents/center` and `/agents/{id}/center`: real per-agent state — current task, latest audit activity, wall-clock execution time, estimated vs confirmed cost, lease, browser-profile count, provider/auth status, errors and recent history — plus a `honesty` block naming each source. Absent data is `null`, never guessed.
+- `POST /agents/{id}/instructions` (recorded, `delivered:false` until a real executor consumes it) and `GET /agents/{id}/instructions`.
+- `POST /agents/{id}/reassign`: guarded task handover (no Manager, no paused/disabled/offline target, no finished work, no leased running task) with a `task.reassigned` audit event.
+- Alembic revision `0013_agent_instructions`.
+- New "Control center" view showing recorded state, with the browser-automation control explicitly shown as unavailable; 511 translated keys in English, Arabic and Persian.
+- Backend tests 144 → 153.
+
 ### Added in the timeline/cancellation slice
 
 - **Execution timeline** (`GET /tasks/{id}/timeline`, `GET /projects/{id}/timeline`): a read-only projection assembled only from `task_transitions`, `task_checkpoints`, `audit_events`, `review_records` and `approval_requests`; every entry names its `source` table so the claim is auditable. Reports `total`, `truncated` and the contributing sources.

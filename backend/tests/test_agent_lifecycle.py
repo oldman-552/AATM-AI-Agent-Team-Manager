@@ -135,3 +135,42 @@ def test_blocked_agents_reports_open_work(client: TestClient) -> None:
     assert blocked and blocked[0]["agent_id"] == agent["id"]
     assert blocked[0]["open_tasks"] == 1
     assert blocked[0]["reason"] == "agent_paused"
+
+
+def test_scope_matrix_covers_all_nine_specification_levels(client: TestClient) -> None:
+    body = client.get("/api/v1/agents/scopes").json()
+    assert body["default"] == "deny"
+    levels = {item["level"] for item in body["levels"]}
+    assert levels == {
+        "Read Only", "Development", "Testing", "File Modification",
+        "Git Commit", "Pull Request", "Branch Merge", "External API Operations",
+        "Production Access",
+    }
+    # Every level maps to a scope that actually exists, and every scope says
+    # where it is enforced: a scope with no boundary would be decoration.
+    for item in body["levels"]:
+        assert item["scope"] in body["scopes"]
+        assert body["enforced_at"][item["scope"]]
+    assert set(body["enforced_at"]) == set(body["scopes"])
+
+    # Approval-only scopes must never imply an execution capability.
+    assert set(body["approval_only"]) == {"merge:approve", "production:approve", "external:approve"}
+    assert set(body["approval_only"]).issubset(set(body["manager_only"]))
+    assert "never executes" in body["note"].lower() or "no scope authorises executing" in body["note"].lower()
+
+
+def test_only_the_manager_can_hold_approval_scopes(client: TestClient) -> None:
+    worker = client.post("/api/v1/agents", json={"name": "Climber", "role": "developer"}).json()
+    for scope in ("merge:approve", "production:approve", "external:approve"):
+        # Storing the scope is allowed (the Manager may need it), but a worker can
+        # never exercise it: require_scope checks the Manager identity first.
+        client.patch(f"/api/v1/agents/{worker['id']}/permissions", json={"permissions": [scope]})
+        from app.agents import Agent, AgentError, require_scope
+
+        agent = Agent(name="Climber", role="developer", is_manager=False, permissions=[scope], status="idle")
+        try:
+            require_scope(agent, scope)
+        except AgentError as exc:
+            assert "reserved for the Manager" in str(exc)
+        else:
+            raise AssertionError(f"{scope} was accepted for a worker")

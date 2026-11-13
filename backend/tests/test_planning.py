@@ -16,7 +16,17 @@ def client(tmp_path):
 def setup_project(client: TestClient, agent_names=("Alice", "Bob")) -> dict:
     project = client.post("/api/v1/projects", json={"name": "Planning"}).json()
     agents = [
-        client.post("/api/v1/agents", json={"name": name, "role": "developer", "project_id": project["id"]}).json()
+        client.post(
+            "/api/v1/agents",
+            json={
+                "name": name,
+                "role": "developer",
+                "project_id": project["id"],
+                # Taking planned work requires the task:write scope; permission
+                # is deny-by-default, so the test declares it explicitly.
+                "permissions": ["task:read", "task:write"],
+            },
+        ).json()
         for name in agent_names
     ]
     return {"project": project, "agents": agents}
@@ -132,3 +142,16 @@ def test_targeting_a_wrong_project_is_rejected(client: TestClient) -> None:
     plan["project_id"] = "does-not-exist"
     assert client.post("/api/v1/planning/apply", json={"plan": plan}).status_code == 404
     assert [row for row in client.get("/api/v1/tasks").json() if row["id"] == task["id"]][0]["assigned_agent_id"] is None
+
+
+def test_apply_skips_an_agent_without_the_write_scope(client: TestClient) -> None:
+    """A plan must not hand work to an agent that never declared task:write."""
+    project = client.post("/api/v1/projects", json={"name": "NoScope"}).json()
+    client.post("/api/v1/agents", json={"name": "Undeclared", "role": "developer"})  # no permissions
+    make_task(client, project["id"], "Needs a scoped worker")
+    plan = client.get("/api/v1/planning/proposals", params={"project_id": project["id"]}).json()
+    applied = client.post("/api/v1/planning/apply", json={"plan": plan, "actor": "manager"})
+    assert applied.status_code == 200, applied.text
+    body = applied.json()
+    assert body["applied"] == []
+    assert body["skipped"][0]["reason"] == "agent_lacks_task_write_scope"

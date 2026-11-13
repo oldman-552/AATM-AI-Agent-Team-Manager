@@ -20,6 +20,10 @@ const SCOPE_LABELS: Record<string, string> = {
   'review:submit': 'scopeReviewSubmit',
   'memory:write': 'scopeMemoryWrite',
   'workspace:write': 'scopeWorkspaceWrite',
+  'pull_request:plan': 'scopePullRequestPlan',
+  'merge:approve': 'scopeMergeApprove',
+  'production:approve': 'scopeProductionApprove',
+  'external:approve': 'scopeExternalApprove',
 }
 
 /**
@@ -105,6 +109,8 @@ export function AgentControls({ agent }: { agent: Agent }) {
                   event.target.checked ? [...current, scope] : current.filter((item) => item !== scope))}
               />
               <span>{t(SCOPE_LABELS[scope] ?? scope)}</span>
+              {scopes.data?.approval_only.includes(scope) && <span className="agent-scope-tag">{t('scopeApprovalOnly')}</span>}
+              {scopes.data?.manager_only.includes(scope) && <span className="agent-scope-tag manager">{t('scopeManagerOnly')}</span>}
             </label>
           ))}
           <div className="agent-scope-actions">

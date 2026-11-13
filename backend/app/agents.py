@@ -31,15 +31,39 @@ TRANSITIONS: dict[str, tuple[str, ...]] = {
     "offline": (),
 }
 
+# The nine levels the specification names, expressed as scopes. A scope that
+# nothing enforces would be decoration, so each one is checked at exactly one
+# real boundary (see ``require_scope`` and the table in API_DOCUMENTATION.md).
 SCOPES = (
-    "task:read",
-    "task:write",
-    "task:assign",
-    "review:submit",
-    "memory:write",
-    "workspace:write",
+    "task:read",          # Read Only: see work and its history
+    "task:write",         # Development: change task content and advance state
+    "task:assign",        # Manager-only: grant work to others
+    "review:submit",      # Testing: record an independent verdict
+    "memory:write",       # File Modification: write project knowledge
+    "workspace:write",    # Git Commit: create branches, write files in a workspace
+    "pull_request:plan",  # Pull Request: record a PR plan for approval
+    "merge:approve",      # Branch Merge: approve a protected merge (never executes)
+    "production:approve", # Production Access: approve a deployment (never executes)
+    "external:approve",   # External API Operations: approve paid/external calls
 )
-MANAGER_ONLY_SCOPES = ("task:assign",)
+MANAGER_ONLY_SCOPES = ("task:assign", "merge:approve", "production:approve", "external:approve")
+
+# Scopes that only ever authorise *recording* an approval. Nothing in this build
+# executes the gated action, so these never become an execution capability.
+APPROVAL_ONLY_SCOPES = ("merge:approve", "production:approve", "external:approve")
+
+OPERATOR_SCOPES: dict[str, str] = {
+    "Read Only": "task:read",
+    "Development": "task:write",
+    "Testing": "review:submit",
+    "File Modification": "workspace:write",
+    "Git Commit": "workspace:write",
+    "Pull Request": "pull_request:plan",
+    "Branch Merge": "merge:approve",
+    "External API Operations": "external:approve",
+    "Production Access": "production:approve",
+}
+
 
 
 class AgentError(ValueError):
@@ -101,12 +125,17 @@ def is_assignable(agent: Agent | None) -> tuple[bool, str]:
 
 
 def require_scope(agent: Agent, scope: str) -> None:
-    """Deny-by-default permission check. Raises ``AgentError`` when not granted."""
+    """Deny-by-default permission check. Raises ``AgentError`` when not granted.
+
+    Order matters: an unknown scope is a programming error and is reported as
+    such; a Manager-only scope is refused for workers even if the row somehow
+    carries it, so a bad migration cannot silently grant merge rights.
+    """
     if scope not in SCOPES:
         raise AgentError(f"Unknown permission scope '{scope}'.")
-    granted = set(agent.permissions or [])
     if scope in MANAGER_ONLY_SCOPES and not agent.is_manager:
         raise AgentError(f"Scope '{scope}' is reserved for the Manager identity.")
+    granted = set(agent.permissions or [])
     if scope not in granted:
         raise AgentError(f"Agent '{agent.name}' does not hold the '{scope}' permission.")
 
@@ -156,3 +185,34 @@ def blocked_agents(db: Session) -> list[dict[str, object]]:
                 {"agent_id": agent.id, "agent_name": agent.name, "status": agent.status, "open_tasks": open_tasks, "reason": reason}
             )
     return blocked
+
+
+def has_scope(agent: Agent, scope: str) -> bool:
+    """Deny by default: no scope is granted unless it is explicitly assigned."""
+    return scope in (agent.permissions or [])
+
+
+def scope_matrix() -> dict[str, object]:
+    """Every level, its scope, and what it actually gates in this build."""
+    return {
+        "levels": [
+            {"level": level, "scope": scope}
+            for level, scope in OPERATOR_SCOPES.items()
+        ],
+        "scopes": list(SCOPES),
+        "manager_only": list(MANAGER_ONLY_SCOPES),
+        "approval_only": list(APPROVAL_ONLY_SCOPES),
+        "enforced_at": {
+            "task:read": "reading a task timeline (GET /tasks/{id}/timeline)",
+            "task:write": "an agent taking assigned work, and advance of task state on its behalf",
+            "task:assign": "Manager-only planning proposals that assign work (POST /planning/apply)",
+            "review:submit": "recording a review verdict",
+            "memory:write": "writing project memory",
+            "workspace:write": "creating a branch or file in a project workspace",
+            "pull_request:plan": "recording a pull-request plan",
+            "merge:approve": "approving a protected merge (recording only; never executes)",
+            "production:approve": "approving a deployment (recording only; never executes)",
+            "external:approve": "approving a paid or external call (recording only; never executes)",
+        },
+        "note": "Deny by default. No scope authorises executing a gated action in this build.",
+    }

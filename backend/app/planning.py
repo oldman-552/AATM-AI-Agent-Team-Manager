@@ -201,6 +201,15 @@ def apply_plan(db: Session, plan: dict[str, object], *, actor: str = "manager") 
         if agent is None or agent.is_manager or agent.status == "offline":
             skipped.append({"task_id": task.id, "reason": "agent_unavailable"})
             continue
+        # Taking planned work is a write: deny-by-default applies to the receiver,
+        # so a plan cannot hand work to an agent that never declared the scope.
+        from app.agents import AgentError, require_scope
+
+        try:
+            require_scope(agent, "task:write")
+        except AgentError:
+            skipped.append({"task_id": task.id, "reason": "agent_lacks_task_write_scope"})
+            continue
         task.assigned_agent_id = agent.id
         if task.state == "pending":
             task.state = "assigned"

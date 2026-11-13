@@ -613,3 +613,5 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .builder-phases p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
 .check-row { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; }
 .check-row input { margin-top: 2px; }
+.agent-scope-tag { font-size: 10px; padding: 1px 5px; border-radius: 6px; background: rgba(183,121,31,.16); color: #b7791f; margin-inline-start: 6px; }
+.agent-scope-tag.manager { background: rgba(130,148,255,.16); color: #8294ff; }

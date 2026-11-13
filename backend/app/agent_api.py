@@ -5,7 +5,7 @@ from sqlalchemy import select
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
-from app.agents import SCOPES, AgentError, blocked_agents, transition, validate_scopes
+from app.agents import SCOPES, AgentError, blocked_agents, scope_matrix, transition, validate_scopes
 from app.audit import add_event
 from app.agent_center import agent_center, center
 from app.api import get_session
@@ -52,7 +52,8 @@ def _agent(db: Session, agent_id: str) -> Agent:
 
 @router.get("/scopes")
 def list_scopes() -> dict[str, object]:
-    return {"scopes": list(SCOPES), "default": "deny", "note": "No scope is granted unless explicitly assigned."}
+    """The nine permission levels, their scopes, and exactly what each gates."""
+    return {"default": "deny", **scope_matrix()}
 
 
 @router.patch("/{agent_id}/state")
@@ -186,6 +187,9 @@ def reassign(agent_id: str, payload: ReassignRequest, db: Session = Depends(get_
             raise HTTPException(status_code=409, detail=f"Target agent is '{target.status}' and cannot take work.")
         if task.state == "running" and task.lease_owner:
             raise HTTPException(status_code=409, detail="Task is running under a lease. Request cancellation or wait for the lease to expire before reassigning.")
+    # Reassignment moves work *away* from this agent, so it is an operator
+    # decision, not the agent granting work to itself. The receiving agent is
+    # still checked: `assign_task` requires task:write of whoever takes the work.
     previous = task.assigned_agent_id
     task.assigned_agent_id = payload.to_agent_id
     if task.state == "running" and payload.to_agent_id is None:

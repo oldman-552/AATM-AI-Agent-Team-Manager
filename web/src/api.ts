@@ -226,7 +226,15 @@ export type ManagerPlan = {
   plan_id: string
 }
 
-export type AgentScopeList = { scopes: string[]; default: string; note: string }
+export type AgentScopeList = {
+  scopes: string[]
+  default: string
+  note: string
+  levels: { level: string; scope: string }[]
+  manager_only: string[]
+  approval_only: string[]
+  enforced_at: Record<string, string>
+}
 
 export type BrowserProfile = {
   id: string

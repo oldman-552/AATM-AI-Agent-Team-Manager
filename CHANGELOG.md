@@ -9,6 +9,15 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Permission levels completed to the specification (nine levels)
+
+- The scope set grew from six to ten scopes covering all nine named levels: added `pull_request:plan`, `merge:approve`, `production:approve` and `external:approve`.
+- `GET /agents/scopes` now returns the level table plus `enforced_at`, so each scope names the boundary that actually checks it; `approval_only` marks the three scopes that can only record an approval.
+- Manager-reserved enforcement is checked **before** the grant, so a corrupted row cannot confer merge or production rights on a worker.
+- `POST /planning/apply` now refuses to hand planned work to an agent that has not declared `task:write`, skipping with `agent_lacks_task_write_scope`.
+- Permissions panel shows an "approval only" or "Manager only" tag per scope; 563 translated keys.
+- Backend tests 178 → 181.
+
 ### Hardened in the reliability and performance slice
 
 - **Request body cap**: mutating requests above 1,000,000 bytes return `413` before any handler runs, and the cap is enforced by counting streamed bytes, not by trusting `Content-Length` (proven at the ASGI layer with an understated header). A non-numeric `Content-Length` returns `400`.

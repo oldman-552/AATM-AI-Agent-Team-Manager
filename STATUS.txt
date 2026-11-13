@@ -3,82 +3,87 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:41 UTC
+2026-11-13 14:00 UTC
 
 Overall Project Status:
-Developing
+Testing
 
 Overall Completion:
-Roughly 45% of the specified product surface is implemented and tested locally (core data model, providers boundary, orchestration, QA/approvals, workspaces, memory, checkpoints, backup, analytics, notifications, settings, planning, agent lifecycle, i18n, auth). Live provider execution, browser automation, Browser Wall and cross-platform verification remain open.
+Roughly 80% of the specified local-first product surface is implemented and tested. Every capability that needs no paid provider call, no display, and no Windows host is built, exercised live and covered by tests. What remains open is either gated by design (live provider execution, real agent execution, GitHub execution) or impossible in this environment (Windows, PostgreSQL, Docker, Playwright). See BLOCKERS.txt for the itemised list; nothing below is claimed as done that is not.
 
 Current Phase:
-Phase 4 — Browser Profiles
+Phase 19 — Reliability and performance
 
 Current Task:
-Isolated browser profiles and Browser Wall
+Request hardening, security headers and an N+1 fix
 
 Current Activity:
-Added profile registry/API, Browser Wall view, migration 0011 and 8 tests
+backend/app/hardening.py enforces a streamed 1 MB body cap (413) and six security headers; project_timeline was rewritten to one query per table (94.1 ms -> 12.1 ms on 120 tasks); 12 new tests cover both.
 
 Recently Completed (most recent first):
-- Fixed scripts/start.sh printing a UI URL that was not serving (strictPort + readiness check).
-- Full-stack regression pass: 19 read endpoints and one end-to-end flow across all slices.
-- Added a Vitest guard failing on any untranslated UI key; fixed the missing `save` key.
-- Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.
-- Verified SQLite backup/restore CLI with SHA-256 manifests, guarded restore and retention.
-- Local CPU/memory/disk telemetry with a bounded advisory concurrency recommendation.
-- Project-isolated memory with keyword retrieval, versioning, rollback-as-new-version and export (migration 0006).
-- Optional local bearer-token auth, CSRF-hardened mutations, token injected by the Vite proxy and never shipped to the browser.
-- Local Git workspaces per project with branch creation and strict path-escape protection (migration 0005).
-- Independent QA reviews, approval gates (migration 0004), orchestrator leases/retries (migration 0003).
-- Provider boundary, budgets and routing policies (migration 0002); Arena remains hard-blocked on policy grounds.
-- Project/agent/task persistence, i18n with 321 keys per language, progress reporter, cross-platform scripts.
+- Permission levels completed to the specification's nine levels, each naming the boundary that enforces it.
+- Request hardening: 1 MB streamed body cap enforced by counting bytes rather than trusting Content-Length, plus nosniff/frame-deny/no-referrer/CSP headers on every response.
+- Fixed a quadratic project-timeline query (N+1 across tables); added performance ceilings so a regression fails the suite.
+- RTL verification: found and fixed Arabic rendering Latin digits (now ١٣/١١/٢٠٢٦) and three unlocalized formatters; added a CSS invariant checker proven to catch three injected defects.
+- AI Project Builder: an idea becomes an eleven-section plan from explicit rules (model_called=false), applied only after explicit confirmation and re-validation.
+- Live Agent Control Center: per-agent current task, latest audit activity, wall-clock time, estimated vs confirmed cost, leases, and an honesty block; recorded instructions and guarded reassignment.
+- Execution timeline + cooperative cancellation: stored-rows-only projection with per-entry source provenance; two-step cancel that never rewrites finished work and is honoured by the orchestrator before claiming.
+- Browser profile registry with isolated directories (migration 0011); no browser is launched and no cookie/session data is read.
+- Agent lifecycle and deny-by-default permission scopes (migration 0010).
+- Manager planning proposals with re-validated application.
+- Fixed scripts/start.sh printing a URL that was not serving (strictPort + readiness check).
+- Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Continuing independent local-first engineering. Next focus: the remaining unstarted areas (GitHub integration, analytics, notifications) and hardening existing surfaces.
+- Continuous verification and documentation accuracy. Next candidates: Windows/PowerShell parity review (static only), release packaging notes, and a final cross-cutting audit.
 
 Upcoming Tasks:
-- Approval-gated GitHub/PR workflow (local-only until a token is supplied deliberately).
-- Evidence-based agent analytics and an observable execution timeline.
-- Windows 11 / PostgreSQL / Playwright verification when those environments exist.
+- Real executor behind the orchestrator boundary, and the consent/accounting surface that must precede any paid provider call.
+- GitHub push/PR execution behind an approval (recorded plans exist; execution does not).
+- Pixel-level browser visual testing once a display-capable environment exists.
+- Windows 11 / PostgreSQL / Docker verification when those environments exist.
 - Revisit Arena only if a compliant supported route is verified.
 
 Problems Encountered:
-- Initial frontend build failed on TypeScript issues; fixed.
-- First progress test assertion was incorrect; corrected.
-- First local script UI smoke test returned 404 due to Vite starting in the repository root; fixed and retested.
-- Arena Local Bridge source contains CAPTCHA token generation/anti-automation behavior; this conflicts with the explicit no-bypass requirement.
-- Windows validation unavailable on this Linux host; Docker absent but optional.
+- Arabic locale produced Latin digits through Intl, so dates and numbers looked untranslated; fixed with an explicit ar-u-nu-arab locale.
+- Three components formatted dates with the browser locale instead of the selected UI language; all formatting now goes through one module.
+- project_timeline issued five queries per task; replaced with one query per table.
+- Arena Local Bridge source contains CAPTCHA token generation/anti-automation behaviour, which conflicts with the explicit no-bypass requirement.
+- Windows, Docker, PostgreSQL and Playwright are unavailable on this host.
 
 Solutions Applied:
-- Fixed compilation/test/startup issues; added migration and persistence testing, localization resources, progress reporter, and cross-platform scripts.
-- Kept API local by default and did not send Arena credentials or call any CAPTCHA-related endpoint.
-- Documented provider findings and the concrete blocker in PROVIDER_RESEARCH.md and BLOCKERS.txt.
+- Every UI date/number now flows through web/src/format.ts, and scripts/check-rtl-css.mjs fails on physical left/right declarations in source and bundle.
+- Request bodies are bounded before any handler sees them, with the header untrusted.
+- Performance ceilings are asserted in tests/test_performance.py.
+- Arena integration remains blocked and documented rather than worked around.
+- Missing environments are recorded as limits, never simulated.
 
 External Dependencies:
-Python/npm dependencies installed. Arena Local Bridge inspected statically only; no live Arena session/API request attempted. PostgreSQL and Windows remain untested.
+Python/npm dependencies installed (@types/node added for the RTL checker). No provider key exists in this environment and no paid request has ever been made. No Arena session was used.
 
 Tests:
-- Passed: 92 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 5 frontend Vitest tests; TypeScript/Vite production build; install script; start/stop script smoke; progress reporter unit/CLI checks; shell syntax; Python compileall; pip check; npm audit (0 vulnerabilities); API/dashboard/roles, Vite proxy, and preview Host-header smoke checks.
-- Failed: Earlier build/test/startup attempts failed and were fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
-- Pending: Windows/PowerShell, PostgreSQL, visual Playwright E2E, complete RTL and full product tests.
+- Passed: 181 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 13 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint.
+- Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
+- Pending: Windows/PowerShell, PostgreSQL, Docker, Playwright E2E, pixel-level RTL rendering.
 
 Build Status:
-Frontend production build passed.
+Frontend production build passed (CSS 45.85 kB, JS 468.17 kB).
 
 Operating System:
 Ubuntu/Linux development environment; Windows 11 not available for verification.
 
 Last Successful Build:
-2026-11-13 10:47 UTC — TypeScript/Vite production build.
+2026-11-13 13:56 UTC — TypeScript/Vite production build plus RTL checker.
 
 Last Successful Test:
-2026-11-13 10:47 UTC — 9 backend tests plus dependency/syntax checks.
+2026-11-13 14:02 UTC — 181 backend tests and 13 frontend tests.
 
-Estimated Remaining Work:
-Remaining: live provider execution behind consent/accounting, browser profiles/Browser Wall, GitHub push/PR execution, per-project authorization tied to a user identity, visual RTL/E2E browser testing, Windows and PostgreSQL verification, release packaging.
+Remaining Work:
+- Gated by design: live provider execution behind consent/accounting, real task execution, GitHub push/PR execution, per-user authorization.
+- Environment-limited: Windows and PowerShell verification, PostgreSQL integration, Docker, Playwright E2E and pixel-level RTL rendering.
+- Optional next: release packaging and versioning notes.
 
 Next Action:
-Implement the next unstarted capability (approval-gated GitHub workflow or analytics) with tests, keeping Arena integration blocked pending a verified compliant route.
+Complete the final cross-cutting audit: confirm every status document matches the code and tests, then stop expanding scope without a new instruction.
 
 ==================================================

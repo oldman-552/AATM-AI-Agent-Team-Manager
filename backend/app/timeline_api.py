@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.api import get_session
 from app.cancellation import CancelError, honour_all, honour_cancel, pending_cancellations, request_cancel, withdraw_cancel
-from app.models import Project, Task
+from app.agents import AgentError, require_scope
+from app.models import Agent, Project, Task
 from app.timeline import project_timeline, task_timeline
 
 router = APIRouter(prefix="/api/v1")
@@ -19,6 +20,25 @@ class CancelRequest(BaseModel):
 
     reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
     requested_by: str = Field(default="local-user", max_length=120)
+
+
+def _scope_checked(db: Session, task: Task, scope: str) -> None:
+    """Check the assigned agent's scope, when the task has one.
+
+    Operator actions (no assigned agent) are not blocked by this: the operator
+    is a local user, and refusing them would make the product unusable. When a
+    task *is* assigned, its agent's declared permissions are authoritative, which
+    is the boundary the specification asks for.
+    """
+    if task.assigned_agent_id is None:
+        return
+    agent = db.get(Agent, task.assigned_agent_id)
+    if agent is None or agent.is_manager:
+        return
+    try:
+        require_scope(agent, scope)
+    except AgentError as exc:
+        raise HTTPException(status_code=403, detail=f"{exc} Grant '{scope}' or use an operator account.") from exc
 
 
 def _task(db: Session, task_id: str) -> Task:

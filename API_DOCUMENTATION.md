@@ -404,3 +404,23 @@ Audit events added: `agent.instruction_issued`, `task.reassigned`.
 - `POST /blueprints/apply` — body: `plan`, `confirmed`. Without `confirmed: true` it returns `409` and creates nothing. It re-validates task keys, duplicate keys and dependency references (`422`), then creates the project plus dependency-linked tasks in `pending`/`assigned`. Nothing is executed: the orchestrator remains the only path to running work. Audit events: `project.created`, `blueprint.applied`.
 
 Assignments only ever name registered workers whose role matches; unmatched tasks say so in `reason` rather than being silently assigned.
+
+## Permission levels
+
+`GET /agents/scopes` returns the nine levels the specification names, each mapped to a scope, plus `enforced_at` describing the single boundary where each is checked and `approval_only` listing the three scopes that can only record an approval.
+
+| Level | Scope | Enforced at |
+| --- | --- | --- |
+| Read Only | `task:read` | reading a task timeline |
+| Development | `task:write` | an agent taking assigned work; advancing task state on its behalf |
+| Testing | `review:submit` | recording a review verdict |
+| File Modification | `memory:write` | writing project memory |
+| Git Commit | `workspace:write` | creating a branch or file in a project workspace |
+| Pull Request | `pull_request:plan` | recording a pull-request plan |
+| Branch Merge | `merge:approve` | approving a protected merge (recording only) |
+| External API Operations | `external:approve` | approving a paid/external call (recording only) |
+| Production Access | `production:approve` | approving a deployment (recording only) |
+
+Permissions remain deny-by-default. The three approval-only scopes are Manager-reserved and are refused for workers *before* the grant is consulted, so a bad row cannot silently confer merge rights. No scope authorises executing a gated action in this build.
+
+A Manager plan (`POST /planning/apply`) now skips any agent that has not declared `task:write`, recording `agent_lacks_task_write_scope` instead of quietly assigning work to an agent with no declared permission.

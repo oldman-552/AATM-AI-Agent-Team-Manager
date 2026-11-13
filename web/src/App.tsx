@@ -6,6 +6,7 @@ import {
   ArrowRight,
   BarChart3,
   BookOpen,
+  MonitorSmartphone,
   Settings,
   Bot,
   Check,
@@ -34,6 +35,7 @@ import MemoryView from './MemoryView'
 import AnalyticsView from './AnalyticsView'
 import { NotificationCenter } from './components/NotificationCenter'
 import SettingsView from './SettingsView'
+import BrowserWallView from './BrowserWallView'
 import { ManagerPlanPanel } from './components/ManagerPlanPanel'
 import { AgentControls } from './components/AgentControls'
 import { CheckpointPanel } from './components/CheckpointPanel'
@@ -41,7 +43,7 @@ import { PullRequestPlans } from './components/PullRequestPlans'
 import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
-type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'memory' | 'analytics' | 'approvals' | 'providers' | 'settings'
+type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'memory' | 'analytics' | 'browsers' | 'approvals' | 'providers' | 'settings'
 
 const navigation: { id: View; label: string; icon: typeof Activity }[] = [
   { id: 'dashboard', label: 'dashboard', icon: Activity },
@@ -50,6 +52,7 @@ const navigation: { id: View; label: string; icon: typeof Activity }[] = [
   { id: 'tasks', label: 'tasks', icon: ListTodo },
   { id: 'memory', label: 'memorySection', icon: BookOpen },
   { id: 'analytics', label: 'analyticsSection', icon: BarChart3 },
+  { id: 'browsers', label: 'browserWallSection', icon: MonitorSmartphone },
   { id: 'approvals', label: 'approvalSection', icon: ShieldCheck },
   { id: 'providers', label: 'providerSection', icon: PlugZap },
   { id: 'settings', label: 'settingsSection', icon: Settings },
@@ -218,6 +221,7 @@ function App() {
           {view === 'tasks' && <TasksView />}
           {view === 'memory' && <MemoryView />}
           {view === 'analytics' && <AnalyticsView />}
+          {view === 'browsers' && <BrowserWallView />}
           {view === 'approvals' && <ApprovalsView />}
           {view === 'providers' && <ProvidersView />}
           {view === 'settings' && <SettingsView onTheme={setTheme} onLanguage={(language) => changeLanguage(language)} />}

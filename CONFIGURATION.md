@@ -51,6 +51,14 @@ Direct API calls then need `-H "Authorization: Bearer $AATM_AUTH_TOKEN"`. The UI
 
 Claude API usage is billed separately from a Claude subscription. AATM currently records only **local cost estimates** (`billing_status="estimated"`); it does not call any provider billing API and cannot confirm charges. No paid request can occur from the HTTP API in this build. Paid usage requires (a) an explicitly enabled provider, (b) a resolvable credential reference, (c) a positive budget limit, and (d) explicit per-request consent.
 
+## Browser profile settings
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `AATM_BROWSER_PROFILES_ROOT` | `$AATM_HOME/browser-profiles` | Root for per-profile directories. Each profile gets `<root>/<uuid>` and can never escape this root. |
+
+AATM does not launch a browser, so a profile directory is empty until some other tool writes to it. Cookies and login state are never read by AATM.
+
 ## Backup settings
 
 | Variable | Default | Purpose |

@@ -163,6 +163,30 @@ class TaskTransition(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
 
 
+class BrowserProfile(Base):
+    """A registry entry and an isolated on-disk directory for a browser profile.
+
+    Stores metadata only. Cookie jars, saved logins and session storage are never
+    read, parsed or persisted by AATM; `session_state` is always
+    ``not_inspected`` in this build.
+    """
+
+    __tablename__ = "browser_profiles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(String(60), nullable=False, unique=True, index=True)
+    label: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    agent_id: Mapped[str | None] = mapped_column(ForeignKey("agents.id"), nullable=True, index=True)
+    isolation: Mapped[str] = mapped_column(String(32), nullable=False, default="per_profile")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="created", index=True)
+    locked_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    session_state: Mapped[str] = mapped_column(String(32), nullable=False, default="not_inspected")
+    profile_path: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+
+
 class NotificationRead(Base):
     """Persisted read state for derived notifications.
 

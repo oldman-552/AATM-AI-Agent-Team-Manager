@@ -155,6 +155,29 @@ export type ManagerPlan = {
 
 export type AgentScopeList = { scopes: string[]; default: string; note: string }
 
+export type BrowserProfile = {
+  id: string
+  name: string
+  label: string
+  agent_id: string | null
+  isolation: 'per_profile' | 'shared_readonly'
+  status: 'created' | 'ready' | 'locked' | 'archived'
+  locked_by: string | null
+  locked_at: string | null
+  session_state: string
+  created_at: string | null
+  updated_at: string | null
+  directory: string
+  exists: boolean
+  size_bytes: number
+  entries: number
+  modified_at: string | null
+  automation_available: false
+  automation_reason: string
+  credentials_inspected: false
+  credentials_note: string
+}
+
 export type AuditEvent = {
   id: string
   entity_type: string
@@ -475,6 +498,21 @@ export const api = {
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
+  browserProfiles: () => request<{ profiles: BrowserProfile[]; automation_available: boolean; note: string }>(
+    '/api/v1/browser-profiles',
+  ),
+  createBrowserProfile: (payload: { name: string; label?: string; agent_id?: string | null }) =>
+    request<{ profile: BrowserProfile }>('/api/v1/browser-profiles', { method: 'POST', body: JSON.stringify(payload) }),
+  lockBrowserProfile: (id: string, lockedBy: string) =>
+    request<{ profile: BrowserProfile }>(`/api/v1/browser-profiles/${id}/lock`, {
+      method: 'POST', body: JSON.stringify({ locked_by: lockedBy }),
+    }),
+  unlockBrowserProfile: (id: string) =>
+    request<{ profile: BrowserProfile }>(`/api/v1/browser-profiles/${id}/unlock`, { method: 'POST' }),
+  deleteBrowserProfile: (id: string) =>
+    request<{ deleted: boolean; name: string; removed_bytes: number }>(
+      `/api/v1/browser-profiles/${id}?confirm=true`, { method: 'DELETE' },
+    ),
   agentScopes: () => request<AgentScopeList>('/api/v1/agents/scopes'),
   changeAgentState: (agentId: string, targetState: string) =>
     request<{ agent_id: string; status: string }>(`/api/v1/agents/${agentId}/state`, {

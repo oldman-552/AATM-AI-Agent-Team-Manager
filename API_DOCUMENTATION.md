@@ -254,6 +254,19 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Browser profiles (`/browser-profiles`)
+
+Registry + isolated on-disk directories. **No browser is launched or driven**, no cookie/login/session material is read, and `session_state` is always `not_inspected`.
+
+- `GET /browser-profiles?agent_id=` — profiles with `exists`, `size_bytes`, `entries`, `modified_at`, `status`, lock owner, plus `automation_available: false` and an explicit reason.
+- `POST /browser-profiles` → 201 — `{name, label?, agent_id?, isolation}`. Creates a real directory under `AATM_BROWSER_PROFILES_ROOT`; names are validated (no `..`, no separators) and unique.
+- `PATCH /browser-profiles/{id}` — label/owner change; `{clear_agent: true}` detaches.
+- `PATCH /browser-profiles/{id}/state` — `created|ready|locked|archived` with validated transitions; `archived` is terminal.
+- `POST /browser-profiles/{id}/lock` — exclusive; a second lock is 409 and names the current holder. `POST .../unlock` releases.
+- `DELETE /browser-profiles/{id}?confirm=true` — removes the directory and the record; refused with 422 without `confirm` and 409 while locked. Reports `removed_bytes`.
+
+Directories are reported relative to the root (`name/`), not as absolute host paths.
+
 ## Agent lifecycle and permissions (`/agents`)
 
 **Lifecycle** `idle → active → paused → active`; any state → `disabled` (and `disabled` is terminal until re-enabled out of band). Illegal jumps are 409, the Manager identity cannot be disabled, and an agent that is paused, disabled, offline or the Manager cannot receive work — that is enforced on both `POST /tasks` and `PATCH /tasks/{id}/assignment`, not just in the UI. Work already held is **not** silently dropped; `GET /agents/blocked` reports agents holding open work while unavailable.

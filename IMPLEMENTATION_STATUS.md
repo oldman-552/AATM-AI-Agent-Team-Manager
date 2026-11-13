@@ -40,10 +40,10 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 ## Phase 4 — Browser Profiles
 
-- [ ] Playwright persistent contexts — **NOT STARTED**.
-- [ ] Independent, locked manager/worker profiles — **NOT STARTED**.
-- [ ] Browser health/auth state and recovery — **NOT STARTED**.
-- [ ] Real-time Browser Wall — **NOT STARTED**.
+- [ ] Playwright persistent contexts — **NOT STARTED**: no browser driver is installed and AATM never launches a browser. The *storage* half is **TESTED** (isolated per-profile directories, exclusive locks, lifecycle, confirmation-gated deletion).
+- [ ] Independent, locked manager/worker profiles — **TESTED for independent and exclusively locked profile directories**: a second lock is refused and names the holder; profiles can be assigned to a specific agent; deletion is refused while locked and requires explicit confirmation.
+- [ ] Browser health/auth state and recovery — **NOT STARTED by design**: inspecting auth state would mean reading credentials, which AATM refuses to do. `session_state` is always `not_inspected` and is documented as such rather than faked.
+- [ ] Real-time Browser Wall — **IN PROGRESS**: the wall shows real profile directories, sizes, lock state and per-profile controls, and states plainly that automation is unavailable. Live page thumbnails require a browser driver and remain **NOT STARTED**.
 
 ## Phase 5 — Orchestration
 

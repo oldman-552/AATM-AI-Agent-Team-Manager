@@ -1,5 +1,14 @@
 # Testing Report
 
+## 2026-11-13 15:35 UTC — Current full-stack verification
+
+- Backend (15:35 UTC): `cd backend && ../.venv/bin/python -m pytest -o addopts='' -q -p no:cacheprovider` → **244 passed**, one upstream Starlette/httpx deprecation warning.
+- Focused budget/notification regression: `tests/test_notifications.py tests/test_provider_api.py` → **16 passed**.
+- Frontend (15:32 UTC): `cd web && npm run verify` → TypeScript clean, **20 Vitest tests passed**, production build passed, RTL source/bundle checker passed with zero physical left/right CSS declarations.
+- New regression coverage proves an alert appears at 80%, stays absent below threshold and for a zero limit, and does **not** alter hard enforcement: the budget guard still permits an estimate that remains below the hard cap.
+
+Historical runs below remain as a chronological record; their counts and feature descriptions are not current-state claims.
+
 ## 2026-11-13 — Environment inspection
 
 - Scope: Repository and runtime availability.

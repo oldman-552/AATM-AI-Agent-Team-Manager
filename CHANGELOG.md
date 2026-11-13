@@ -2,6 +2,14 @@
 
 ## Unreleased — 2026-11-13
 
+### Budget alerts and documentation accuracy
+
+- Derived an in-app warning when persisted provider usage reaches **80%** of a positive daily, monthly, global, agent, project, or credential budget. Alert scope and period follow the stored usage records; estimate/confirmed billing basis is identified.
+- The alert is strictly advisory: `BudgetGuard` remains the sole hard enforcement point, and a request is denied only when its estimate would exceed an applicable limit. Tests explicitly verify that an under-cap request remains allowed at the alert threshold.
+- Added the alert message in English, Arabic and Persian; notifications remain derived and read-state persistent.
+- Corrected stale implementation/API/status documentation, including the old disabled-executor claim, missing SSE stream, and 321/450 translation-key counts.
+- Verification: **244 backend tests passed**, **20 frontend tests passed**, `npm run verify` passed; one upstream Starlette/httpx deprecation warning remains.
+
 - Preserved the complete AATM master development prompt in `AATM_MASTER_DEVELOPMENT_PROMPT.md`.
 - Added a local FastAPI/SQLAlchemy/Alembic foundation with SQLite defaults, health/dashboard routes, and project/agent/task/audit persistence.
 - Added a default unconfigured Manager identity, 20 role templates, and a 20-worker registration cap.

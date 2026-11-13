@@ -142,17 +142,23 @@ Enforcement rules (server-side, not advisory):
 - Records are keyed by an idempotency key, so a replay cannot double count.
 - Per-agent/per-project/per-key scopes fail closed when the corresponding scope value is missing.
 
+The in-app notification feed emits an **advisory near-limit alert at 80%** of a positive applicable budget, based on persisted estimated/confirmed usage. This threshold only informs the operator; it does not change the hard guard's decision. The guard still rejects only when the new estimate would exceed a configured limit.
+
 ### `GET /usage`
 
 Aggregated usage plus the most recent records. Costs carry `billing_status: "estimated"`; confirmed billing is only present if a reconciliation process imported it (`confirmed_cost_usd`), which does not exist yet. No provider billing API is called.
 
-## Orchestrator (inspection and recovery only)
+## Orchestrator (inspection, recovery, and opt-in local execution)
 
-The durable orchestrator (`backend/app/orchestrator.py`) dispatches work through an injectable `TaskExecutor`. The HTTP surface deliberately **cannot** start a run: the configured executor is `DisabledExecutor`, which refuses to execute and never simulates work.
+The durable orchestrator (`backend/app/orchestrator.py`) dispatches work through an injectable `TaskExecutor`. The default HTTP configuration has execution disabled. An opt-in `LocalProcessExecutor` is available for real local commands; it never calls a model or provider.
 
 ### `GET /orchestrator/status`
 
 Returns the configured executor (and its refusal reason), counts (`running`, `waiting_for_retry`, `expired_leases`, `assigned`, `failed`), active leases with owner/expiry, and the retry queue.
+
+### `POST /orchestrator/run`
+
+Runs one orchestrator pass. Returns **409** unless `AATM_EXECUTION_ENABLED` is `1`, `true`, `yes`, or `on`. When enabled, only a command named by a task's `run:<name>` acceptance criterion can run; its argument vector must be present in the human-committed `<workspace>/.aatm/exec.json`. Commands run without a shell, under the program allow-list, inside the workspace, with a minimal environment, timeout, output cap, and process-group teardown. `AATM_EXECUTION_PROGRAMS` may narrow the built-in allow-list but cannot widen it.
 
 ### `POST /orchestrator/recover`
 
@@ -300,11 +306,11 @@ Non-secret, allow-listed preferences persisted in `app_settings` under `user_pre
 ## Notifications (derived, with persisted read state)
 
 - `GET /notifications` — `{notifications, unread, total, source}`. Each item has `kind`, `message_key` + `data` (for client-side translation), `action_view`, `severity`, `read` and `read_at`.
-- `POST /notifications/read` — `{ids: ["<kind>:<uuid>", ...]}` persists read state (422 for malformed ids).
+- `POST /notifications/read` — `{ids: ["<kind>:<identifier>", ...]}` persists read state (422 for malformed ids). Row-backed items use UUIDs; budget-alert IDs use a stable digest of the budget scope/provider/period, not a secret or credential value.
 - `POST /notifications/read-all` — marks every currently unread derived notification read (idempotent).
 - `DELETE /notifications/read-state?older_than_days=90` — retention for the read-state table.
 
-Notifications are **derived**, never fabricated: pending approvals, tasks in `failed`/`rework_required`, and tasks with an expired lease. Deciding an approval removes its notification because the underlying row no longer needs attention. Messages are returned as translation keys plus data, so the server never hardcodes a language.
+Notifications are **derived**, never fabricated: pending approvals, tasks in `failed`/`rework_required`, tasks with an expired lease, and persisted provider usage at or above 80% of a positive budget. Budget alerts use effective usage (confirmed cost when reconciled, otherwise the estimate), are scoped to the relevant provider and period/entity, and carry their billing basis. They are advisory: they do not deny a request or change the hard budget guard. Deciding an approval removes its notification because the underlying row no longer needs attention. Messages are returned as translation keys plus data, so the server never hardcodes a language.
 
 ## Analytics (derived from stored rows)
 

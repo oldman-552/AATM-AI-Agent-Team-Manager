@@ -12,10 +12,10 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [ ] Project, agent, task, and audit-record APIs — **TESTED** (create/list, assignment, role catalog, worker cap; tests pass).
 - [ ] React + TypeScript + Vite UI — **TESTED** for compile/bundle and query wiring (TypeScript check, Vitest resource tests, and production bundle pass; browser visual/E2E checks remain pending).
 - [ ] Frontend-to-backend relative API proxy — **VERIFIED** (actual Vite proxy returned backend health/dashboard; preview host smoke check passed).
-- [ ] English/Arabic/Persian resources, RTL direction and key parity — **TESTED** for resource correctness (321 keys per language, `web/src/i18n.test.ts` asserts identical key sets, no empty values, Arabic/Persian as distinct languages, and RTL direction for `ar`/`fa`). Visual layout/RTL browser verification remains **NOT STARTED**.
+- [ ] English/Arabic/Persian resources, RTL direction and key parity — **TESTED** for resource correctness (646 keys per language in the current tree; `web/src/i18n.test.ts` asserts identical key sets, no empty values, Arabic/Persian as distinct languages, and RTL direction for `ar`/`fa`). Visual layout/RTL browser verification remains **NOT STARTED**.
 - [ ] Loopback/host/CORS baseline — **TESTED** (middleware and loopback defaults exist; dedicated tests assert untrusted Host rejection at 400 and that a hostile origin receives no `access-control-allow-origin` header). Real multi-user authentication remains absent.
 - [ ] Local setup scripts — **TESTED** for Linux install/start/stop smoke flow; Windows PowerShell and update/uninstall paths are **IMPLEMENTED** but not executed.
-- [ ] Phase 1 regression suite/build — **TESTED** (final run: 9 backend tests pass; TypeScript/Vite production build, shell syntax, Python compilation, dependency checks, and npm audit pass).
+- [ ] Phase 1 regression suite/build — **TESTED** (current run: 244 backend tests pass; 20 frontend Vitest tests pass; TypeScript/Vite production build and RTL CSS checks pass; see `TESTING_REPORT.md`).
 
 ## Phase 2 — AI Providers
 
@@ -47,25 +47,25 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 ## Phase 5 — Orchestration
 
-- [ ] Durable task records — **IN PROGRESS** (persisted metadata, dependencies, assignment, state history and audit events; no scheduler/executor).
+- [ ] Durable task records and execution — task metadata, dependencies, assignment, state history, audit events, lease-based orchestration, retries, recovery, cancellation and the opt-in local executor are **TESTED**. The default executor remains disabled; no model or provider call is made.
 - [x] Explicit task state machine with validated transitions — **TESTED** (`backend/app/workflow.py`; transitions, terminal states, evidence requirements for failure/approval/rework, retry counting, and a server-owned transition map at `GET /api/v1/tasks/workflow`).
 - [x] Dependency gating and ready queue — **TESTED** (`GET /api/v1/tasks/ready` returns assigned tasks with satisfied dependencies only; starting a task with incomplete dependencies is rejected with 409).
 - [x] Transition idempotency and append-only history — **TESTED** (replaying an idempotency key does not duplicate transitions or audit events; conflicting reuse is rejected; history survives an application restart).
 - [x] Dependency-aware dispatch with bounded concurrency — **TESTED** (`backend/app/orchestrator.py`; `max_concurrency` caps dispatch, dependency-unsatisfied tasks are never claimed, and an injected fake executor is used in tests).
 - [x] Lease-based ownership with crash recovery — **TESTED** (claims write `lease_owner`/`lease_expires_at`; `recover_expired_leases` returns interrupted tasks to the queue, records the failure, and refuses to steal an active lease; recovery survives a process restart).
 - [x] Retry policy with exponential backoff and a retry ceiling — **TESTED** (failures schedule `next_attempt_at`; a task is not dispatched before its backoff elapses; retries stop at `max_retries`).
-- [x] Orchestrator observability + idempotent recovery API — **TESTED** (`GET /api/v1/orchestrator/status`, `POST /api/v1/orchestrator/recover`; no dispatch endpoint exists).
-- [ ] Real task execution by agents — **NOT STARTED** (the default `DisabledExecutor` refuses to run; nothing is simulated, and no provider/shell/browser work happens).
-- [ ] Cancellation propagation and graceful shutdown — **NOT STARTED**.
+- [x] Orchestrator observability + recovery API — **TESTED** (`GET /api/v1/orchestrator/status`, `POST /api/v1/orchestrator/recover`; the run endpoint is separately gated by the opt-in execution flag).
+- [ ] Real local task execution — **TESTED** (opt-in `LocalProcessExecutor`, real allow-listed shell-free subprocesses inside project workspaces; disabled by default, with timeout/output caps, cancellation, and graceful shutdown). This does not execute an AI agent or call a model/provider.
+- [x] Cancellation propagation and graceful shutdown — **TESTED** (request/apply/withdraw protocol, cross-connection cancellation observed by the orchestrator, cancelled tasks are not charged retry attempts, live processes are stopped at shutdown).
 - [ ] Manager planning/assignment/review loop — **IN PROGRESS / TESTED for planning and assignment**: proposals → explicit apply → independent review via the existing QA loop. Automatic iteration without an operator remains **NOT STARTED**.
 
 ## Phase 6 — Projects and Memory
 
 - [ ] Basic project records — **TESTED** (create/list and persistence tests pass).
 - [x] Isolated Git workspaces per project — **TESTED** with real throwaway repositories (create from a local source or fresh init, branch creation, read-only status, strict root-escape and branch-name validation, audited removal). Merge/push/fetch/branch-deletion are intentionally absent.
-- [ ] Project Builder and delivery plan — **NOT STARTED**.
+- [ ] Project Builder and delivery plan — **TESTED** (rule-generated, eleven-section project plan; explicit apply revalidates inputs; the response states that no model was called).
 - [ ] Global/project/agent/task/decision memory — **TESTED** for isolation and scoping (project-bound memory never appears in another project's list, search, export or direct lookup; global entries are shared deliberately).
-- [ ] Memory search, retrieval, summarization, versioning, export, cleanup — **IN PROGRESS / TESTED** for deterministic keyword retrieval, versioning with rollback-as-new-version, JSON export, explicit deletion and audit events. Summarization (which would require a provider) remains **NOT STARTED**.
+- [ ] Memory search, retrieval, summarization, versioning, export, cleanup — **TESTED** for deterministic keyword retrieval, versioning with rollback-as-new-version, JSON export, explicit deletion and audit events. Context summaries are extractive selections of stored sentences (never generated/paraphrased); model-based summarization remains gated and **NOT STARTED**.
 
 ## Phase 7 — GitHub and Workspaces
 
@@ -76,33 +76,30 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 8 — QA and Intelligence
 
 - [ ] Independent QA/review records — **TESTED** (server-side reviewer separation: self-review is rejected; `approved` needs concrete checks plus recorded output; `rework_required` needs a summary; verdicts drive the workflow and are replay-safe, audited, and exposed in the task UI).
-- [ ] Automated quality/test workflows — **IN PROGRESS** (backend suite: 51 tests; frontend Vitest resource tests; no CI pipeline yet).
-- [ ] Evidence-based agent analytics — **TESTED** for delivery analytics: counts, daily throughput, audit activity, cycle time with sample sizes, review approval rate, rework share and approval totals, all computed from persisted rows with `null` for absent data. Per-agent performance scoring is **NOT STARTED** (verdict samples are too sparse to be meaningful).
+- [ ] Automated quality/test workflows — **TESTED** (current backend suite: 244 tests; frontend: 20 Vitest tests; `npm run verify` includes typecheck, tests, production build and RTL CSS invariants). Hosted CI remains **NOT STARTED**.
+- [ ] Evidence-based agent analytics — **TESTED** for delivery analytics and the AI Team Intelligence Center: counts, throughput, cycle time, review/rework measures and per-agent complexity-weighted metrics derive from stored rows, expose sample sizes, keep rule-based assessments separate from measurements, and use `null` for missing data.
 
 ## Phase 9 — Recovery and Approvals
 
 - [ ] Recovery diagnostics/checkpoints/safe retries — **TESTED** for lease recovery (expired leases are reconciled after a simulated crash and after a process restart; retry scheduling honours exponential backoff and a retry ceiling; an active lease is never stolen) and for durable **checkpoints** (append-only, monotonic sequences, credential rejection, resume plan that never claims automatic resumption). Automatic replay of partial agent work remains **NOT STARTED** by design.
 - [ ] Human approval center and complete audit trail — **IN PROGRESS** (approval requests and decisions are persisted, audited and exposed in a dedicated Approvals view; the gated actions themselves are not executed, and the audit trail still lacks authentication attribution).
-- [ ] Observable execution timeline — **NOT STARTED**.
+- [x] Observable execution timeline and resumable audit stream — **TESTED** (task/project timelines cite source tables; SSE audit stream uses a resumable keyset cursor, bounded lifetime, heartbeat, separate DB session and honest poll-transport labelling).
 
 ## Phase 10 — Cost and Resources
 
-- [ ] Server-side budgets and cost/usage tracking — **TESTED** for enforcement plumbing (consent-gated, positive-limit-required, scoped limits; usage persisted and labelled as estimates; no confirmed billing reconciliation yet).
-- [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **TESTED for CPU/memory/disk** (local standard-library sampling, bounded advisory recommendation, visible in the Tasks view). Browser-level monitoring and automatic concurrency changes remain **NOT STARTED**.
+- [ ] Server-side budgets, cost/usage tracking and alerts — **TESTED** for consent-gated positive/scoped hard limits and persisted usage. In-app notifications advise at 80% of a positive limit; this threshold does not change enforcement. Usage is explicitly estimated unless later reconciled; billing reconciliation remains **NOT STARTED**.
+- [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **TESTED for CPU/memory/disk** (local standard-library sampling, bounded advisory recommendation, visible in Operations). Browser-level monitoring and automatic concurrency changes remain **NOT STARTED**; the recommendation is not applied automatically.
 
 ## Phase 11 — Dashboard and Interface
 
 - [ ] Basic API-backed dashboard and responsive shell — **TESTED** (real backend counts, loading/error/empty states; production build and API smoke passed).
-- [ ] Notifications — **TESTED** for derived in-app notifications: pending approvals, failed/rework tasks and expired leases, with server-persisted read state, mark-all, retention and per-language keys. Email/webhook/push delivery remains **NOT STARTED**.
-- [ ] Complete navigation, manager chat, live control, Browser Wall, analytics, notifications, settings — **IN PROGRESS**: navigation covers Dashboard, Projects, Agents, Tasks, Memory, Analytics, Approvals, Providers and Settings, with a notification bell and a real preferences page (language, theme, page size, polling, retention). Manager chat and Browser Wall remain **NOT STARTED**.
-- [ ] Live updates through an appropriate backend event mechanism — **NOT STARTED** (dashboard polls current read APIs; no event stream).
+- [ ] Notifications — **TESTED** for derived in-app notifications: pending approvals, failed/rework tasks, expired leases and 80%-of-budget advisories, with server-persisted read state, mark-all, retention and English/Arabic/Persian keys. Email/webhook/push delivery remains **NOT STARTED**.
+- [ ] Product interface — **TESTED** for navigation across Dashboard, Operations, Projects, Project Builder, Agents, Agent Center, Tasks, Memory, Analytics, Browser Wall, Approvals, Providers and Settings; includes notification bell and validated preferences. The Browser Wall displays real stored profile data but no browser automation; Manager chat is **NOT STARTED**.
+- [x] Live updates through an appropriate backend event mechanism — **TESTED** (resumable SSE audit stream with bounded polling transport; the UI labels its delivery honestly).
 
 ## Phase 12 — Internationalization
 
-- [ ] Complete English UI — **IN PROGRESS** (only initial four-view UI resources).
-- [ ] Complete Arabic UI and verified RTL — **IN PROGRESS** (initial translations/direction; no browser RTL E2E verification).
-- [ ] Complete Persian UI and verified RTL — **IN PROGRESS** (distinct initial translations/direction; no browser RTL E2E verification).
-- [ ] Persisted immediate language switching and locale formatting — **IMPLEMENTED** (initial selector; cross-locale browser tests pending).
+- [ ] English/Arabic/Persian product UI — **TESTED** for dictionary parity (646 keys each), persisted language selection, direction, locale-aware number/date formatting, RTL CSS invariants in source and production bundle, and frontend render smoke. Pixel-level browser layout and Playwright RTL E2E remain **NOT STARTED** because no display/Playwright environment is available.
 
 ## Phase 13 — Reliability and Security
 

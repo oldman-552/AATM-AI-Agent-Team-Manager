@@ -9,6 +9,7 @@ off; the run endpoint refuses with 409 while execution is disabled.
 """
 
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
@@ -24,7 +25,8 @@ from app.execution import (
     execution_enabled,
 )
 from app.models import Task
-from app.orchestrator import DisabledExecutor, Orchestrator, OrchestratorConfig, recover_expired_leases
+from app.orchestrator import LEASE_SECONDS, DisabledExecutor, Orchestrator, OrchestratorConfig, recover_expired_leases
+from app.run_lock import acquire_run_lock, release_run_lock, renew_run_lock
 
 router = APIRouter(prefix="/api/v1/orchestrator")
 
@@ -121,16 +123,32 @@ def run_batch(request: Request, db: Session = Depends(get_session)) -> dict[str,
             ),
         )
 
-    run_lock = request.app.state.orchestrator_run_lock
-    if not run_lock.acquire(blocking=False):
+    process_lock = request.app.state.orchestrator_run_lock
+    if not process_lock.acquire(blocking=False):
         raise HTTPException(status_code=409, detail="An orchestrator run is already active in this API process.")
+
+    owner = f"api-run-{uuid4()}"
+    lock_acquired = False
     try:
+        lock_acquired = acquire_run_lock(db, owner, lease_seconds=LEASE_SECONDS)
+        if not lock_acquired:
+            raise HTTPException(status_code=409, detail="An orchestrator run is already active for this database.")
+
         factory = request.app.state.session_factory
         executor = LocalProcessExecutor(factory, allowed_programs=configured_programs())
         concurrency = concurrency_policy(db, for_run=True)
+
+        def renew_run_guard() -> None:
+            if not renew_run_lock(db, owner, lease_seconds=LEASE_SECONDS):
+                raise HTTPException(status_code=409, detail="The orchestrator database lock was lost during this run.")
+
         orchestrator = Orchestrator(
             executor=executor,
-            config=OrchestratorConfig(max_concurrency=int(concurrency["effective_dispatch_budget"])),
+            config=OrchestratorConfig(
+                owner=owner,
+                max_concurrency=int(concurrency["effective_dispatch_budget"]),
+                heartbeat_callback=renew_run_guard,
+            ),
         )
         try:
             report = orchestrator.run_once(db)
@@ -146,4 +164,9 @@ def run_batch(request: Request, db: Session = Depends(get_session)) -> dict[str,
         )
         return payload
     finally:
-        run_lock.release()
+        try:
+            if lock_acquired:
+                db.rollback()
+                release_run_lock(db, owner)
+        finally:
+            process_lock.release()

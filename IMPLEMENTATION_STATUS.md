@@ -15,7 +15,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [ ] English/Arabic/Persian resources, RTL direction and key parity — **TESTED** for resource correctness (652 keys per language in the current tree; `web/src/i18n.test.ts` asserts identical key sets, no empty values, Arabic/Persian as distinct languages, and RTL direction for `ar`/`fa`). Visual layout/RTL browser verification remains **NOT STARTED**.
 - [ ] Loopback/host/CORS baseline — **TESTED** (middleware and loopback defaults exist; dedicated tests assert untrusted Host rejection at 400 and that a hostile origin receives no `access-control-allow-origin` header). Real multi-user authentication remains absent.
 - [ ] Local setup scripts — **TESTED** for Linux install/start/stop smoke flow; Windows PowerShell and update/uninstall paths are **IMPLEMENTED** but not executed.
-- [ ] Phase 1 regression suite/build — **TESTED** (current run: 253 backend tests pass; 20 frontend Vitest tests pass; TypeScript/Vite production build and RTL CSS checks pass; see `TESTING_REPORT.md`).
+- [ ] Phase 1 regression suite/build — **TESTED** (current run: 261 backend tests pass; 20 frontend Vitest tests pass; TypeScript/Vite production build and RTL CSS checks pass; see `TESTING_REPORT.md`).
 
 ## Phase 2 — AI Providers
 
@@ -51,7 +51,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [x] Explicit task state machine with validated transitions — **TESTED** (`backend/app/workflow.py`; transitions, terminal states, evidence requirements for failure/approval/rework, retry counting, and a server-owned transition map at `GET /api/v1/tasks/workflow`).
 - [x] Dependency gating and ready queue — **TESTED** (`GET /api/v1/tasks/ready` returns assigned tasks with satisfied dependencies only; starting a task with incomplete dependencies is rejected with 409).
 - [x] Transition idempotency and append-only history — **TESTED** (replaying an idempotency key does not duplicate transitions or audit events; conflicting reuse is rejected; history survives an application restart).
-- [x] Dependency-aware dispatch with bounded concurrency — **TESTED** (`backend/app/orchestrator.py`; `max_concurrency` caps dispatch, dependency-unsatisfied tasks are never claimed, and an injected fake executor is used in tests).
+- [x] Dependency-aware bounded parallel dispatch — **TESTED** (`backend/app/orchestrator.py`; `max_concurrency` caps claims, a bounded thread pool runs tasks from different projects concurrently (same-project tasks share a workspace and are excluded from one batch), dependency-unsatisfied tasks are never claimed, and tests prove overlap with a barrier while database mutations remain on the main thread).
 - [x] Lease-based ownership with crash recovery — **TESTED** (claims write `lease_owner`/`lease_expires_at`; `recover_expired_leases` returns interrupted tasks to the queue, records the failure, and refuses to steal an active lease; recovery survives a process restart).
 - [x] Retry policy with exponential backoff and a retry ceiling — **TESTED** (failures schedule `next_attempt_at`; a task is not dispatched before its backoff elapses; retries stop at `max_retries`).
 - [x] Orchestrator observability + recovery API — **TESTED** (`GET /api/v1/orchestrator/status`, `POST /api/v1/orchestrator/recover`; the run endpoint is separately gated by the opt-in execution flag).
@@ -76,7 +76,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 8 — QA and Intelligence
 
 - [ ] Independent QA/review records — **TESTED** (server-side reviewer separation: self-review is rejected; `approved` needs concrete checks plus recorded output; `rework_required` needs a summary; verdicts drive the workflow and are replay-safe, audited, and exposed in the task UI).
-- [ ] Automated quality/test workflows — **TESTED** (current backend suite: 253 tests; frontend: 20 Vitest tests; `npm run verify` includes typecheck, tests, production build and RTL CSS invariants). Hosted CI remains **NOT STARTED**.
+- [ ] Automated quality/test workflows — **TESTED locally** (current backend suite: 261 tests; frontend: 20 Vitest tests; `npm run verify` includes typecheck, tests, production build and RTL CSS invariants). GitHub Actions CI is defined in `.github/workflows/ci.yml` for push, pull request and manual runs; its first hosted execution remains **NOT VERIFIED**.
 - [ ] Evidence-based agent analytics — **TESTED** for delivery analytics and the AI Team Intelligence Center: counts, throughput, cycle time, review/rework measures and per-agent complexity-weighted metrics derive from stored rows, expose sample sizes, keep rule-based assessments separate from measurements, and use `null` for missing data.
 
 ## Phase 9 — Recovery and Approvals
@@ -88,7 +88,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 10 — Cost and Resources
 
 - [ ] Server-side budgets, cost/usage tracking and alerts — **TESTED** for consent-gated positive/scoped hard limits and persisted usage. In-app notifications advise at 80% of a positive limit; this threshold does not change enforcement. Usage is explicitly estimated unless later reconciled; billing reconciliation remains **NOT STARTED**.
-- [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **TESTED for CPU/memory/disk** (local standard-library sampling, bounded advisory recommendation, visible in Operations). Browser-level monitoring remains **NOT STARTED**. Resource-adaptive dispatch is **TESTED as an explicit opt-in per-run batch cap**; it never raises the configured maximum. Because runs are currently sequential and the guard is per API process, true parallel scheduling and cross-worker coordination remain **NOT STARTED**.
+- [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **TESTED for CPU/memory/disk** (local standard-library sampling, bounded advisory recommendation, visible in Operations). Browser-level monitoring remains **NOT STARTED**. Resource-adaptive dispatch is **TESTED as an explicit opt-in per-run batch cap**; it never raises the configured maximum. A bounded thread pool provides parallel task execution when the cap exceeds one; task execution uses isolated worker sessions while workflow mutations and periodic lease heartbeats stay on the orchestrator thread. Lease renewal is covered by an expiry/recovery regression test. Cross-process API run serialization is **TESTED** using a database-backed expiring lock; distributed worker scheduling and per-worktree isolation remain **NOT STARTED**.
 
 ## Phase 11 — Dashboard and Interface
 

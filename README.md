@@ -10,11 +10,11 @@ The complete product specification is preserved in [`AATM_MASTER_DEVELOPMENT_PRO
 
 | | |
 |---|---|
-| Backend | FastAPI + SQLAlchemy 2 + Alembic — **253 tests** |
+| Backend | FastAPI + SQLAlchemy 2 + Alembic — **261 tests** |
 | Frontend | React 18 + TypeScript + Vite — **20 tests** |
 | Languages | English, Arabic, Persian — **652 keys each**, parity enforced by test |
 | Database | SQLite by default (WAL enabled); any SQLAlchemy URL via config |
-| Migrations | 13, upgrade/downgrade round-tripped |
+| Migrations | 14 revisions; latest upgrade/downgrade round-trip verified |
 | Layout | RTL verified by a CSS invariant checker (0 physical `left`/`right`) |
 
 ## Quick start
@@ -36,12 +36,14 @@ Verify it yourself:
 (cd web && npm run verify)     # tsc + vitest + build + RTL checker
 ```
 
+GitHub Actions runs the backend suite and frontend verification on pushes and pull requests; see [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
 ## What actually works
 
 **Records and workflow**
 - Projects, agents, tasks with a validated state machine, dependency gating, replay-safe idempotency and append-only history.
 - Agent lifecycle states and ten deny-by-default permission scopes, enforced server-side.
-- Durable orchestrator: lease-based claims, bounded per-run dispatch batches, exponential backoff with a retry ceiling, crash recovery for expired leases. Task execution is sequential today; true parallel worker scheduling remains open.
+- Durable orchestrator: lease-based claims with heartbeat renewal during long executions, bounded parallel task execution (only when `max_concurrency > 1`), exponential backoff with a retry ceiling, and crash recovery for expired leases. Task/workflow DB changes are committed on the orchestrator thread; a database-wide expiring lock serializes API runs across processes, while a distributed worker pool remains open.
 - Cooperative cancellation as a two-step protocol that never rewrites finished work.
 
 **Execution (opt-in, local only)**
@@ -59,7 +61,7 @@ Verify it yourself:
 - AI Team Intelligence Center: complexity-weighted agent metrics where thin samples are flagged, empty metrics are `null` never `0`, and rule-based assessments are kept in separate fields from measurements. No ranking by task count.
 - Live audit stream over SSE with a resumable cursor and its transport labelled honestly as *polled*.
 - Self-healing surface: classified database errors, queue health, and a capability table where only the two genuinely automatic recoveries are marked automatic.
-- Local CPU/memory/disk-based dispatch cap: off by default; when `AATM_ADAPTIVE_CONCURRENCY=1`, it can only reduce the per-run dispatch batch below `AATM_MAX_CONCURRENCY`, subtracts already-running tasks, and reports the applied cap. Tasks in a run remain sequential; this is not a distributed multi-worker semaphore.
+- Local CPU/memory/disk-based adaptive cap: off by default; when `AATM_ADAPTIVE_CONCURRENCY=1`, it can only reduce the per-run dispatch batch below `AATM_MAX_CONCURRENCY`, subtracts already-running tasks, and reports the applied cap. A cap above one runs tasks from different projects concurrently in a bounded thread pool; tasks in the same project share a workspace and are not batched together. DB changes stay on the orchestrator thread. Run requests sharing one database are serialized across API processes by an expiring database lock; this is not a distributed worker pool or task semaphore.
 
 **Safety and operations**
 - Approval-gated pull-request plans showing exact commands, never calling the network.
@@ -98,8 +100,8 @@ Interactive docs at `http://127.0.0.1:8000/docs`. Full route reference and reque
 ```
 backend/
   app/            FastAPI routers, domain modules, execution, events
-  tests/          30 test modules, 253 tests
-  migrations/     13 Alembic revisions
+  tests/          31 test modules, 261 tests
+  migrations/     14 Alembic revisions
 web/
   src/            React views, typed API client, i18n resources
 scripts/          install/start/stop/update/uninstall (sh + ps1), backup, progress reporter

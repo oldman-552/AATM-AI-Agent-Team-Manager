@@ -347,6 +347,16 @@ class MemoryVersion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
 
 
+class OrchestratorRunLock(Base):
+    """A database-backed, expiring singleton lock for API run requests."""
+
+    __tablename__ = "orchestrator_run_locks"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    owner: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class AgentInstruction(Base):
     """An operator instruction recorded for an agent.
 

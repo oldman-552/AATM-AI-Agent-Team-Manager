@@ -1,12 +1,34 @@
 # Testing Report
 
+## 2026-11-13 16:44 UTC — Database-wide run serialization
+
+- Added migration `0014_orchestrator_run_lock` and a conditional-update singleton lease shared by API processes using the same database. Runs are rejected with 409 while another process owns the lock; active long runs renew both task leases and the database run lock from the orchestrator thread. Owner checks, expiry takeover, cross-session exclusion, API rejection, and successful-release behavior are covered by tests. Alembic `0014` upgrade, downgrade to `0013`, and re-upgrade were also exercised on a temporary SQLite database.
+- Backend full suite: **261 passed**; focused run-lock/orchestrator/executor/cancellation suite: **54 passed**. One upstream Starlette/httpx deprecation warning.
+- Frontend verify remains green from 16:34 UTC: **20 tests**, typecheck, production build, RTL checker.
+- GitHub Actions workflow is locally parsed and has backend/frontend jobs; the first hosted run remains pending.
+
+## 2026-11-13 16:33 UTC — Lease renewal and CI foundation
+
+- Backend: full suite → **258 passed**, one upstream Starlette/httpx deprecation warning; focused orchestrator/executor/cancellation suite → **51 passed**.
+- Frontend (16:32 UTC, repeated at 16:34 after the locale-copy correction): `npm ci && npm run verify` → TypeScript clean, **20 Vitest tests passed**, production build and RTL checks passed.
+- Added timed lease renewals while executors run. The orchestrator session performs heartbeats on the control thread; a file-backed SQLite regression test lets a one-second lease cross its original deadline and verifies recovery does not steal the live task.
+- Added `.github/workflows/ci.yml` with separate backend and frontend jobs on push, pull request and manual dispatch. Locally parsed the workflow YAML and verified its job structure; no hosted run has occurred yet.
+
+## 2026-11-13 16:21 UTC — Bounded parallel execution
+
+- Backend: `cd backend && ../.venv/bin/python -m pytest -o addopts='' -q -p no:cacheprovider` → **257 passed**, one upstream Starlette/httpx deprecation warning.
+- Focused orchestrator/executor/cancellation run → **50 passed**.
+- Frontend (16:16 UTC): `cd web && npm run verify` → TypeScript clean, **20 Vitest tests passed**, production build passed, RTL source/bundle checks passed.
+- Regression tests prove real overlap, worker-session isolation, single-slot bounded worker execution, same-project workspace exclusion, and failure isolation between sibling tasks.
+- This code is on the current Arena branch; it has not been merged into `main`.
+
 ## 2026-11-13 15:56 UTC — Resource-adaptive dispatch verification
 
 - Backend (15:55 UTC): `cd backend && ../.venv/bin/python -m pytest -o addopts='' -q -p no:cacheprovider` → **253 passed**, one upstream Starlette/httpx deprecation warning.
 - Focused adaptive/resource/orchestrator/executor tests → **51 passed**.
 - Frontend (15:47 UTC): `cd web && npm run verify` → TypeScript clean, **20 Vitest tests passed**, production build passed, RTL source/bundle checker passed (zero physical left/right CSS declarations).
 - Added tests for default-off behavior, `.env` configuration loading, malformed max cap failing closed to 1, pressured-resource reduction, running-slot subtraction to zero, zero-budget no-claim, run endpoint applying the opt-in cap, overlapping run rejection, and status reporting.
-- The cap only reduces a per-run dispatch batch; tasks remain sequential and locking is per API process. True parallel workers and cross-process coordination are still open, not claimed as complete.
+- The cap reduces a per-run dispatch batch. When greater than one, tasks from different projects execute concurrently using isolated worker ORM sessions; same-project tasks are skipped from one batch to protect their shared workspace. Workflow writes and periodic lease heartbeats remain on the orchestrator thread. Long-running task lease renewal is tested. Run locking is per API process; cross-process coordination remains open.
 
 Historical verification entries below remain chronological; their old counts and runtime descriptions are not current-state claims.
 

@@ -1,10 +1,13 @@
 """Orchestrator tests using an injected fake executor (never a provider)."""
 
 from datetime import datetime, timedelta, timezone
+import threading
+import time
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
+from sqlalchemy.orm import object_session
 
 from app.main import create_app
 from app.models import AuditEvent, Task, TaskTransition
@@ -140,6 +143,144 @@ def test_bounded_concurrency_limits_started_tasks(app_client: TestClient) -> Non
         assert len(executor.calls) == 2  # type: ignore[attr-defined]
         states = {task_id: db.get(Task, task_id).state for task_id in task_ids}
         assert sorted(states.values()) == ["assigned", "completed", "completed"]
+
+
+def test_single_slot_dispatch_uses_one_isolated_executor_worker(app_client: TestClient) -> None:
+    agent = make_agent(app_client)
+    task_ids = [make_task(app_client, agent, title=f"Serial {index}") for index in range(2)]
+    executor_threads: list[int] = []
+    primary_session = None
+
+    def execute(task: Task) -> ExecutionResult:
+        executor_threads.append(threading.get_ident())
+        assert object_session(task) is not primary_session
+        return ExecutionResult(output=task.title, evidence="Single-slot execution verified.")
+
+    with session_of(app_client) as db:
+        orchestrator_thread = threading.get_ident()
+        primary_session = db
+        report = Orchestrator(execute, OrchestratorConfig(max_concurrency=1)).run_once(db)
+        db.commit()
+        assert len(report.completed) == 1
+        assert len(report.started) == 1
+        assert executor_threads[0] != orchestrator_thread
+        assert db.get(Task, next(task_id for task_id in task_ids if task_id not in report.completed)).state == "assigned"
+
+
+def test_long_running_executor_renews_lease_until_it_finishes(tmp_path) -> None:
+    database = tmp_path / "heartbeat.sqlite3"
+    app = create_app(f"sqlite:///{database}", allowed_hosts=["testserver"])
+    started = threading.Event()
+    release = threading.Event()
+    task_errors: list[BaseException] = []
+    reports = []
+
+    with TestClient(app) as client:
+        agent = make_agent(client)
+        task_id = make_task(client, agent)
+
+        def execute(task: Task) -> ExecutionResult:
+            started.set()
+            if not release.wait(timeout=5):
+                raise TimeoutError("test did not release the executor")
+            return ExecutionResult(output="long work", evidence="Lease heartbeat kept the task owned.")
+
+        def run() -> None:
+            try:
+                with session_of(client) as db:
+                    reports.append(Orchestrator(execute, OrchestratorConfig(lease_seconds=1)).run_once(db))
+                    db.commit()
+            except BaseException as exc:
+                task_errors.append(exc)
+
+        runner = threading.Thread(target=run)
+        runner.start()
+        assert started.wait(timeout=3)
+        time.sleep(1.2)
+        with session_of(client) as db:
+            recovered = recover_expired_leases(db, now=datetime.now(UTC))
+            db.commit()
+        release.set()
+        runner.join(timeout=5)
+
+        assert not runner.is_alive()
+        assert task_errors == []
+        assert recovered == []
+        assert reports[0].completed == [task_id]
+
+
+def test_bounded_dispatch_executes_tasks_in_parallel_without_sharing_database_session(app_client: TestClient) -> None:
+    agent = make_agent(app_client)
+    task_ids = [make_task(app_client, agent, title=f"Concurrent {index}") for index in range(2)]
+    barrier = threading.Barrier(2)
+    lock = threading.Lock()
+    active = 0
+    maximum_active = 0
+    primary_session = None
+
+    def execute(task: Task) -> ExecutionResult:
+        nonlocal active, maximum_active
+        assert object_session(task) is not primary_session
+        with lock:
+            active += 1
+            maximum_active = max(maximum_active, active)
+        try:
+            barrier.wait(timeout=3)
+            return ExecutionResult(output=task.title, evidence="Both workers reached the barrier.")
+        finally:
+            with lock:
+                active -= 1
+
+    with session_of(app_client) as db:
+        primary_session = db
+        report = Orchestrator(execute, OrchestratorConfig(max_concurrency=2)).run_once(db)
+        db.commit()
+        assert set(report.completed) == set(task_ids)
+        assert report.failed == []
+        assert maximum_active == 2
+        assert all(db.get(Task, task_id).state == "completed" for task_id in task_ids)
+
+
+def test_parallel_dispatch_never_runs_two_commands_in_one_project_workspace(app_client: TestClient) -> None:
+    project_id = app_client.post("/api/v1/projects", json={"name": "Shared workspace"}).json()["id"]
+    agent = make_agent(app_client)
+    task_ids = [
+        make_task(app_client, agent, title=f"Same project {index}", project_id=project_id)
+        for index in range(2)
+    ]
+    executor = fake_executor()
+
+    with session_of(app_client) as db:
+        report = Orchestrator(executor, OrchestratorConfig(max_concurrency=2)).run_once(db)
+        db.commit()
+        assert len(report.started) == 1
+        assert len(report.completed) == 1
+        assert len(report.skipped) == 1
+        assert "same dispatch batch" in report.skipped[0]["reason"]
+        assert len(executor.calls) == 1  # type: ignore[attr-defined]
+        states = {task_id: db.get(Task, task_id).state for task_id in task_ids}
+        assert sorted(states.values()) == ["assigned", "completed"]
+
+
+def test_parallel_executor_failure_is_isolated_from_successful_sibling(app_client: TestClient) -> None:
+    agent = make_agent(app_client)
+    failed_id = make_task(app_client, agent, title="Parallel failure")
+    successful_id = make_task(app_client, agent, title="Parallel success")
+    barrier = threading.Barrier(2)
+
+    def execute(task: Task) -> ExecutionResult:
+        barrier.wait(timeout=3)
+        if task.id == failed_id:
+            raise ValueError("Do not persist arbitrary executor error text")
+        return ExecutionResult(output="ok", evidence="Sibling task completed.")
+
+    with session_of(app_client) as db:
+        report = Orchestrator(execute, OrchestratorConfig(max_concurrency=2)).run_once(db)
+        db.commit()
+        assert report.failed == [failed_id]
+        assert report.completed == [successful_id]
+        assert db.get(Task, failed_id).error == "Executor error: ValueError"
+        assert db.get(Task, successful_id).state == "completed"
 
 
 def test_dependencies_block_dispatch(app_client: TestClient) -> None:

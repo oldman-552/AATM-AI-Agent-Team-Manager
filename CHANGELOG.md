@@ -2,13 +2,13 @@
 
 ## Unreleased — 2026-11-13
 
-### Opt-in adaptive dispatch cap
+### Bounded adaptive and parallel task dispatch
 
 - Added `AATM_MAX_CONCURRENCY` (bounded 1–20, default 1) and `AATM_ADAPTIVE_CONCURRENCY` (off by default). When enabled, local CPU/memory/disk telemetry can only reduce the per-run dispatch batch; existing running tasks are subtracted and a zero budget claims no task.
 - Serialized orchestrator run requests in one API process, exposed the calculated cap in status/run responses, and showed adaptive mode in Operations.
-- The scope is intentionally explicit: runs execute tasks sequentially today; this is not a parallel worker pool or cross-process semaphore.
+- Bounded parallel execution now runs tasks from different projects in a thread pool when the cap exceeds one; same-project tasks are excluded from the same batch. Worker ORM sessions are isolated, and workflow/database writes plus periodic lease heartbeats stay on the orchestrator thread. Migration `0014_orchestrator_run_lock` adds an expiring database lock that serializes API run requests across processes sharing a database; this is not a distributed task-level worker semaphore. Added GitHub Actions workflows for backend and frontend validation; the first hosted run is pending.
 - Updated configuration/API/architecture/implementation docs. Locale resources now have **652 keys each**.
-- Verification: **253 backend tests passed**, **20 frontend tests passed**, TypeScript/build/RTL verification passed; one upstream Starlette/httpx warning remains.
+- Verification after bounded parallel execution: **261 backend tests passed**, **20 frontend tests passed**, TypeScript/build/RTL verification passed; one upstream Starlette/httpx warning remains.
 
 ### Budget alerts and documentation accuracy
 

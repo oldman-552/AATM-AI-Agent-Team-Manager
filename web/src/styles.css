@@ -545,3 +545,27 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* --- Execution timeline --------------------------------------------------- */
+.timeline-block { display: flex; flex-direction: column; gap: 8px; }
+.timeline-note { font-size: 12px; color: var(--muted); margin: 0; }
+.timeline-list { list-style: none; margin: 0; padding: 0 0 0 10px; border-inline-start: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.timeline-entry { position: relative; display: flex; gap: 8px; }
+.timeline-dot { position: absolute; inset-inline-start: -15px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.timeline-entry.transition .timeline-dot { background: var(--accent); }
+.timeline-entry.review .timeline-dot, .timeline-entry.approval .timeline-dot { background: var(--success, #2f855a); }
+.timeline-entry.audit .timeline-dot { background: var(--warning, #b7791f); }
+.timeline-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.timeline-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.timeline-head strong { font-size: 13px; }
+.timeline-head time { font-size: 11px; color: var(--muted); }
+.timeline-body p { margin: 0; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.timeline-source { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); opacity: .8; }
+.timeline-footnote { font-size: 11px; color: var(--muted); margin: 0; }
+
+/* --- Cancellation -------------------------------------------------------- */
+.cancel-block { display: flex; flex-direction: column; gap: 6px; }
+.cancel-banner { display: flex; gap: 6px; align-items: center; margin: 0; font-size: 12px; padding: 6px 8px; border-radius: 8px; background: rgba(183, 121, 31, .12); }
+.cancel-banner span { font-style: italic; opacity: .85; }
+.cancel-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.cancel-form { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; }

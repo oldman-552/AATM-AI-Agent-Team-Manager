@@ -113,6 +113,8 @@ class TaskRead(ORMModel):
     retry_count: int
     output: str | None
     error: str | None
+    cancel_requested_at: datetime | None = None
+    cancel_reason: str | None = None
     created_at: datetime
     updated_at: datetime
 

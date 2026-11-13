@@ -37,8 +37,29 @@ export type Task = {
   retry_count: number
   output: string | null
   error: string | null
+  cancel_requested_at?: string | null
+  cancel_reason?: string | null
   created_at: string
   updated_at: string
+}
+
+export type TimelineEntry = {
+  at: string
+  kind: 'transition' | 'checkpoint' | 'audit' | 'review' | 'approval'
+  title_key: string
+  data: Record<string, unknown>
+  detail: string | null
+  reference: string
+  source: string
+}
+
+export type TaskTimeline = {
+  task_id: string
+  entries: TimelineEntry[]
+  total: number
+  truncated: boolean
+  sources: string[]
+  note: string
 }
 
 export type TaskCheckpoint = {
@@ -494,6 +515,23 @@ export const api = {
   readyTasks: () => request<{ tasks: Task[]; note: string }>('/api/v1/tasks/ready'),
   changeTaskState: (taskId: string, payload: { target_state: string; idempotency_key: string; note: string }) =>
     request<TaskStateChangeResult>(`/api/v1/tasks/${taskId}/state`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  taskTimeline: (taskId: string, limit = 200) =>
+    request<TaskTimeline>(`/api/v1/tasks/${taskId}/timeline?limit=${limit}`),
+  requestCancel: (taskId: string, reason: string) =>
+    request<{ task_id: string; cancel_requested_at: string | null; cancel_reason: string | null; state: string; note: string }>(
+      `/api/v1/tasks/${taskId}/cancel`,
+      { method: 'POST', body: JSON.stringify({ reason }) },
+    ),
+  withdrawCancel: (taskId: string) =>
+    request<{ task_id: string; state: string }>(`/api/v1/tasks/${taskId}/cancel`, { method: 'DELETE' }),
+  applyCancel: (taskId: string) =>
+    request<{ task_id: string; cancelled: boolean; state?: string; reason?: string }>(`/api/v1/tasks/${taskId}/cancel/apply`, {
+      method: 'POST',
+    }),
+  pendingCancellations: () =>
+    request<{ pending: { task_id: string; title: string; state: string; reason: string | null; requested_at: string | null }[] }>(
+      '/api/v1/cancellations',
+    ),
   taskTransitions: (taskId: string) =>
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),

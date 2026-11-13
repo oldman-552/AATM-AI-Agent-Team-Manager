@@ -36,6 +36,7 @@ import AnalyticsView from './AnalyticsView'
 import { NotificationCenter } from './components/NotificationCenter'
 import SettingsView from './SettingsView'
 import BrowserWallView from './BrowserWallView'
+import TaskTimelineView, { CancelControls } from './TaskTimelineView'
 import { ManagerPlanPanel } from './components/ManagerPlanPanel'
 import { AgentControls } from './components/AgentControls'
 import { CheckpointPanel } from './components/CheckpointPanel'
@@ -826,6 +827,8 @@ function TaskRow({ task, projects, agents, language, workflow }: { task: Task; p
       <div className="task-actions">
         <ReviewForm task={task} agents={agents} />
         <CheckpointPanel task={task} />
+        <CancelControls task={task} />
+        <TaskTimelineView taskId={task.id} language={language} />
         {nextStates.length ? (
           <>
             <label className="task-note-field">

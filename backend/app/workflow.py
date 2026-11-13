@@ -22,14 +22,15 @@ ALLOWED_TRANSITIONS: dict[TaskState, tuple[TaskState, ...]] = {
     "waiting": ("running", "failed", "cancelled"),
     "completed": ("reviewing", "rework_required"),
     "failed": ("assigned", "rework_required", "cancelled"),
-    "reviewing": ("approved", "rework_required"),
+    "reviewing": ("approved", "rework_required", "cancelled"),
     "rework_required": ("assigned", "cancelled"),
     "approved": (),
     "cancelled": (),
 }
 
 DEPENDENCY_SATISFIED_STATES = frozenset({"completed", "approved"})
-EVIDENCE_REQUIRED_STATES = frozenset({"failed", "approved", "rework_required"})
+# A cancellation must say why; losing work silently is never acceptable.
+EVIDENCE_REQUIRED_STATES = frozenset({"failed", "approved", "rework_required", "cancelled"})
 PRIORITY_ORDER = {"urgent": 0, "high": 1, "normal": 2, "low": 3}
 
 
@@ -130,6 +131,8 @@ def transition_task(
                 "Dependencies are not complete: " + ", ".join(blocking) + "."
             )
     if target_state in EVIDENCE_REQUIRED_STATES and not note.strip():
+        if target_state == "cancelled":
+            raise WorkflowError("A cancellation requires a reason; provide a note explaining why.")
         raise WorkflowError(
             f"Evidence is required for '{target_state}' transitions; provide a note."
         )

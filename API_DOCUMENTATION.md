@@ -358,3 +358,26 @@ Recommendation rules: bounded by `1..min(configured_max, 4, cpu_count)`; memory 
 ## Audit events added in this slice
 
 `task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `project.workspace_created`, `project.workspace_branch_created`, `project.workspace_removed`, `memory.created`, `memory.versioned`, `memory.rolled_back`, `memory.deleted`, `task.checkpointed`, `github.plan_created`, `github.plan_approved`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.
+
+## Execution timeline and cancellation
+
+The timeline is a **projection of stored rows**, never a reconstruction. Each entry names the table it came from (`source`), so any claim on screen can be audited in the database.
+
+### `GET /tasks/{task_id}/timeline?limit=200`
+
+Merges `task_transitions`, `task_checkpoints`, task-scoped `audit_events`, `review_records` and `approval_requests`, sorted by `(at, kind, reference)` with a stable tiebreaker. Returns `entries[]` (`at`, `kind`, `title_key`, `data`, `detail`, `reference`, `source`), plus `total`, `truncated`, `sources` and a `note` restating that assembly is read-only.
+
+### `GET /projects/{project_id}/timeline?limit=100`
+
+Newest-first across the project's tasks; each entry also carries `task_id` and `task_title`. `404` for an unknown project.
+
+### Cancellation is a two-step protocol
+
+1. `POST /tasks/{task_id}/cancel` with `{"reason": "..."}` records **intent** (`cancel_requested_at`, `cancel_reason`) and an audit event. It deliberately does **not** change `state`: an executor may still be mid-flight. `409` when already requested, already cancelled, or when the task already reached `completed`/`approved` — finished work is never rewritten.
+2. `POST /tasks/{task_id}/cancel/apply` honours the request at a safe boundary. Returns `{"cancelled": true|false, "reason"}` where `reason` may be `no_pending_request`, `already_finished` or `not_cancellable`.
+
+`DELETE /tasks/{task_id}/cancel` withdraws a pending request. `GET /cancellations` lists pending requests; `POST /cancellations/apply` applies them all (operator action, also used by the orchestrator).
+
+`Orchestrator.run_once` honours pending cancellations **before** claiming anything, and reports them in `cancelled[]`; a cancelled task is therefore never started. The workflow itself requires a reason note for any `cancelled` transition (a `409` without one), and `reviewing → cancelled` is now a legal transition.
+
+Audit events added: `task.cancel_requested`, `task.cancel_withdrawn`, `task.cancelled`.

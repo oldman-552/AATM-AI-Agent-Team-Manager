@@ -26,6 +26,7 @@ from app.settings_api import router as settings_router
 from app.planning_api import router as planning_router
 from app.agent_api import router as agent_router
 from app.browser_api import router as browser_router
+from app.timeline_api import router as timeline_router
 from app.workspace_api import router as workspace_router
 from app.provider_api import ops_router, provider_router
 from app.provider_store import seed_provider_defaults
@@ -104,6 +105,7 @@ def create_app(
     # core router, otherwise `GET /agents` can shadow `GET /agents/{id}/state`.
     app.include_router(agent_router)
     app.include_router(browser_router)
+    app.include_router(timeline_router)
     app.include_router(router)
     app.include_router(workflow_router)
     app.include_router(provider_router)

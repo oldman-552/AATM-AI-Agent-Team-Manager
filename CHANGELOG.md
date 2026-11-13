@@ -9,6 +9,16 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Added in the timeline/cancellation slice
+
+- **Execution timeline** (`GET /tasks/{id}/timeline`, `GET /projects/{id}/timeline`): a read-only projection assembled only from `task_transitions`, `task_checkpoints`, `audit_events`, `review_records` and `approval_requests`; every entry names its `source` table so the claim is auditable. Reports `total`, `truncated` and the contributing sources.
+- **Cooperative cancellation**: `POST /tasks/{id}/cancel` records intent without touching state; `POST /tasks/{id}/cancel/apply` honours it at a safe boundary; `DELETE` withdraws. Finished work is never rewritten — applying a pending request to a `completed` task returns `already_finished` and keeps the outcome.
+- The orchestrator honours pending cancellations **before** claiming, so cancelled work is never started; `RunReport` gained `cancelled[]`.
+- The workflow now requires a reason for any `cancelled` transition and allows `reviewing → cancelled`.
+- Alembic revision `0012_task_cancellation` (`cancel_requested_at`, `cancel_reason`).
+- Tasks view: inline timeline panel and cancel controls (request → pending banner → apply/withdraw); 476 translated keys in English, Arabic and Persian.
+- Backend tests 137 → 144.
+
 ### Added in the provider/workflow slice
 
 - Offline provider boundary: contracts, credential references (`env:`/`keyring:`), configurable estimate pricing, hard budget guard, and deterministic routing with five policies.

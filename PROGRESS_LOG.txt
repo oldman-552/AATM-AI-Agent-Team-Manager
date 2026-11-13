@@ -300,3 +300,13 @@ Tests executed: Backend pytest 137 passed; vitest 6; tsc; vite build; migration 
 Results: Directory created and later removed on disk; second lock and locked deletion both refused; unconfirmed deletion refused with 422.
 Problems: The credential-leak test matched the explanatory note rather than a data field.
 Solutions: Asserted on field names instead of free text, so the honest note can still mention cookies.
+
+[2026-11-13 13:47 UTC] Phase 15 — Execution timeline and cooperative cancellation — Timeline projection and two-step cancellation
+Task: Timeline projection and two-step cancellation
+Action performed: Implemented timeline + cancel protocol, wired into orchestrator, UI, docs
+Files created: backend/app/timeline.py, backend/app/cancellation.py, backend/app/timeline_api.py, backend/migrations/versions/0012_task_cancellation.py, backend/tests/test_timeline_cancel.py, web/src/TaskTimelineView.tsx
+Files modified: backend/app/main.py, backend/app/models.py, backend/app/schemas.py, backend/app/workflow.py, backend/app/orchestrator.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 144 passed, 1 warning; vitest 6 passed; tsc clean; vite build OK; live API smoke: 9 timeline entries, cancel applied at safe boundary, re-cancel 409, blank reason 422
+Results: Backend 137 -> 144 tests; i18n 450 -> 476 keys x3; migration 0012 applied live on the running API
+Problems: None
+Solutions: None

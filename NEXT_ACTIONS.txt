@@ -13,6 +13,9 @@ Do NOT: enable live execution in the HTTP API before the consent/authorization/a
 COMPLETED — P1 durable orchestrator and crash recovery (2026-11-13 12:57 UTC)
 Result: `backend/app/orchestrator.py` now implements lease-based claims, bounded concurrency, dependency-aware dispatch, exponential backoff with a retry ceiling, expired-lease recovery that survives a process restart, and inspection/recovery endpoints. 15 orchestrator tests pass with injected fake executors; migration 0003 verified up/down. Execution itself remains deliberately unavailable: `DisabledExecutor` refuses to run and no HTTP route can start a run.
 
+COMPLETED — P1 execution timeline and cooperative cancellation (2026-11-13 13:50 UTC)
+Result: `backend/app/timeline.py` projects stored history only (transitions, checkpoints, task audits, reviews, approval requests) with per-entry `source` provenance; `backend/app/cancellation.py` implements the two-step request→honour protocol, refuses to rewrite finished work, and is wired into `Orchestrator.run_once` so cancelled tasks are never claimed. 7 new tests (backend 137 → 144); migration 0012 verified live (0011 → 0012 on the running API). UI: inline timeline panel + cancel controls; 476 keys × en/ar/fa.
+
 P1 — Real executor behind the orchestrator boundary (next)
 Description: Implement the first real `TaskExecutor` with cancellation propagation and graceful shutdown. It must remain provider-agnostic, run under the existing leases/backoff, and be verified with a local, deterministic executor (for example a bounded subprocess runner in a sandboxed project workspace) rather than by simulating success. Wire an authorized, explicitly consented provider call only after the auth and consent surface exists.
 Dependencies: Authentication/authorization decision; project workspace sandbox design.

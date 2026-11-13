@@ -26,6 +26,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.audit import add_event
+from app.cancellation import honour_all as honour_cancellations
 from app.models import Task
 from app.workflow import dependencies_satisfied, transition_task
 
@@ -98,6 +99,7 @@ class RunReport:
     completed: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
     skipped: list[dict[str, str]] = field(default_factory=list)
+    cancelled: list[str] = field(default_factory=list)
     executor: str = "unknown"
 
     def as_dict(self) -> dict[str, object]:
@@ -107,6 +109,7 @@ class RunReport:
             "completed": list(self.completed),
             "failed": list(self.failed),
             "skipped": [dict(item) for item in self.skipped],
+            "cancelled": list(self.cancelled),
             "executor": self.executor,
         }
 
@@ -255,6 +258,10 @@ class Orchestrator:
         now = self.config.now or utc_now()
         report = RunReport(executor=getattr(self.executor, "__name__", type(self.executor).__name__))
         report.recovered = recover_expired_leases(db, now=now, owner=self.config.owner)
+        # Cancellations are honoured before any claim, so a cancelled task is
+        # never started, and never after it is cancelled.
+        cancel_report = honour_cancellations(db)
+        report.cancelled = [item["task_id"] for item in cancel_report["applied"]]
 
         budget = max(1, self.config.max_concurrency)
         for task in self._ready_candidates(db, now)[:budget]:

@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 14:28 UTC
+2026-11-13 15:04 UTC
 
 Overall Project Status:
 Testing
@@ -12,15 +12,16 @@ Overall Completion:
 Roughly 80% of the specified local-first product surface is implemented and tested. Every capability that needs no paid provider call, no display, and no Windows host is built, exercised live and covered by tests. What remains open is either gated by design (live provider execution, real agent execution, GitHub execution) or impossible in this environment (Windows, PostgreSQL, Docker, Playwright). See BLOCKERS.txt for the itemised list; nothing below is claimed as done that is not.
 
 Current Phase:
-Phase 26 — Live event stream (SSE)
+Phase 27 — Real local task execution
 
 Current Task:
-Real-time updates, implemented honestly for a local SQLite build
+An executor that actually runs, behind the existing boundary
 
 Current Activity:
-Cursor on (created_at,id) after a timestamp-only cursor dropped tied events; hello frame states delivery=poll; close frame reports why the stream ended; client resumes with last_event_id and backs off
+Task names a command via run:<name>; argv comes from .aatm/exec.json a human committed, never from the database; no shell; bare allow-listed argv0; sanitised env; process-group timeout; cooperative cancellation; fixed a write-transaction deadlock and a stale cancel flag
 
 Recently Completed (most recent first):
+- Real local task execution (opt-in): a bounded, allow-listed, shell-free subprocess runner. Two real defects fixed — cancellation could never reach a running task (write transaction held across the run → "database is locked", now committed first + SQLite WAL), and a stale cancel flag left stopped tasks in `running` forever (now refreshed). Verified live over HTTP with real command output recorded.
 - Live event stream (SSE): resumable cursor, bounded lifetime, heartbeat, honest "polled" labelling; live panel in Operations.
 - Operations view: audit log with filtering, usage and costs, and a local resource monitor whose recommendation is explicitly advisory.
 - AI Team Intelligence Center: complexity-weighted, sample-aware agent metrics, with rule-based assessments kept separate from measurements (no ranking by task count).
@@ -44,7 +45,7 @@ Currently Working On:
 - Continuous verification and documentation accuracy. Next candidates: Windows/PowerShell parity review (static only), release packaging notes, and a final cross-cutting audit.
 
 Upcoming Tasks:
-- Real executor behind the orchestrator boundary, and the consent/accounting surface that must precede any paid provider call.
+- The consent/accounting surface that must precede any paid provider call; wiring an authorized model call into the executor.
 - GitHub push/PR execution behind an approval (recorded plans exist; execution does not).
 - Pixel-level browser visual testing once a display-capable environment exists.
 - Windows 11 / PostgreSQL / Docker verification when those environments exist.
@@ -68,7 +69,7 @@ External Dependencies:
 Python/npm dependencies installed (@types/node added for the RTL checker). No provider key exists in this environment and no paid request has ever been made. No Arena session was used.
 
 Tests:
-- Passed: 220 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 20 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint.
+- Passed: 241 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 20 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint.
 - Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
 - Pending: Windows/PowerShell, PostgreSQL, Docker, Playwright E2E, pixel-level RTL rendering.
 
@@ -85,7 +86,7 @@ Last Successful Test:
 2026-11-13 14:26 UTC — 220 backend tests and 20 frontend tests.
 
 Remaining Work:
-- Gated by design: live provider execution behind consent/accounting, real task execution, GitHub push/PR execution, per-user authorization.
+- Gated by design: live provider execution behind consent/accounting (a task now runs a local command, never a model), GitHub push/PR execution, per-user authorization.
 - Environment-limited: Windows and PowerShell verification, PostgreSQL integration, Docker, Playwright E2E and pixel-level RTL rendering.
 - Optional next: release packaging and versioning notes.
 

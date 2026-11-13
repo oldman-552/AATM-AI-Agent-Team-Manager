@@ -18,6 +18,10 @@ def build_engine(database_url: str) -> Engine:
 
     if database_url.startswith("sqlite:"):
         connect_args["check_same_thread"] = False
+        # Wait rather than failing at once when another connection is writing.
+        # The executor polls for cancellation while the orchestrator holds a
+        # read transaction, and an operator's cancel write must eventually land.
+        connect_args["timeout"] = 15
         if database_url in {"sqlite://", "sqlite:///:memory:"}:
             engine_options["poolclass"] = StaticPool
         elif database_url.startswith("sqlite:///"):
@@ -32,9 +36,21 @@ def build_engine(database_url: str) -> Engine:
     engine = create_engine(database_url, connect_args=connect_args, **engine_options)
     if database_url.startswith("sqlite:"):
         @event.listens_for(engine, "connect")
-        def enable_foreign_keys(connection, _record) -> None:
+        def configure_sqlite(connection, _record) -> None:
             cursor = connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
+            # Write-ahead logging lets a reader and a writer proceed at the same
+            # time. Without it, SQLite's rollback journal blocks the cancel
+            # request for as long as the orchestrator's read transaction is open,
+            # which made "cancel a running task" fail with "database is locked".
+            # WAL is persistent per database file, harmless to re-apply, and the
+            # in-memory database ignores it.
+            try:
+                cursor.execute("PRAGMA journal_mode=WAL")
+            except Exception:
+                # Older/embedded builds without WAL still work; they just keep
+                # the previous locking behaviour.
+                pass
             cursor.close()
     return engine
 

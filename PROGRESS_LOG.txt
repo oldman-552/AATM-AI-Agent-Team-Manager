@@ -420,3 +420,13 @@ Tests executed: pytest 219 passed (7 new event tests, 10.7 s); vitest 20 passed 
 Results: Backend 212 -> 219; frontend 16 -> 20; i18n 638 -> 646 keys x3; timestamp-cursor bug found and fixed
 Problems: None
 Solutions: None
+
+[2026-11-13 15:04 UTC] Phase 27 — Real local task execution — An executor that actually runs, behind the existing boundary
+Task: An executor that actually runs, behind the existing boundary
+Action performed: Added LocalProcessExecutor with named allow-listed commands, opt-in activation, run endpoint, shutdown teardown and 21 tests
+Files created: backend/app/execution.py, backend/tests/test_execution.py
+Files modified: backend/app/orchestrator.py, backend/app/orchestrator_api.py, backend/app/db.py, backend/app/main.py, backend/tests/test_orchestrator.py, web/src/api.ts
+Tests executed: pytest 241 passed (21 new); live HTTP run: task completed with real output 'AATM executed a real command', lease released, audit events written; pyflakes clean; tsc clean
+Results: Backend 220 -> 241; execution remains off by default (409 without the flag); two would-have-shipped-silently defects fixed
+Problems: None
+Solutions: None

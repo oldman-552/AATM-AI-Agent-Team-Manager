@@ -45,9 +45,10 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 24. **Agent control center** (`backend/app/agent_center.py`) — per-agent live state assembled from tasks, audit rows, usage records, leases and browser profiles, with an explicit `honesty` block; absent data is `null`.
 25. **Self-healing and recovery** (`backend/app/recovery.py`) — classified database errors with rollback-before-close, bounded transient retry restricted to lock contention, queue health, and a capability table that marks only genuine automatic recoveries as automatic.
 26. **Memory context** (`backend/app/memory_context.py`) — deterministic, budgeted context selection with an explicit exclusion list, and extractive summarization that never paraphrases.
-27. **Event stream** (`backend/app/events.py`) — SSE over a polled audit table, with a resumable keyset cursor and a bounded lifetime; the transport describes itself as polling.
-28. **Team intelligence** (`backend/app/intelligence.py`) — complexity-weighted, sample-aware agent metrics with rule-based assessments kept in separate fields from the measurements.
-29. **Project builder** (`backend/app/blueprints.py`) — a deterministic rule engine that turns a described idea into an eleven-section plan with provenance for every requirement; applying is explicit, re-validated and inert.
+27. **Local executor** (`backend/app/execution.py`) — bounded subprocess runner behind the `TaskExecutor` protocol; commands are named in `.aatm/exec.json`, allow-listed, shell-free, and opt-in via `AATM_EXECUTION_ENABLED`.
+28. **Event stream** (`backend/app/events.py`) — SSE over a polled audit table, with a resumable keyset cursor and a bounded lifetime; the transport describes itself as polling.
+29. **Team intelligence** (`backend/app/intelligence.py`) — complexity-weighted, sample-aware agent metrics with rule-based assessments kept in separate fields from the measurements.
+30. **Project builder** (`backend/app/blueprints.py`) — a deterministic rule engine that turns a described idea into an eleven-section plan with provenance for every requirement; applying is explicit, re-validated and inert.
 
 ## Planned components
 

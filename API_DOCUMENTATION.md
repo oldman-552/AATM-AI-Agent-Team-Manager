@@ -480,3 +480,37 @@ Guarantees:
 - **Own database session.** The request session is closed when the response begins, so the generator builds its own factory; a generator holding the request session fails mid-stream.
 - **Bounded batches** of 200 events per poll.
 - **Same authentication as every other endpoint.** With `AATM_AUTH_MODE=token` the stream requires the bearer header; a token passed as a query parameter is rejected, because URLs land in logs and shell history. The dev proxy injects the header server-side, which is what lets the browser's `EventSource` (which cannot set headers) authenticate.
+
+## Local task execution (opt-in)
+
+Execution is **off by default**. `POST /orchestrator/run` returns **409** unless `AATM_EXECUTION_ENABLED` is set to `1`/`true`/`yes`/`on`; `GET /orchestrator/status` reports `executor.configured` and, when enabled, `enabled_by` and the active `allowed_programs`.
+
+When enabled, one bounded batch runs through `LocalProcessExecutor` (`backend/app/execution.py`).
+
+### Where the command comes from
+
+A task names a command; it does not contain one. The name appears as an acceptance criterion `run:<name>`, and the argv for that name lives in `.aatm/exec.json` inside the project's isolated workspace — a file a human committed. **Executing a command string from the database would turn every task title into remote code execution**, so that is not supported.
+
+```json
+{ "report": { "argv": ["python3", "-m", "pytest", "-q"], "timeout_seconds": 120 } }
+```
+
+### Safety rules (each with a test)
+
+| Rule | Why |
+|---|---|
+| No shell; argv lists only | no globbing, pipes or redirection |
+| `argv[0]` must be a bare, allow-listed program | a path like `./evil` or `/bin/sh` is refused |
+| cwd must be inside the registered workspace | `..` cannot escape it |
+| Child inherits only `PATH`, `LANG`, `LC_ALL`, `TZ` | provider keys and `AATM_*` secrets never leak |
+| Wall-clock timeout; process group killed | grandchildren are not orphaned |
+| Output capped (64 KB default) | reported as `truncated`, never silently cut |
+| Cancellation polled while running | a cancelled task is recorded as `cancelled`, not `failed` |
+| Every live process registered | application shutdown terminates them |
+
+A non-zero exit is a failure with evidence, not a success. A task that returns no evidence cannot complete.
+
+### Two bugs found while building this
+
+- **Cancellation could never reach a running task.** The orchestrator held an open write transaction for the whole subprocess run, so an operator's cancel request failed with `database is locked`. Fixed by committing the claim before executing (and enabling SQLite WAL). This was a real production defect, not a test artefact.
+- **`expire_on_commit=False` left `cancel_requested_at` stale** in memory, so `honour_cancel` saw "no pending request" and a stopped task stayed in `running` forever. Fixed with an explicit refresh.

@@ -295,7 +295,7 @@ def test_disabled_executor_is_explicitly_labelled() -> None:
     assert "does not simulate" in str(excinfo.value)
 
 
-def test_orchestrator_api_is_inspection_only(app_client: TestClient) -> None:
+def test_orchestrator_api_executes_nothing_by_default(app_client: TestClient) -> None:
     agent = make_agent(app_client)
     task_id = make_task(app_client, agent)
     past = datetime.now(UTC) - timedelta(minutes=5)
@@ -318,9 +318,14 @@ def test_orchestrator_api_is_inspection_only(app_client: TestClient) -> None:
     assert recovered.json()["recovered"] == [task_id]
     assert app_client.get("/api/v1/tasks").json()[0]["state"] == "assigned"
 
-    # Recovery is idempotent and there is no dispatch endpoint.
+    # Recovery is idempotent. A dispatch endpoint now exists, but by default it
+    # refuses: the guarantee this test protects is that a default build cannot
+    # start a run, not that the route is absent. Asserting 404 would pass again
+    # the day someone deletes the route, which is the weaker check.
     assert app_client.post("/api/v1/orchestrator/recover").json()["count"] == 0
-    assert app_client.post("/api/v1/orchestrator/run").status_code in (404, 405)
+    refused = app_client.post("/api/v1/orchestrator/run")
+    assert refused.status_code == 409
+    assert "AATM_EXECUTION_ENABLED" in refused.json()["detail"]
 
 
 def test_claim_rejects_unassigned_and_replay_claim(app_client: TestClient) -> None:

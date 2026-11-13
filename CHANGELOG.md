@@ -2,6 +2,14 @@
 
 ## Unreleased — 2026-11-13
 
+### Opt-in adaptive dispatch cap
+
+- Added `AATM_MAX_CONCURRENCY` (bounded 1–20, default 1) and `AATM_ADAPTIVE_CONCURRENCY` (off by default). When enabled, local CPU/memory/disk telemetry can only reduce the per-run dispatch batch; existing running tasks are subtracted and a zero budget claims no task.
+- Serialized orchestrator run requests in one API process, exposed the calculated cap in status/run responses, and showed adaptive mode in Operations.
+- The scope is intentionally explicit: runs execute tasks sequentially today; this is not a parallel worker pool or cross-process semaphore.
+- Updated configuration/API/architecture/implementation docs. Locale resources now have **652 keys each**.
+- Verification: **253 backend tests passed**, **20 frontend tests passed**, TypeScript/build/RTL verification passed; one upstream Starlette/httpx warning remains.
+
 ### Budget alerts and documentation accuracy
 
 - Derived an in-app warning when persisted provider usage reaches **80%** of a positive daily, monthly, global, agent, project, or credential budget. Alert scope and period follow the stored usage records; estimate/confirmed billing basis is identified.

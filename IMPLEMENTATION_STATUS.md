@@ -12,10 +12,10 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [ ] Project, agent, task, and audit-record APIs — **TESTED** (create/list, assignment, role catalog, worker cap; tests pass).
 - [ ] React + TypeScript + Vite UI — **TESTED** for compile/bundle and query wiring (TypeScript check, Vitest resource tests, and production bundle pass; browser visual/E2E checks remain pending).
 - [ ] Frontend-to-backend relative API proxy — **VERIFIED** (actual Vite proxy returned backend health/dashboard; preview host smoke check passed).
-- [ ] English/Arabic/Persian resources, RTL direction and key parity — **TESTED** for resource correctness (646 keys per language in the current tree; `web/src/i18n.test.ts` asserts identical key sets, no empty values, Arabic/Persian as distinct languages, and RTL direction for `ar`/`fa`). Visual layout/RTL browser verification remains **NOT STARTED**.
+- [ ] English/Arabic/Persian resources, RTL direction and key parity — **TESTED** for resource correctness (652 keys per language in the current tree; `web/src/i18n.test.ts` asserts identical key sets, no empty values, Arabic/Persian as distinct languages, and RTL direction for `ar`/`fa`). Visual layout/RTL browser verification remains **NOT STARTED**.
 - [ ] Loopback/host/CORS baseline — **TESTED** (middleware and loopback defaults exist; dedicated tests assert untrusted Host rejection at 400 and that a hostile origin receives no `access-control-allow-origin` header). Real multi-user authentication remains absent.
 - [ ] Local setup scripts — **TESTED** for Linux install/start/stop smoke flow; Windows PowerShell and update/uninstall paths are **IMPLEMENTED** but not executed.
-- [ ] Phase 1 regression suite/build — **TESTED** (current run: 244 backend tests pass; 20 frontend Vitest tests pass; TypeScript/Vite production build and RTL CSS checks pass; see `TESTING_REPORT.md`).
+- [ ] Phase 1 regression suite/build — **TESTED** (current run: 253 backend tests pass; 20 frontend Vitest tests pass; TypeScript/Vite production build and RTL CSS checks pass; see `TESTING_REPORT.md`).
 
 ## Phase 2 — AI Providers
 
@@ -76,7 +76,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 8 — QA and Intelligence
 
 - [ ] Independent QA/review records — **TESTED** (server-side reviewer separation: self-review is rejected; `approved` needs concrete checks plus recorded output; `rework_required` needs a summary; verdicts drive the workflow and are replay-safe, audited, and exposed in the task UI).
-- [ ] Automated quality/test workflows — **TESTED** (current backend suite: 244 tests; frontend: 20 Vitest tests; `npm run verify` includes typecheck, tests, production build and RTL CSS invariants). Hosted CI remains **NOT STARTED**.
+- [ ] Automated quality/test workflows — **TESTED** (current backend suite: 253 tests; frontend: 20 Vitest tests; `npm run verify` includes typecheck, tests, production build and RTL CSS invariants). Hosted CI remains **NOT STARTED**.
 - [ ] Evidence-based agent analytics — **TESTED** for delivery analytics and the AI Team Intelligence Center: counts, throughput, cycle time, review/rework measures and per-agent complexity-weighted metrics derive from stored rows, expose sample sizes, keep rule-based assessments separate from measurements, and use `null` for missing data.
 
 ## Phase 9 — Recovery and Approvals
@@ -88,7 +88,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 10 — Cost and Resources
 
 - [ ] Server-side budgets, cost/usage tracking and alerts — **TESTED** for consent-gated positive/scoped hard limits and persisted usage. In-app notifications advise at 80% of a positive limit; this threshold does not change enforcement. Usage is explicitly estimated unless later reconciled; billing reconciliation remains **NOT STARTED**.
-- [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **TESTED for CPU/memory/disk** (local standard-library sampling, bounded advisory recommendation, visible in Operations). Browser-level monitoring and automatic concurrency changes remain **NOT STARTED**; the recommendation is not applied automatically.
+- [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **TESTED for CPU/memory/disk** (local standard-library sampling, bounded advisory recommendation, visible in Operations). Browser-level monitoring remains **NOT STARTED**. Resource-adaptive dispatch is **TESTED as an explicit opt-in per-run batch cap**; it never raises the configured maximum. Because runs are currently sequential and the guard is per API process, true parallel scheduling and cross-worker coordination remain **NOT STARTED**.
 
 ## Phase 11 — Dashboard and Interface
 
@@ -99,7 +99,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 ## Phase 12 — Internationalization
 
-- [ ] English/Arabic/Persian product UI — **TESTED** for dictionary parity (646 keys each), persisted language selection, direction, locale-aware number/date formatting, RTL CSS invariants in source and production bundle, and frontend render smoke. Pixel-level browser layout and Playwright RTL E2E remain **NOT STARTED** because no display/Playwright environment is available.
+- [ ] English/Arabic/Persian product UI — **TESTED** for dictionary parity (652 keys each), persisted language selection, direction, locale-aware number/date formatting, RTL CSS invariants in source and production bundle, and frontend render smoke. Pixel-level browser layout and Playwright RTL E2E remain **NOT STARTED** because no display/Playwright environment is available.
 
 ## Phase 13 — Reliability and Security
 

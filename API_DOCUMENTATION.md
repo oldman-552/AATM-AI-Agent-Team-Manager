@@ -154,11 +154,13 @@ The durable orchestrator (`backend/app/orchestrator.py`) dispatches work through
 
 ### `GET /orchestrator/status`
 
-Returns the configured executor (and its refusal reason), counts (`running`, `waiting_for_retry`, `expired_leases`, `assigned`, `failed`), active leases with owner/expiry, and the retry queue.
+Returns the configured executor (and its refusal reason), counts (`running`, `waiting_for_retry`, `expired_leases`, `assigned`, `failed`), active leases with owner/expiry, the retry queue, and `concurrency` policy fields (`adaptive_enabled`, configured/recommended cap, running count and available dispatch budget).
 
 ### `POST /orchestrator/run`
 
 Runs one orchestrator pass. Returns **409** unless `AATM_EXECUTION_ENABLED` is `1`, `true`, `yes`, or `on`. When enabled, only a command named by a task's `run:<name>` acceptance criterion can run; its argument vector must be present in the human-committed `<workspace>/.aatm/exec.json`. Commands run without a shell, under the program allow-list, inside the workspace, with a minimal environment, timeout, output cap, and process-group teardown. `AATM_EXECUTION_PROGRAMS` may narrow the built-in allow-list but cannot widen it.
+
+`AATM_MAX_CONCURRENCY` sets the per-run dispatch ceiling (integer 1–20, default 1; invalid values fall back to 1). `AATM_ADAPTIVE_CONCURRENCY` is a separate opt-in (default off). When enabled, local CPU/memory/disk sampling can lower the dispatch batch, never raise the configured cap; recommendations have a four-task ceiling and subtract already-running tasks. One API process serializes run requests. This is a per-process guard, not a distributed multi-worker semaphore; tasks within a single run currently execute sequentially.
 
 ### `POST /orchestrator/recover`
 
@@ -357,7 +359,7 @@ Backup is a local operator command, not an HTTP endpoint — destructive operati
 
 ### `GET /system/resources?configured_max=2`
 
-Returns a **local** snapshot (CPU percent from load average, memory from `/proc/meminfo` or `os.sysconf`, disk from the database directory) and a bounded concurrency recommendation. `applied_automatically` is always `false`: the orchestrator's configured `max_concurrency` remains authoritative, and the recommendation is advisory only. Nothing is uploaded.
+Returns a **local** snapshot (CPU percent from load average, memory from `/proc/meminfo` or `os.sysconf`, disk from the database directory) and a bounded concurrency recommendation. This endpoint itself never applies its recommendation (`applied_automatically: false`). The separate opt-in orchestrator policy is described above; when disabled, this remains advisory only. Nothing is uploaded.
 
 Recommendation rules: bounded by `1..min(configured_max, 4, cpu_count)`; memory pressure at ≥90% or disk pressure at ≥95% forces the floor; load per core ≥1.0 halves the result.
 

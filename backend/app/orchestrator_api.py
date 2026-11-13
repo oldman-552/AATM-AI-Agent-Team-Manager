@@ -2,9 +2,10 @@
 
 The HTTP surface can inspect queue/lease state, recover expired leases, and —
 **only when an operator has opted in with ``AATM_EXECUTION_ENABLED``** — start a
-bounded run through the local process executor. With the flag unset the run
-endpoint refuses with 409 and the status endpoint says why, so the default build
-still never executes anything.
+bounded run through the local process executor. An independent opt-in flag,
+``AATM_ADAPTIVE_CONCURRENCY``, lets local resource telemetry reduce a run's
+dispatch batch without raising the configured maximum. Both controls default
+off; the run endpoint refuses with 409 while execution is disabled.
 """
 
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.adaptive_concurrency import concurrency_policy
 from app.api import get_session
 from app.execution import (
     EXECUTION_FLAG,
@@ -58,6 +60,7 @@ def orchestrator_status(db: Session = Depends(get_session)) -> dict[str, object]
         if task.state == "assigned" and _aware(task.next_attempt_at) is not None
     ]
     enabled = execution_enabled()
+    concurrency = concurrency_policy(db, in_flight=len(running))
     return {
         "executor": {
             "configured": enabled,
@@ -79,6 +82,7 @@ def orchestrator_status(db: Session = Depends(get_session)) -> dict[str, object]
         },
         "leases": running,
         "retry_queue": waiting,
+        "concurrency": concurrency,
         "checked_at": now.isoformat(),
         "note": (
             "Execution is enabled by the operator; POST /run starts one bounded batch."
@@ -117,18 +121,29 @@ def run_batch(request: Request, db: Session = Depends(get_session)) -> dict[str,
             ),
         )
 
-    factory = request.app.state.session_factory
-    executor = LocalProcessExecutor(factory, allowed_programs=configured_programs())
-    orchestrator = Orchestrator(executor=executor, config=OrchestratorConfig())
+    run_lock = request.app.state.orchestrator_run_lock
+    if not run_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="An orchestrator run is already active in this API process.")
     try:
-        report = orchestrator.run_once(db)
-        db.commit()
-    except ExecutionError as exc:
-        db.rollback()
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    payload = report.as_dict()
-    payload["note"] = (
-        "Each task ran a named, allow-listed command from its project's .aatm/exec.json. "
-        "Nothing was simulated; 'output' is real command output."
-    )
-    return payload
+        factory = request.app.state.session_factory
+        executor = LocalProcessExecutor(factory, allowed_programs=configured_programs())
+        concurrency = concurrency_policy(db, for_run=True)
+        orchestrator = Orchestrator(
+            executor=executor,
+            config=OrchestratorConfig(max_concurrency=int(concurrency["effective_dispatch_budget"])),
+        )
+        try:
+            report = orchestrator.run_once(db)
+            db.commit()
+        except ExecutionError as exc:
+            db.rollback()
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        payload = report.as_dict()
+        payload["concurrency"] = concurrency
+        payload["note"] = (
+            "Each task ran a named, allow-listed command from its project's .aatm/exec.json. "
+            "Nothing was simulated; 'output' is real command output."
+        )
+        return payload
+    finally:
+        run_lock.release()

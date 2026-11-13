@@ -295,6 +295,20 @@ def test_disabled_executor_is_explicitly_labelled() -> None:
     assert "does not simulate" in str(excinfo.value)
 
 
+def test_zero_dispatch_budget_does_not_claim_ready_work(app_client: TestClient) -> None:
+    agent = make_agent(app_client)
+    task_id = make_task(app_client, agent)
+    execute = fake_executor()
+
+    with session_of(app_client) as db:
+        report = Orchestrator(execute, OrchestratorConfig(max_concurrency=0)).run_once(db)
+        db.commit()
+        assert report.started == []
+        assert report.completed == []
+        assert execute.calls == []
+        assert db.get(Task, task_id).state == "assigned"
+
+
 def test_orchestrator_api_executes_nothing_by_default(app_client: TestClient) -> None:
     agent = make_agent(app_client)
     task_id = make_task(app_client, agent)

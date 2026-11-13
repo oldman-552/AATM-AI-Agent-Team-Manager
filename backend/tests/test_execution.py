@@ -504,6 +504,49 @@ def test_the_run_endpoint_refuses_when_disabled(client):
     assert "AATM_EXECUTION_ENABLED" in response.json()["detail"]
 
 
+def test_run_endpoint_applies_opt_in_adaptive_dispatch_cap(client, monkeypatch):
+    from app.resources import ResourceSnapshot
+
+    monkeypatch.setenv("AATM_EXECUTION_ENABLED", "1")
+    monkeypatch.setenv("AATM_ADAPTIVE_CONCURRENCY", "1")
+    monkeypatch.setenv("AATM_MAX_CONCURRENCY", "4")
+    snapshot = ResourceSnapshot(
+        cpu_percent=96.0,
+        load_average_1m=8.0,
+        cpu_count=4,
+        memory_total_mb=8000.0,
+        memory_available_mb=400.0,
+        memory_used_ratio=0.95,
+        disk_total_gb=100.0,
+        disk_free_gb=2.0,
+        disk_used_ratio=0.98,
+        measured_at="2026-11-13T00:00:00+00:00",
+    )
+    monkeypatch.setattr("app.adaptive_concurrency.sample_resources", lambda _path: snapshot)
+
+    response = client.post("/api/v1/orchestrator/run")
+    assert response.status_code == 200, response.text
+    assert response.json()["started"] == []
+    policy = response.json()["concurrency"]
+    assert policy["adaptive_enabled"] is True
+    assert policy["configured_max"] == 4
+    assert policy["recommended_max"] == 1
+    assert policy["effective_dispatch_budget"] == 1
+    assert policy["applied_automatically"] is True
+
+
+def test_overlapping_run_request_is_refused(client, monkeypatch):
+    monkeypatch.setenv("AATM_EXECUTION_ENABLED", "1")
+    lock = client.app.state.orchestrator_run_lock
+    assert lock.acquire(blocking=False)
+    try:
+        response = client.post("/api/v1/orchestrator/run")
+    finally:
+        lock.release()
+    assert response.status_code == 409
+    assert "already active" in response.json()["detail"]
+
+
 def test_status_reports_execution_as_disabled(client):
     body = client.get("/api/v1/orchestrator/status").json()
     assert body["executor"]["configured"] is False

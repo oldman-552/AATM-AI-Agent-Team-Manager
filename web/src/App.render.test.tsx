@@ -96,6 +96,13 @@ const responses: Record<string, unknown> = {
     idempotency: 'No external effect exists.', checked_at: '2026-11-13T10:00:00Z', note: 'Read from real state.',
   },
   '/api/v1/usage': { total_records: 0, by_provider: {}, records: [], billing_note: 'Estimates only; no confirmed billing.' },
+  '/api/v1/orchestrator/status': {
+    executor: { configured: false, name: 'DisabledExecutor', reason: 'disabled', enabled_by: null, allowed_programs: [] },
+    counts: { running: 0, waiting_for_retry: 0, expired_leases: 0, assigned: 0, failed: 0 },
+    leases: [], retry_queue: [],
+    concurrency: { adaptive_enabled: false, configured_max: 1, recommended_max: null, in_flight: 0, effective_dispatch_budget: 1, applied_automatically: false, reasons: [], note: 'off' },
+    checked_at: '2026-11-13T10:00:00Z', note: 'off',
+  },
   '/api/v1/system/resources': {
     snapshot: { cpu_percent: 12, load_average_1m: 0.4, cpu_count: 4, memory_total_mb: 8000, memory_available_mb: 4000, memory_used_ratio: 0.5, disk_total_gb: 100, disk_free_gb: 60, disk_used_ratio: 0.4, measured_at: '2026-11-13T10:00:00Z' },
     recommendation: { recommended_concurrency: 2, configured_max: 2, in_flight: 0, reasons: ['normal load'], applied_automatically: false, note: 'Advisory only.' },

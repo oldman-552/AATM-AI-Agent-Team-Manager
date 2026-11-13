@@ -460,3 +460,33 @@ Tests executed: backend pytest: 244 passed, 1 upstream Starlette/httpx warning a
 Results: Advisory notification only at >=80%; no changes to BudgetGuard hard denial path; scoped budgets and mixed billing basis are covered.
 Problems: None.
 Solutions: No shortcuts or fabricated test results; exact command outcomes are recorded.
+
+[2026-11-13 15:51 UTC] Phase 29 — Opt-in resource-adaptive dispatch cap — Complete final integration and prompt-progress audit
+Task: Complete final integration and prompt-progress audit
+Action performed: Added explicit adaptive cap env controls, status/run policy reporting, per-app run serialization, Operations UI display, docs and tests; audited remaining gaps and current prompt completion estimate
+Files created: backend/app/adaptive_concurrency.py, backend/tests/test_adaptive_concurrency.py
+Files modified: .env.example, API_DOCUMENTATION.md, ARCHITECTURE.md, CHANGELOG.md, IMPLEMENTATION_STATUS.md, NEXT_ACTIONS.txt, README.md, STATUS.txt, TESTING_REPORT.md, backend/app/main.py, backend/app/orchestrator.py, backend/app/orchestrator_api.py, backend/app/resources.py, backend/app/blueprints.py, backend/tests/test_execution.py, backend/tests/test_orchestrator.py, web/src/App.render.test.tsx, web/src/OpsView.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css
+Tests executed: Backend pytest: 252 passed, 1 upstream Starlette/httpx warning at 15:51 UTC; focused adaptive/resource/orchestrator/executor tests: 50 passed; npm run verify at 15:47 UTC: TypeScript clean, 20 Vitest passed, build and RTL checker passed
+Results: Adaptive control is disabled by default, can only reduce the configured dispatch batch, subtracts in-flight work and refuses claims at zero budget. It does not create parallel execution or cross-process coordination. Prompt implementation estimate remains roughly 80%, explicitly unweighted.
+Problems: One test collection attempt failed after an unused-import cleanup removed pytest, required by the test fixture decorator.
+Solutions: Restored pytest import and reran the complete backend suite: 252 passed.
+
+[2026-11-13 15:54 UTC] Phase 29 — Opt-in resource-adaptive dispatch cap — Final full-suite verification and prompt completion estimate
+Task: Final full-suite verification and prompt completion estimate
+Action performed: Added .env-backed adaptive controls, tested their parsing/fail-closed behavior, and synchronized current docs and counts
+Files created: None
+Files modified: .env.example, API_DOCUMENTATION.md, ARCHITECTURE.md, CHANGELOG.md, IMPLEMENTATION_STATUS.md, NEXT_ACTIONS.txt, README.md, STATUS.txt, TESTING_REPORT.md, backend/app/adaptive_concurrency.py, backend/app/core/config.py, backend/app/main.py, backend/app/orchestrator.py, backend/app/orchestrator_api.py, backend/app/resources.py, backend/app/blueprints.py, backend/tests/test_adaptive_concurrency.py, backend/tests/test_execution.py, backend/tests/test_orchestrator.py, web/src/App.render.test.tsx, web/src/OpsView.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css
+Tests executed: Backend full pytest: 253 passed, 1 upstream Starlette/httpx warning at 15:53 UTC; adaptive/resource/orchestrator/executor focused suites: 51 passed; frontend npm run verify at 15:47 UTC: tsc clean, 20 Vitest passed, build and RTL checker passed
+Results: Opt-in adaptive controller only reduces per-run batch cap, supports .env/environment settings, subtracts running work, and returns zero dispatch budget safely. Parallel task execution and cross-worker enforcement remain incomplete. Checklist-based project estimate is rounded to roughly 80%, not exact or weighted.
+Problems: An intermediate full test run failed collection after pytest import was briefly removed; restored it and final full run passed.
+Solutions: Restored the pytest import required for the fixture and validated all 253 backend tests.
+
+[2026-11-13 15:56 UTC] Phase 29 — Opt-in resource-adaptive dispatch cap — Final verification after configuration hardening
+Task: Final verification after configuration hardening
+Action performed: Confirmed AATM_* controls load from .env or process environment, malformed max cap fails closed, and zero available run budget does not claim work; updated current estimates and docs
+Files created: None
+Files modified: None
+Tests executed: Backend full pytest: 253 passed, 1 upstream Starlette/httpx warning at 15:55 UTC; focused adaptive/resource/orchestrator/executor suite: 51 passed; frontend npm run verify at 15:47 UTC: TypeScript clean, 20 Vitest tests, build, RTL checker passed
+Results: Master prompt file is preserved in full: 1,505 lines and 27 parts. Checklist tally: 75 entries, 44 fully-complete labels, 29 mixed/partial, 2 unclear; half-credit for partial yields 78%, rounded to roughly 80%. This is not effort-weighted.
+Problems: None in final run.
+Solutions: Verified disabled-by-default, reduction-only adaptive dispatch and documented the remaining sequential/per-process limitations.

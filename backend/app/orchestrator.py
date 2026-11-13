@@ -7,7 +7,9 @@ Design guarantees (all verified by tests):
   a fake executor. Nothing here contacts a model, browser or shell.
 * **Leases, not lock-in-process.** A claim writes ``lease_owner`` and
   ``lease_expires_at`` so a crashed process cannot permanently own a task.
-* **Bounded concurrency.** ``max_concurrency`` caps in-flight tasks per run.
+* **Bounded dispatch.** ``max_concurrency`` caps claims in one run; task execution
+  is sequential today. The HTTP adapter serializes run requests within one app
+  process. This is not a distributed semaphore or parallel worker pool.
 * **Crash recovery.** ``recover_expired_leases`` reconciles tasks whose lease
   expired: the task returns to ``assigned`` and the attempt is recorded, so a
   kill -9 mid-run cannot leave work stuck in ``running`` forever.
@@ -296,7 +298,9 @@ class Orchestrator:
         cancel_report = honour_cancellations(db)
         report.cancelled = [item["task_id"] for item in cancel_report["applied"]]
 
-        budget = max(1, self.config.max_concurrency)
+        # Zero is meaningful for the opt-in adaptive policy: inspect/recover but
+        # dispatch nothing when all recommended slots are occupied.
+        budget = max(0, self.config.max_concurrency)
         for task in self._ready_candidates(db, now)[:budget]:
             if not claim_task(
                 db,

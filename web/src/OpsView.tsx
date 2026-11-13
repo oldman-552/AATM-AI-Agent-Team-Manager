@@ -11,7 +11,8 @@ import { formatDateTime, formatNumber } from './format'
  * One operational view for the three things an operator checks together: what
  * happened (audit log), what it cost (usage), and what the machine is doing
  * (resources). Every panel states its own provenance; nothing is estimated
- * silently and no recommendation here is applied automatically.
+ * silently. Resource advice stays advisory; an opt-in dispatch cap is reported
+ * separately by the orchestrator.
  */
 /** A nullable ratio rendered as a percentage, or as "no data" when unmeasurable. */
 function ratio(value: number | null, language: string, alreadyPercent = false): string {
@@ -29,6 +30,7 @@ export default function OpsView() {
 
   const events = useQuery({ queryKey: ['events'], queryFn: api.events, refetchInterval: 20_000 })
   const resources = useQuery({ queryKey: ['resources'], queryFn: () => api.resources(), refetchInterval: 15_000 })
+  const orchestrator = useQuery({ queryKey: ['orchestrator-status'], queryFn: api.orchestratorStatus, refetchInterval: 15_000 })
   const usage = useQuery({ queryKey: ['usage'], queryFn: api.usage, refetchInterval: 30_000 })
 
   return (
@@ -120,6 +122,16 @@ export default function OpsView() {
                 {resources.data.recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}
               </ul>
               <p className="form-note">{resources.data.recommendation.note}</p>
+              {orchestrator.data && (
+                <div className="ops-adaptive-status">
+                  <strong>{t('opsAdaptiveMode', { state: t(orchestrator.data.concurrency.adaptive_enabled ? 'opsAdaptiveOn' : 'opsAdaptiveOff') })}</strong>
+                  <span>{t('opsAdaptiveBudget', {
+                    available: formatNumber(orchestrator.data.concurrency.effective_dispatch_budget, language),
+                    configured: formatNumber(orchestrator.data.concurrency.configured_max, language),
+                  })}</span>
+                  <small>{t('opsAdaptiveNote')}</small>
+                </div>
+              )}
             </>
           )}
       </section>

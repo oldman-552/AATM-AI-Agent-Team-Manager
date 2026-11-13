@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Bell, CheckCheck } from 'lucide-react'
 
 import { api, NotificationItem } from '../api'
+import { formatDateTime, formatNumber } from '../format'
 
 /**
  * Notifications come from real pending work on the server (pending approvals,
@@ -68,7 +69,7 @@ export function NotificationCenter({ onNavigate }: { onNavigate: (view: string) 
         onClick={() => setOpen((value) => !value)}
       >
         <Bell size={17} />
-        {unread > 0 && <span className="notification-badge">{new Intl.NumberFormat(language).format(unread)}</span>}
+        {unread > 0 && <span className="notification-badge">{formatNumber(unread, language)}</span>}
       </button>
       {open && (
         <div className="notification-panel" role="dialog" aria-label={t('notificationsTitle')}>
@@ -89,7 +90,7 @@ export function NotificationCenter({ onNavigate }: { onNavigate: (view: string) 
                   <button type="button" onClick={() => openItem(item)}>
                     <span className="notification-dot" aria-hidden="true" />
                     <span className="notification-text">{message(item)}</span>
-                    {item.created_at && <time>{new Date(/(?:Z|[+-]\d{2}:\d{2})$/.test(item.created_at) ? item.created_at : `${item.created_at}Z`).toLocaleString(language)}</time>}
+                    {item.created_at && <time>{formatDateTime(/(?:Z|[+-]\d{2}:\d{2})$/.test(item.created_at) ? item.created_at : `${item.created_at}Z`, language)}</time>}
                   </button>
                 </li>
               ))}

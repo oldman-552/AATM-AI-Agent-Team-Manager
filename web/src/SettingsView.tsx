@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Save, SlidersHorizontal, Undo2 } from 'lucide-react'
 
+import { formatDateTime } from './format'
 import { api, AppPreferences } from './api'
 
 type Draft = Omit<AppPreferences, 'updated_at'>
@@ -122,7 +123,7 @@ export default function SettingsView({ onTheme, onLanguage }: {
         </div>
         {settings.data.settings.updated_at && (
           <p className="form-note">
-            {t('settingsUpdatedAt')}: {new Date(String(settings.data.settings.updated_at)).toLocaleString(i18n.language)}
+            {t('settingsUpdatedAt')}: {formatDateTime(String(settings.data.settings.updated_at), i18n.language)}
           </p>
         )}
       </section>

@@ -330,3 +330,13 @@ Tests executed: pytest 166 passed, 1 warning; vitest 6 passed; tsc clean; build 
 Results: Backend 153 -> 166 tests; i18n 511 -> 557 keys x3
 Problems: None
 Solutions: None
+
+[2026-11-13 13:56 UTC] Phase 18 — RTL and locale verification — Programmatic RTL invariants and locale-correct formatting
+Task: Programmatic RTL invariants and locale-correct formatting
+Action performed: Found and fixed Arabic digit rendering and unlocalized formatters; added shared formatter, CSS RTL checker and 7 tests
+Files created: web/src/format.ts, web/scripts/check-rtl-css.mjs, web/src/rtl.test.ts
+Files modified: web/src/App.tsx, web/src/ApprovalsView.tsx, web/src/AgentCenterView.tsx, web/src/BrowserWallView.tsx, web/src/ProvidersView.tsx, web/src/SettingsView.tsx, web/src/TaskTimelineView.tsx, web/src/components/CheckpointPanel.tsx, web/src/components/NotificationCenter.tsx, web/package.json
+Tests executed: npm run verify green: tsc clean, vitest 13 passed, build OK, RTL check 0 physical in source and bundle; pytest 166 passed
+Results: Frontend tests 6 -> 13; Arabic digits fixed (١٣/١١/٢٠٢٦); RTL guard proven to fail on 3 injected defects
+Problems: None
+Solutions: None

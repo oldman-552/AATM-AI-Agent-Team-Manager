@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Lock, MonitorSmartphone, Plus, ShieldOff, Trash2, Unlock } from 'lucide-react'
 
 import { api, BrowserProfile } from './api'
+import { formatNumber } from './format'
 
 /**
  * The Browser Wall shows what actually exists: isolated profile directories and
@@ -52,7 +53,7 @@ export default function BrowserWallView() {
     })
   }
 
-  const bytes = (value: number) => new Intl.NumberFormat(i18n.language).format(value)
+  const bytes = (value: number) => formatNumber(value, i18n.language)
 
   function statusKey(profile: BrowserProfile): string {
     const map: Record<string, string> = {

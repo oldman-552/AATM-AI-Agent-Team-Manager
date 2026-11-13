@@ -124,3 +124,10 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [x] Atomic progress event writer, secret-pattern redaction, heartbeat, and idle detection — **TESTED** (unit tests pass; 300-second long-running loop is not currently left active).
 - [ ] Required documentation set — **IMPLEMENTED** as initial docs; final completeness review remains.
 - [x] Testing report based on executed tests — **IMPLEMENTED**; refreshed after final regression and startup checks.
+
+## RTL visual verification — reclassified (2026-11-13)
+
+Previously recorded as "unverified: visual RTL layout". It is now verified to the extent a headless environment allows, and explicitly not beyond that:
+
+- **Verified programmatically**: no physical left/right CSS declarations exist in the source stylesheet or the built bundle (`npm run check:rtl`, which fails on injected defects); Arabic and Persian switch `dir` to `rtl`; Arabic uses Arabic-Indic digits; Persian uses the Solar Hijri calendar; every Arabic/Persian dictionary value contains Arabic script, so no key was left in English; no component formats a date or number without a locale.
+- **Still unverified**: pixel-level appearance in a real browser (font shaping, line breaking, mixed-direction strings such as file paths inside RTL paragraphs). Playwright and a display are both unavailable here, so this is recorded as an environment limit rather than claimed as done.

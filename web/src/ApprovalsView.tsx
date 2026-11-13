@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, CircleAlert, LoaderCircle, Plus, ShieldCheck, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { formatDateTime } from './format'
 import { api, type Approval } from './api'
 
 const kinds = [
@@ -107,13 +108,14 @@ export default function ApprovalsView() {
 
 function ApprovalRow({ approval, onDecide, pending }: { approval: Approval; onDecide: (status: 'approved' | 'rejected') => void; pending: boolean }) {
   const { t } = useTranslation()
+  const { i18n } = useTranslation()
   return (
     <article className="panel approval-row">
       <div className="approval-row-main">
         <span className="panel-kicker">{t(kindLabels[approval.kind] ?? approval.kind)}</span>
         <h3>{approval.summary}</h3>
         <div className="approval-row-meta">
-          <span>{new Date(approval.requested_at).toLocaleString()}</span>
+          <span>{formatDateTime(approval.requested_at, i18n.language)}</span>
           {approval.decided_by && <span>{t('approvalDecideBy')}: {approval.decided_by}</span>}
         </div>
       </div>

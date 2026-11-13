@@ -136,3 +136,14 @@ One end-to-end flow exercised every slice in sequence on the same project:
 - Visual browser-based Playwright E2E, full Arabic/Persian RTL verification, backup/restore, provider calls, agent execution, and Arena bridge interoperability.
 
 This is a Phase 1 foundation verification report, not a final product verification report.
+
+## RTL and locale verification (2026-11-13)
+
+`npm run verify` runs `tsc --noEmit`, `vitest run`, `vite build` and the RTL CSS checker. Current result: TypeScript clean, **13 Vitest tests pass**, build succeeds, and the checker reports `0 physical` declarations in both `src/styles.css` (53,567 bytes, 26 logical inline declarations) and the built bundle.
+
+Two real defects were found and fixed by writing these tests rather than assuming the UI was correct:
+
+1. Arabic dates and numbers rendered with Latin digits (`13/11/2026`). The cause is that this ICU build's `ar` locale uses Latin digits while `fa` localizes. Fixed by formatting through `ar-u-nu-arab`; verified output is now `١٣‏/١١‏/٢٠٢٦`.
+2. Three components formatted with the browser locale or an inline `Intl` call, independent of the chosen UI language.
+
+The checker's detection power was proven with a probe file containing `margin-left`, an asymmetric `left`/`right` pair, and a lone `left`: all three were reported and the script exited 1.

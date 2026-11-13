@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowRight, CheckCircle2, CircleSlash, History, LoaderCircle, ShieldQuestion } from 'lucide-react'
 
 import { api, TimelineEntry } from './api'
+import { formatDateTime } from './format'
 
 /**
  * The timeline is a projection of stored rows. Every row shown here exists in the
@@ -48,7 +49,7 @@ export default function TaskTimelineView({ taskId, language }: { taskId: string;
                       <div className="timeline-body">
                         <div className="timeline-head">
                           <strong>{badge(entry)}</strong>
-                          <time>{new Date(entry.at).toLocaleString(language)}</time>
+                          <time>{formatDateTime(entry.at, language)}</time>
                         </div>
                         {detail(entry) && <p>{detail(entry)}</p>}
                         <span className="timeline-source">{t('timelineSource')}: {entry.source}</span>

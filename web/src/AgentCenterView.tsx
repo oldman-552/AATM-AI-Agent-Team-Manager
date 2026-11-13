@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 
 import { api, AgentCenterEntry } from './api'
+import { formatCurrency, formatDate, formatDateTime } from './format'
 
 /**
  * The Live Agent Control Center renders only recorded state. Where AATM has no
@@ -61,8 +62,7 @@ function CenterCard({ entry, language }: { entry: AgentCenterEntry; language: st
     },
   })
 
-  const money = (value: number) =>
-    new Intl.NumberFormat(language, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 }).format(value)
+  const money = (value: number) => formatCurrency(value, language)
 
   const seconds = entry.execution_time.seconds
   const duration = seconds === null
@@ -93,7 +93,7 @@ function CenterCard({ entry, language }: { entry: AgentCenterEntry; language: st
         <div>
           <dt><Activity size={13} /> {t('centerLatestActivity')}</dt>
           <dd>{entry.latest_activity
-            ? <>{entry.latest_activity.summary} <time>{new Date(entry.latest_activity.at).toLocaleString(language)}</time></>
+            ? <>{entry.latest_activity.summary} <time>{formatDateTime(entry.latest_activity.at, language)}</time></>
             : <span className="muted">{t('centerNoData')}</span>}</dd>
         </div>
         <div>
@@ -126,7 +126,7 @@ function CenterCard({ entry, language }: { entry: AgentCenterEntry; language: st
         <div>
           <dt><ArrowRightLeft size={13} /> {t('centerLease')}</dt>
           <dd>{entry.leases.held
-            ? <>{entry.leases.owner} · {t('centerLeaseUntil')} {entry.leases.expires_at ? new Date(entry.leases.expires_at).toLocaleString(language) : t('centerNoData')}</>
+            ? <>{entry.leases.owner} · {t('centerLeaseUntil')} {entry.leases.expires_at ? formatDateTime(entry.leases.expires_at, language) : t('centerNoData')}</>
             : <span className="muted">{t('centerNoLease')}</span>}</dd>
         </div>
       </dl>
@@ -139,7 +139,7 @@ function CenterCard({ entry, language }: { entry: AgentCenterEntry; language: st
               <li key={item.task_id}>
                 <span>{item.title}</span>
                 <span className="state-badge small">{item.state}</span>
-                <time>{new Date(item.updated_at).toLocaleDateString(language)}</time>
+                <time>{formatDate(item.updated_at, language)}</time>
               </li>
             ))}
           </ul>
@@ -178,7 +178,7 @@ function CenterCard({ entry, language }: { entry: AgentCenterEntry; language: st
                 <li key={item.id}>
                   <p>{item.instruction}</p>
                   <span className="muted">
-                    {new Date(item.created_at).toLocaleString(language)} · {item.delivered ? t('centerDelivered') : t('centerNotDelivered')}
+                    {formatDateTime(item.created_at, language)} · {item.delivered ? t('centerDelivered') : t('centerNotDelivered')}
                   </span>
                 </li>
               ))}

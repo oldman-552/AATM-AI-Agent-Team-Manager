@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { History, Plus, RotateCcw } from 'lucide-react'
 
 import { api, Task } from '../api'
+import { formatDateTime } from '../format'
 
 /**
  * Durable checkpoints for a task.
@@ -12,7 +13,7 @@ import { api, Task } from '../api'
  * points and a plain-language plan the operator can act on.
  */
 export function CheckpointPanel({ task }: { task: Task }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [label, setLabel] = useState('')
@@ -80,7 +81,7 @@ export function CheckpointPanel({ task }: { task: Task }) {
                 <li key={item.id}>
                   <span className="checkpoint-seq">#{item.sequence}</span>
                   <span>{item.label}</span>
-                  <time>{new Date(item.created_at).toLocaleString()}</time>
+                  <time>{formatDateTime(item.created_at, i18n.language)}</time>
                 </li>
               ))}
             </ol>

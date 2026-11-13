@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Ban, Check, CircleAlert, LoaderCircle, PlugZap, Route, Send, ShieldCheck, Wallet } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { formatNumber } from './format'
 import {
   api,
   type ProviderDescriptor,
@@ -41,12 +42,12 @@ const scopeTranslationKey: Record<string, string> = {
 }
 
 function money(value: number, language: string): string {
-  return new Intl.NumberFormat(language, {
+  return formatNumber(value, language, {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 6,
-  }).format(value)
+  })
 }
 
 export default function ProvidersView() {

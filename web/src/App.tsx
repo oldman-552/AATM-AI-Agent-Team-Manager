@@ -40,6 +40,7 @@ import SettingsView from './SettingsView'
 import BrowserWallView from './BrowserWallView'
 import TaskTimelineView, { CancelControls } from './TaskTimelineView'
 import AgentCenterView from './AgentCenterView'
+import { formatDateTime, formatNumber } from './format'
 import ProjectBuilderView from './ProjectBuilderView'
 import { ManagerPlanPanel } from './components/ManagerPlanPanel'
 import { AgentControls } from './components/AgentControls'
@@ -116,11 +117,11 @@ function readTheme(): 'dark' | 'light' {
 
 function formatDate(date: string, language: string): string {
   const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(date) ? date : `${date}Z`
-  return new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(normalized))
+  return formatDateTime(normalized, language)
 }
 
 function count(value: number, language: string): string {
-  return new Intl.NumberFormat(language).format(value)
+  return formatNumber(value, language)
 }
 
 function App() {

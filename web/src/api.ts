@@ -276,6 +276,33 @@ export type MemoryVersion = { version: number; title: string; content: string; c
 
 export type MemorySearchResult = { entry: MemoryEntry; score: number }
 
+export type ResourceSnapshot = {
+  cpu_percent: number | null
+  load_average_1m: number | null
+  cpu_count: number
+  memory_total_mb: number | null
+  memory_available_mb: number | null
+  memory_used_ratio: number | null
+  disk_total_gb: number | null
+  disk_free_gb: number | null
+  disk_used_ratio: number | null
+  measured_at: string
+}
+
+export type ResourceReport = {
+  snapshot: ResourceSnapshot
+  recommendation: {
+    recommended_concurrency: number
+    configured_max: number
+    in_flight: number
+    reasons: string[]
+    applied_automatically: boolean
+    note: string
+  }
+  orchestrator: { default_lease_seconds: number; max_retries: number; note: string }
+  telemetry: string
+}
+
 export type WorkflowDefinition = {
   transitions: Record<string, string[]>
   dependency_satisfied_states: string[]
@@ -333,6 +360,7 @@ export const api = {
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
+  resources: (configuredMax = 2) => request<ResourceReport>(`/api/v1/system/resources?configured_max=${configuredMax}`),
   recoverLeases: () => request<{ recovered: string[]; count: number; note: string }>('/api/v1/orchestrator/recover', { method: 'POST' }),
   taskReviews: (taskId: string) => request<{ reviews: Review[]; note: string }>(`/api/v1/tasks/${taskId}/reviews`),
   createReview: (

@@ -737,9 +737,32 @@ function OrchestratorPanel() {
           {recovery.isSuccess && <p className="form-success"><Check size={13} />{t('orchestratorRecovered')}: {recovery.data.count}</p>}
           {recovery.isError && <p className="form-error">{t('requestFailed')}: {recovery.error.message}</p>}
           <p className="form-note">{status.data.executor.reason}</p>
+          <ResourceSummary />
         </>
       )}
     </section>
+  )
+}
+
+function ResourceSummary() {
+  const { t } = useTranslation()
+  const resources = useQuery({ queryKey: ['resources'], queryFn: () => api.resources(2), refetchInterval: 15000 })
+  if (resources.isLoading || !resources.data) return null
+  const { snapshot, recommendation } = resources.data
+  const memory = snapshot.memory_used_ratio
+  const disk = snapshot.disk_used_ratio
+  return (
+    <div className="resource-summary">
+      <div className="system-divider" />
+      <span className="panel-kicker">{t('resourcesTitle')}</span>
+      <div className="orchestrator-counts">
+        <div className="orchestrator-count"><span>{t('resourceCpu')}</span><strong>{snapshot.cpu_percent !== null ? `${Math.round(snapshot.cpu_percent)}%` : '—'}</strong></div>
+        <div className={`orchestrator-count ${memory !== null && memory >= 0.9 ? 'attention' : ''}`}><span>{t('resourceMemory')}</span><strong>{memory !== null ? `${Math.round(memory * 100)}%` : '—'}</strong></div>
+        <div className={`orchestrator-count ${disk !== null && disk >= 0.95 ? 'attention' : ''}`}><span>{t('resourceDisk')}</span><strong>{disk !== null ? `${Math.round(disk * 100)}%` : '—'}</strong></div>
+        <div className="orchestrator-count"><span>{t('resourceRecommended')}</span><strong>{recommendation.recommended_concurrency}</strong></div>
+      </div>
+      <p className="form-note">{recommendation.note}</p>
+    </div>
   )
 }
 

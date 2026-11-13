@@ -254,6 +254,14 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## System resources
+
+### `GET /system/resources?configured_max=2`
+
+Returns a **local** snapshot (CPU percent from load average, memory from `/proc/meminfo` or `os.sysconf`, disk from the database directory) and a bounded concurrency recommendation. `applied_automatically` is always `false`: the orchestrator's configured `max_concurrency` remains authoritative, and the recommendation is advisory only. Nothing is uploaded.
+
+Recommendation rules: bounded by `1..min(configured_max, 4, cpu_count)`; memory pressure at ≥90% or disk pressure at ≥95% forces the floor; load per core ≥1.0 halves the result.
+
 ## Audit events added in this slice
 
 `task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `project.workspace_created`, `project.workspace_branch_created`, `project.workspace_removed`, `memory.created`, `memory.versioned`, `memory.rolled_back`, `memory.deleted`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.

@@ -89,7 +89,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 10 — Cost and Resources
 
 - [ ] Server-side budgets and cost/usage tracking — **TESTED** for enforcement plumbing (consent-gated, positive-limit-required, scoped limits; usage persisted and labelled as estimates; no confirmed billing reconciliation yet).
-- [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **NOT STARTED**.
+- [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **TESTED for CPU/memory/disk** (local standard-library sampling, bounded advisory recommendation, visible in the Tasks view). Browser-level monitoring and automatic concurrency changes remain **NOT STARTED**.
 
 ## Phase 11 — Dashboard and Interface
 

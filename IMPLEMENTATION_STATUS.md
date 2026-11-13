@@ -12,7 +12,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [ ] Project, agent, task, and audit-record APIs — **TESTED** (create/list, assignment, role catalog, worker cap; tests pass).
 - [ ] React + TypeScript + Vite UI — **TESTED** for compile/bundle and query wiring (TypeScript check, Vitest resource tests, and production bundle pass; browser visual/E2E checks remain pending).
 - [ ] Frontend-to-backend relative API proxy — **VERIFIED** (actual Vite proxy returned backend health/dashboard; preview host smoke check passed).
-- [ ] English/Arabic/Persian resources, RTL direction and key parity — **TESTED** for resource correctness (216 keys per language, `web/src/i18n.test.ts` asserts identical key sets, no empty values, Arabic/Persian as distinct languages, and RTL direction for `ar`/`fa`). Visual layout/RTL browser verification remains **NOT STARTED**.
+- [ ] English/Arabic/Persian resources, RTL direction and key parity — **TESTED** for resource correctness (321 keys per language, `web/src/i18n.test.ts` asserts identical key sets, no empty values, Arabic/Persian as distinct languages, and RTL direction for `ar`/`fa`). Visual layout/RTL browser verification remains **NOT STARTED**.
 - [ ] Loopback/host/CORS baseline — **TESTED** (middleware and loopback defaults exist; dedicated tests assert untrusted Host rejection at 400 and that a hostile origin receives no `access-control-allow-origin` header). Real multi-user authentication remains absent.
 - [ ] Local setup scripts — **TESTED** for Linux install/start/stop smoke flow; Windows PowerShell and update/uninstall paths are **IMPLEMENTED** but not executed.
 - [ ] Phase 1 regression suite/build — **TESTED** (final run: 9 backend tests pass; TypeScript/Vite production build, shell syntax, Python compilation, dependency checks, and npm audit pass).
@@ -58,7 +58,6 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [ ] Real task execution by agents — **NOT STARTED** (the default `DisabledExecutor` refuses to run; nothing is simulated, and no provider/shell/browser work happens).
 - [ ] Cancellation propagation and graceful shutdown — **NOT STARTED**.
 - [ ] Manager planning/assignment/review loop — **NOT STARTED**.
-- [ ] Manager planning/assignment/review loop — **NOT STARTED**.
 
 ## Phase 6 — Projects and Memory
 
@@ -82,7 +81,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 ## Phase 9 — Recovery and Approvals
 
-- [ ] Recovery diagnostics/checkpoints/safe retries — **TESTED** for lease recovery (expired leases are reconciled after a simulated crash and after a process restart; retry scheduling honours exponential backoff and a retry ceiling; an active lease is never stolen). Checkpoints for partial agent work remain **NOT STARTED**.
+- [ ] Recovery diagnostics/checkpoints/safe retries — **TESTED** for lease recovery (expired leases are reconciled after a simulated crash and after a process restart; retry scheduling honours exponential backoff and a retry ceiling; an active lease is never stolen) and for durable **checkpoints** (append-only, monotonic sequences, credential rejection, resume plan that never claims automatic resumption). Automatic replay of partial agent work remains **NOT STARTED** by design.
 - [ ] Human approval center and complete audit trail — **IN PROGRESS** (approval requests and decisions are persisted, audited and exposed in a dedicated Approvals view; the gated actions themselves are not executed, and the audit trail still lacks authentication attribution).
 - [ ] Observable execution timeline — **NOT STARTED**.
 
@@ -108,7 +107,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 - [ ] Input validation and local-host/CORS baseline — **TESTED** (Trusted Host rejects unknown hosts with 400; hostile origins receive no CORS allow header; provider schemas reject unknown fields and raw credentials; task/review/approval payloads are validated with length bounds).
 - [ ] Authentication/authorization and granular permission enforcement — **IN PROGRESS / TESTED for the local baseline**: opt-in single-user bearer-token auth (constant-time comparison, fail-closed configuration, token never in the browser bundle), cross-origin mutation rejection, and dedicated tests. User accounts, roles, per-project permissions and audit attribution to a principal remain **NOT STARTED**.
-- [ ] Backup/restore, crash recovery, performance tests — **NOT STARTED**.
+- [ ] Backup/restore, crash recovery, performance tests — **TESTED for backup/restore and crash recovery**: verified SQLite backups with manifests and guarded restore (`scripts/backup.py`), expired-lease reconciliation after a simulated crash, and durable checkpoints. Performance/load testing and PostgreSQL backup remain **NOT STARTED**.
 - [ ] Sensitive-data protection, complete auditability, secure credential vault — **NOT STARTED**.
 
 ## Phase 14 — Cross-Platform Delivery

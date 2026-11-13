@@ -180,3 +180,23 @@ Tests executed: Backend pytest 86 passed; CLI create/list/verify/restore/prune e
 Results: Restore brought back a deleted project row; previous database preserved as db.pre-restore-20261113T131548Z.sqlite3; verify reports integrity_check: ok.
 Problems: A blank backup name was replaced with a generated name, and a tampered file raised instead of failing verification.
 Solutions: Blank names are now rejected and unreadable files return ok=false with a diagnostic check; both covered by tests.
+
+[2026-11-13 13:18 UTC] Phase 9 — Recovery and Continuity — Durable task checkpoints and resume planning
+Task: Durable task checkpoints and resume planning
+Action performed: Implemented and verified append-only task checkpoints with credential rejection and an advisory resume plan
+Files created: backend/app/checkpoints.py, backend/app/checkpoint_api.py, backend/migrations/versions/0007_task_checkpoints.py, backend/tests/test_checkpoints.py, web/src/components/CheckpointPanel.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 92 passed; frontend vitest 5; tsc --noEmit; vite build; migration 0007 up/down/re-up; live proxy checkpoint smoke
+Results: Sequences 1 and 2 recorded, resume plan listed concrete actions with resumed_automatically=false, a credential-shaped payload was rejected with 422, DELETE preflight now allowed.
+Problems: DELETE was absent from the CORS allow-methods list, so a browser-originated delete would fail preflight.
+Solutions: Added DELETE to allowed methods and verified the preflight response.
+
+[2026-11-13 13:19 UTC] Phase 15 — Documentation Sync — Refresh live status and remaining-work registers
+Task: Refresh live status and remaining-work registers
+Action performed: Reconciled STATUS, IMPLEMENTATION_STATUS, NEXT_ACTIONS and BLOCKERS with verified work
+Files created: None
+Files modified: STATUS.txt, IMPLEMENTATION_STATUS.md, NEXT_ACTIONS.txt, BLOCKERS.txt
+Tests executed: No code change; documentation-only. Backend 92 tests and frontend build last verified at 13:18 UTC.
+Results: Status files now state 92 backend tests, 321 i18n keys and the real state of phases 6, 9 and 13.
+Problems: STATUS.txt still described the 9-test foundation slice from the first session.
+Solutions: Rewrote the recently-completed, upcoming and test sections to match measured results.

@@ -22,7 +22,16 @@ Do NOT: mark execution as complete without a real run; never fabricate output or
 COMPLETED — P2 independent QA reviews and approval gates (2026-11-13 13:02 UTC)
 Result: `backend/app/quality.py` + API/UI now enforce reviewer separation, require concrete checks and recorded output for approval, require a summary for rework, drive verdicts through the validated state machine, and persist replay-safe audited records (migration 0004). Approval gates record and audit decisions for paid/deploy/merge/delete operations without executing them. 7 new tests (51 backend total) pass.
 
-P3 — Authentication and authorization for the local API
+COMPLETED — P3 authentication and authorization for the local API (2026-11-13 13:11 UTC)
+Result: opt-in `AATM_AUTH_MODE=token` bearer auth with constant-time comparison and fail-closed configuration, cross-origin mutation rejection (403), token injected only by the Vite proxy and absent from the browser bundle, 8 tests. User accounts/roles remain open.
+
+COMPLETED — P5 backup/restore portion (2026-11-13 13:16 UTC)
+Result: `scripts/backup.py` + `backend/app/backup.py` provide consistent online SQLite backups with SHA-256 manifests, `verify`, and a guarded `restore` that preserves the previous database and restores it if integrity fails; retention pruning; 8 tests. Windows 11 and PostgreSQL remain blocked on their environments.
+
+COMPLETED — P6 memory, checkpoints, resources (2026-11-13 13:18 UTC)
+Result: project-isolated memory (migration 0006), durable checkpoints with resume plans (migration 0007), and local resource telemetry. Backend total 92 tests.
+
+P3 (remaining) — User accounts, roles and per-project authorization
 Description: Single-user local token or OS-user-bound auth, CSRF-safe mutation policy, and per-project authorization checks; loopback binding stays the default. Must precede any paid provider execution path.
 Dependencies: Decision on the local auth model.
 Expected outcome: Mutating endpoints reject unauthenticated callers, with tests.
@@ -36,7 +45,8 @@ P5 — Windows 11 verification, PostgreSQL integration, backup/restore
 Description: Execute the PowerShell install/start/stop/update/uninstall path on Windows 11, run the suite against PostgreSQL, and implement + test backup/restore of the SQLite database and project metadata.
 Dependencies: Windows host; PostgreSQL server; approved backup design.
 
-P6 — Later product phases
-Description: Agent lifecycle/permissions, Manager planning loop, persistent Playwright profiles and Browser Wall, project-isolated memory with retrieval/versioning, Git workspaces and approval-gated GitHub workflows, cost/resource monitoring dashboards, full navigation, cross-platform release packaging.
+P6 (remaining) — Later product phases
+Description: Manager planning loop, agent lifecycle/permissions, persistent Playwright profiles and Browser Wall, approval-gated GitHub push/PR workflow, evidence-based analytics and execution timeline, notifications, cross-platform release packaging.
+Note: project-isolated memory, Git workspaces, cost/resource telemetry and checkpoints are already implemented and tested.
 Dependencies: Verified orchestrator, auth, providers where required.
 Expected outcome: Phased delivery; no feature marked complete without passing tests.

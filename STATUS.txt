@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:16 UTC
+2026-11-13 13:19 UTC
 
 Overall Project Status:
 Developing
@@ -12,31 +12,32 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 9 — Recovery and Continuity
+Phase 15 — Documentation Sync
 
 Current Task:
-Verified backup and guarded restore
+Refresh live status and remaining-work registers
 
 Current Activity:
-Added backup service, CLI and 8 tests; replaced the backup documentation stub
+Updated stale test counts, phase states, note about DELETE CORS, added gated-execution blocker
 
-Recently Completed:
-- Saved AATM_MASTER_DEVELOPMENT_PROMPT.md in the repository.
-- Implemented real project/agent/task persistence, 20 worker roles, Alembic migration, and API-backed dashboard data.
-- Implemented React/Vite dashboard and initial English/Arabic/Persian switching with RTL direction.
-- Added Linux and PowerShell setup/process/update/uninstall scripts and a tested atomic progress reporter.
-- Backend tests: 9 passed (one upstream Starlette/httpx deprecation warning).
-- Frontend production build passed; npm audit found 0 vulnerabilities.
-- Linux install/start/stop path and Vite/API/preview-host smoke checks passed.
-- Inspected Arena Local Bridge v1.1.0 and documented a no-bypass policy blocker.
-- Committed and pushed the master prompt and tested Phase 1 foundation as `8b2badf` to the current Arena branch; verified remote SHA matches.
+Recently Completed (most recent first):
+- Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.
+- Verified SQLite backup/restore CLI with SHA-256 manifests, guarded restore and retention.
+- Local CPU/memory/disk telemetry with a bounded advisory concurrency recommendation.
+- Project-isolated memory with keyword retrieval, versioning, rollback-as-new-version and export (migration 0006).
+- Optional local bearer-token auth, CSRF-hardened mutations, token injected by the Vite proxy and never shipped to the browser.
+- Local Git workspaces per project with branch creation and strict path-escape protection (migration 0005).
+- Independent QA reviews, approval gates (migration 0004), orchestrator leases/retries (migration 0003).
+- Provider boundary, budgets and routing policies (migration 0002); Arena remains hard-blocked on policy grounds.
+- Project/agent/task persistence, i18n with 321 keys per language, progress reporter, cross-platform scripts.
 
 Currently Working On:
-- Continuing independent local-first engineering after publication; next focus is a provider abstraction that remains testable without live provider calls.
+- Continuing independent local-first engineering. Next focus: the remaining unstarted areas (GitHub integration, analytics, notifications) and hardening existing surfaces.
 
 Upcoming Tasks:
-- Design/test provider abstractions without making external provider calls.
-- Continue independent orchestration, security, and UX foundation work.
+- Approval-gated GitHub/PR workflow (local-only until a token is supplied deliberately).
+- Evidence-based agent analytics and an observable execution timeline.
+- Windows 11 / PostgreSQL / Playwright verification when those environments exist.
 - Revisit Arena only if a compliant supported route is verified.
 
 Problems Encountered:
@@ -55,7 +56,7 @@ External Dependencies:
 Python/npm dependencies installed. Arena Local Bridge inspected statically only; no live Arena session/API request attempted. PostgreSQL and Windows remain untested.
 
 Tests:
-- Passed: 9 backend tests; TypeScript/Vite production build; install script; start/stop script smoke; progress reporter unit/CLI checks; shell syntax; Python compileall; pip check; npm audit (0 vulnerabilities); API/dashboard/roles, Vite proxy, and preview Host-header smoke checks.
+- Passed: 92 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 5 frontend Vitest tests; TypeScript/Vite production build; install script; start/stop script smoke; progress reporter unit/CLI checks; shell syntax; Python compileall; pip check; npm audit (0 vulnerabilities); API/dashboard/roles, Vite proxy, and preview Host-header smoke checks.
 - Failed: Earlier build/test/startup attempts failed and were fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
 - Pending: Windows/PowerShell, PostgreSQL, visual Playwright E2E, complete RTL and full product tests.
 
@@ -75,6 +76,6 @@ Estimated Remaining Work:
 Large multi-phase product; no reliable completion date can be estimated from this early foundation.
 
 Next Action:
-Define and test a safe, no-network provider abstraction boundary while keeping Arena integration blocked pending a verified compliant route.
+Implement the next unstarted capability (approval-gated GitHub workflow or analytics) with tests, keeping Arena integration blocked pending a verified compliant route.
 
 ==================================================

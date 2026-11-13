@@ -41,3 +41,12 @@ Additional verification limits:
 - PostgreSQL is configurable and the psycopg driver is included, but there is no PostgreSQL server available here and its integration is untested.
 - The full UI has not had browser-based visual/E2E testing; only production build, Vitest resource tests, and HTTP/Vite-proxy smoke checks were run. Playwright is not installed in this environment.
 - Visual RTL layout (Arabic/Persian alignment, spacing, mixed technical content, dates and numbers) is unverified; only translation completeness, parity and direction are unit-tested.
+
+5. Real task execution is intentionally not wired to a provider yet.
+   Date detected: 2026-11-13
+   Affected feature: End-to-end task execution producing genuine agent output.
+   Technical cause: `DisabledExecutor` is the default and the HTTP app exposes no run route, so no task can execute. Wiring a provider requires the consent/authorization/accounting surface from blocker 4.
+   Attempts to resolve it: Orchestrator mechanics (leases, retries, recovery) and durable checkpoints are implemented and tested with injected fake executors; execution itself is deliberately absent.
+   Required intervention: Explicit user authorization for paid provider usage plus a key supplied via `env:`/keyring, then build the consent surface first.
+   Workaround: All local-first platform features (memory, workspaces, QA, checkpoints, backup) work without execution.
+   Current status: GATED — by design, not a defect.

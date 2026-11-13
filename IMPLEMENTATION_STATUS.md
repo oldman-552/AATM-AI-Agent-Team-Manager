@@ -77,7 +77,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 - [ ] Independent QA/review records — **TESTED** (server-side reviewer separation: self-review is rejected; `approved` needs concrete checks plus recorded output; `rework_required` needs a summary; verdicts drive the workflow and are replay-safe, audited, and exposed in the task UI).
 - [ ] Automated quality/test workflows — **IN PROGRESS** (backend suite: 51 tests; frontend Vitest resource tests; no CI pipeline yet).
-- [ ] Evidence-based agent analytics — **NOT STARTED**.
+- [ ] Evidence-based agent analytics — **TESTED** for delivery analytics: counts, daily throughput, audit activity, cycle time with sample sizes, review approval rate, rework share and approval totals, all computed from persisted rows with `null` for absent data. Per-agent performance scoring is **NOT STARTED** (verdict samples are too sparse to be meaningful).
 
 ## Phase 9 — Recovery and Approvals
 

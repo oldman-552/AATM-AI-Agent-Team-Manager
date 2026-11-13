@@ -200,3 +200,13 @@ Tests executed: No code change; documentation-only. Backend 92 tests and fronten
 Results: Status files now state 92 backend tests, 321 i18n keys and the real state of phases 6, 9 and 13.
 Problems: STATUS.txt still described the 9-test foundation slice from the first session.
 Solutions: Rewrote the recently-completed, upcoming and test sections to match measured results.
+
+[2026-11-13 13:21 UTC] Phase 7 — GitHub and Workspaces — Approval-gated pull-request plans
+Task: Approval-gated pull-request plans
+Action performed: Implemented and verified pull-request planning with approval gating and an honest execute refusal
+Files created: backend/app/github_plans.py, backend/app/github_api.py, backend/migrations/versions/0008_github_plans.py, backend/tests/test_github_plans.py, web/src/components/PullRequestPlans.tsx
+Files modified: backend/app/models.py, backend/app/quality.py, backend/app/schemas.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 99 passed; frontend vitest 5; tsc --noEmit; vite build; migration 0008 up/down/re-up; live proxy plan smoke
+Results: Plan recorded with linked pending approval, execute returned 409 with a reason, approval moved the plan to approved_not_executed while executed stayed false.
+Problems: The approvals list is wrapped in an approvals key, so the first test indexed the wrapper.
+Solutions: Unwrapped the payload in the test; behaviour of the endpoint was correct.

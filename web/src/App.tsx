@@ -4,6 +4,7 @@ import {
   Activity,
   ArrowDownLeft,
   ArrowRight,
+  BarChart3,
   BookOpen,
   Bot,
   Check,
@@ -29,12 +30,13 @@ import { useTranslation } from 'react-i18next'
 import { api, type Agent, type AuditEvent, type Project, type Task, type WorkflowDefinition } from './api'
 import ApprovalsView from './ApprovalsView'
 import MemoryView from './MemoryView'
+import AnalyticsView from './AnalyticsView'
 import { CheckpointPanel } from './components/CheckpointPanel'
 import { PullRequestPlans } from './components/PullRequestPlans'
 import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
-type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'memory' | 'approvals' | 'providers'
+type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'memory' | 'analytics' | 'approvals' | 'providers'
 
 const navigation: { id: View; label: string; icon: typeof Activity }[] = [
   { id: 'dashboard', label: 'dashboard', icon: Activity },
@@ -42,6 +44,7 @@ const navigation: { id: View; label: string; icon: typeof Activity }[] = [
   { id: 'agents', label: 'agents', icon: UsersRound },
   { id: 'tasks', label: 'tasks', icon: ListTodo },
   { id: 'memory', label: 'memorySection', icon: BookOpen },
+  { id: 'analytics', label: 'analyticsSection', icon: BarChart3 },
   { id: 'approvals', label: 'approvalSection', icon: ShieldCheck },
   { id: 'providers', label: 'providerSection', icon: PlugZap },
 ]
@@ -207,6 +210,7 @@ function App() {
           {view === 'agents' && <AgentsView />}
           {view === 'tasks' && <TasksView />}
           {view === 'memory' && <MemoryView />}
+          {view === 'analytics' && <AnalyticsView />}
           {view === 'approvals' && <ApprovalsView />}
           {view === 'providers' && <ProvidersView />}
         </div>

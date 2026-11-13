@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:19 UTC
+2026-11-13 13:21 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 15 — Documentation Sync
+Phase 7 — GitHub and Workspaces
 
 Current Task:
-Refresh live status and remaining-work registers
+Approval-gated pull-request plans
 
 Current Activity:
-Updated stale test counts, phase states, note about DELETE CORS, added gated-execution blocker
+Added plan service/API, migration 0008, Projects-view panel and 7 tests
 
 Recently Completed (most recent first):
 - Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.

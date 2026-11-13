@@ -20,6 +20,7 @@ from app.quality_api import router as quality_router
 from app.system_api import router as system_router
 from app.checkpoint_api import router as checkpoint_router
 from app.github_api import router as github_router
+from app.analytics_api import router as analytics_router
 from app.workspace_api import router as workspace_router
 from app.provider_api import ops_router, provider_router
 from app.provider_store import seed_provider_defaults
@@ -105,6 +106,7 @@ def create_app(
     app.include_router(system_router)
     app.include_router(checkpoint_router)
     app.include_router(github_router)
+    app.include_router(analytics_router)
     resolved_origins = allowed_origins or settings.cors_origins
     app.add_middleware(LocalAuthMiddleware, config=AuthConfig.from_settings(resolved_origins))
 

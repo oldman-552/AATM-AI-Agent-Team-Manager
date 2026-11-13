@@ -254,6 +254,18 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Analytics (derived from stored rows)
+
+Read-only, no synthetic scores. `days` is bounded to 1–90 (422 otherwise).
+
+- `GET /analytics?days=14` — counts, throughput, activity, cycle time, review outcomes, rework and approval totals, plus explicit `notes`.
+- `GET /analytics/throughput`, `/cycle-time`, `/reviews`, `/rework`, `/approvals`, `/activity` — the same sections individually.
+
+Honesty rules baked into the response:
+- A metric with no data returns `null` (for example `cycle_time.average_seconds`), never `0` that could read as "instantaneous".
+- Cycle time reports `samples`; tasks without a terminal transition are excluded and counted separately.
+- Provider cost analytics are **absent** because live provider traffic does not exist; the endpoint says so in `notes`.
+
 ## Pull-request plans (no network)
 
 Planning and gating only. No token is read, no HTTP request to GitHub is made, and nothing is pushed.

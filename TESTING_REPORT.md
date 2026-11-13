@@ -8,7 +8,8 @@
 ## 2026-11-13 12:57 UTC — Backend tests (current)
 
 - Latest command: `cd backend && ../.venv/bin/python -m pytest`.
-- Result: **99 passed, 1 warning** (90 new tests across this session).
+- Result: **103 passed, 1 warning** (94 new tests across this session).
+- `tests/test_analytics.py` (4 tests): an empty database reports zero counts and `null` rates rather than invented numbers (with the seeded Manager identity accounted for); counts, throughput and cycle time follow real transitions; review approval rate and pending approvals are measured independently; rework share is computed and `days` bounds are enforced.
 - `tests/test_github_plans.py` (7 tests): a plan is recorded with a linked `pull_request` approval; planned commands are inert text; `execute` always refuses with 409 and the plan stays `executed: false`; approval decisions mirror to `approved_not_executed`/`rejected` and repeats are 409; unsafe owner/repo/branch input and same-branch plans are 422; duplicate open plans are rejected but allowed again after rejection; plans are isolated per project and audited.
 - `tests/test_checkpoints.py` (6 tests): monotonic, append-only checkpoint sequences; credential-shaped state/notes rejected (422) and nothing persisted; label/note/size/404 validation; the resume plan is guidance only (`resumed_automatically: false`) and distinguishes expired from live leases; retention keeps the newest checkpoints.
 - `tests/test_backup.py` (8 tests): create → verify → mutate → restore round-trip against real SQLite files; restore refuses without `allow_overwrite`; path-traversal and oversized names rejected; duplicate names rejected; a tampered backup fails verification and its restore is refused; a missing database and a non-SQLite URL are rejected; pruning keeps the newest entries; a backup taken while the application holds an open connection is consistent.
@@ -35,8 +36,8 @@
 ## 2026-11-13 12:57 UTC — Frontend tests and build (current)
 
 - `cd web && npm test` (Vitest 2.1.9) → **5 passed**.
-  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (337 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
-- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1652 modules, `dist/assets/index-CiYpFe4P.css` 35.48 kB, `dist/assets/index-BH7OTWou.js` 375.11 kB.
+  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (362 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
+- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1654 modules, `dist/assets/index-BooAzzMq.css` 36.22 kB, `dist/assets/index-CW9Q6Pg5.js` 384.77 kB.
 - First TypeScript run failed twice: a missing `Send` icon import in `ProvidersView.tsx` and an invalid Vitest assertion overload in `i18n.test.ts`. Both were fixed before the passing run.
 
 ## 2026-11-13 — Frontend build (historical)
@@ -72,6 +73,7 @@
 - Cleanup: `.aatm-home` (git-ignored smoke database) only; no credentials, no provider traffic.
 - Notable: binding uvicorn to `0.0.0.0` makes the API reject the preview Host with 400 (by design). Only Vite is exposed for previews; the API stays loopback-bound.
 - Orchestrator endpoints were re-verified on a restarted server: startup applied migration `0003_task_leases`, `/api/v1/orchestrator/status` reported `executor.configured: false` with the refusal reason, and the same payload was served through the Vite proxy.
+- Analytics verified live through the Vite proxy against the real database: `{projects: 4, agents: 5, tasks: 3, active: 1, terminal: 2, checkpoints: 2}`, throughput 3, 30 audit events, cycle time with `samples: 2` and one explicitly excluded task, and `days=0`/`days=91` rejected with 422.
 - Pull-request plans verified live through the Vite proxy: plan created as `awaiting_approval` with `executed: false`, `execute` refused with 409 and a clear reason, approval moved it to `approved_not_executed` while `executed` stayed false, and `repo: "../etc"` was rejected with 422.
 - Checkpoints verified live through the Vite proxy: two checkpoints with sequences 1 and 2, a resume plan listing concrete next actions with `resumed_automatically: false`, a credential-shaped payload rejected with 422, and a `DELETE` preflight now advertising `DELETE`.
 - Backup CLI verified end to end at `/tmp/bk`: create (282,624 bytes), `verify` → `sha256 matches manifest, integrity_check: ok`, restore refused without `--yes` (exit 2) and without `allow_overwrite` (exit 1), then a real restore that brought back a deleted project row and kept the replaced database as `db.pre-restore-20261113T131548Z.sqlite3`.

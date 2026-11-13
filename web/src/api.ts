@@ -80,6 +80,24 @@ export type PullRequestPlan = {
   created_at: string
 }
 
+export type AnalyticsOverview = {
+  counts: {
+    projects: number
+    agents: number
+    tasks: number
+    tasks_active: number
+    tasks_terminal: number
+    checkpoints: number
+  }
+  throughput: { days: number; start: string; buckets: { date: string; completed: number; approved: number; cancelled: number }[]; total: number; source: string }
+  activity: { days: number; buckets: { date: string; events: number }[]; total: number; source: string }
+  cycle_time: { samples: number; average_seconds: number | null; median_seconds: number | null; max_seconds: number | null }
+  reviews: { total: number; by_verdict: Record<string, number>; approval_rate: number | null; source: string }
+  rework: { tasks_with_rework: number; rework_events: number; task_total: number; share: number | null; source: string }
+  approvals: { by_status: Record<string, number>; by_kind: Record<string, number>; pending: number; source: string }
+  notes: string[]
+}
+
 export type AuditEvent = {
   id: string
   entity_type: string
@@ -400,6 +418,7 @@ export const api = {
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
+  analytics: (days = 14) => request<AnalyticsOverview>(`/api/v1/analytics?days=${days}`),
   resources: (configuredMax = 2) => request<ResourceReport>(`/api/v1/system/resources?configured_max=${configuredMax}`),
   checkpoints: (taskId: string) => request<{ task_id: string; checkpoints: TaskCheckpoint[] }>(`/api/v1/tasks/${taskId}/checkpoints`),
   createCheckpoint: (taskId: string, payload: { label: string; note?: string; state?: Record<string, unknown> }) =>

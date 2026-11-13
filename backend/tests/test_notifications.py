@@ -8,7 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.main import create_app
-from app.models import Task as TaskModel
+from app.models import Task as TaskModel, UsageRecord
+from app.provider_store import budget_guard
+from app.providers.contracts import CostEstimate
 
 
 @pytest.fixture
@@ -126,6 +128,157 @@ def test_validation_and_retention(client: TestClient) -> None:
     assert client.delete("/api/v1/notifications/read-state", params={"older_than_days": 0}).status_code == 422
     # Default retention keeps fresh read state; only expired rows are pruned.
     assert client.delete("/api/v1/notifications/read-state").json()["removed"] == 0
+
+
+def test_budget_near_limit_notification_is_advisory_and_readable(client: TestClient) -> None:
+    configured = client.put(
+        "/api/v1/budgets",
+        json={"scope": "daily", "provider_id": "anthropic", "limit_usd": 0.5},
+    )
+    assert configured.status_code == 200
+    with Session(client.app.state.engine) as session:
+        session.add(
+            UsageRecord(
+                request_key="budget-alert-80-percent-estimated",
+                provider_id="anthropic",
+                model="test-model",
+                input_tokens=10,
+                output_tokens=10,
+                estimated_cost_usd=0.3,
+                billing_status="estimated",
+                created_at=datetime.datetime.now(datetime.timezone.utc),
+            )
+        )
+        session.add(
+            UsageRecord(
+                request_key="budget-alert-80-percent-confirmed",
+                provider_id="anthropic",
+                model="test-model",
+                input_tokens=10,
+                output_tokens=10,
+                estimated_cost_usd=0.2,
+                confirmed_cost_usd=0.1,
+                billing_status="confirmed",
+                created_at=datetime.datetime.now(datetime.timezone.utc),
+            )
+        )
+        session.commit()
+
+        # The notification threshold is not an enforcement threshold. The real
+        # hard guard still permits a request whose estimate remains under limit.
+        result = budget_guard(session).check(
+            CostEstimate("test-model", 10, 10, 0.05),
+            provider_id="anthropic",
+            agent_id=None,
+            project_id=None,
+            credential_ref=None,
+            paid_consent=True,
+            is_paid=True,
+        )
+        assert result.allowed is True
+
+    body = client.get("/api/v1/notifications").json()
+    alerts = [item for item in body["notifications"] if item["kind"] == "budget_near_limit"]
+    assert len(alerts) == 1
+    alert = alerts[0]
+    assert alert["message_key"] == "notificationBudgetNearLimit"
+    assert alert["data"] == {
+        "provider": "anthropic",
+        "scope": "daily",
+        "scope_label": "daily",
+        "used_usd": 0.4,
+        "limit_usd": 0.5,
+        "percent": 80,
+        "billing_basis": "mixed",
+    }
+    assert alert["severity"] == "warning"
+    assert alert["action_view"] == "providers"
+    assert alert["read"] is False
+
+    marked = client.post("/api/v1/notifications/read", json={"ids": [alert["id"]]}).json()
+    matching = [item for item in marked["notifications"] if item["id"] == alert["id"]]
+    assert marked["marked_read"] == 1
+    assert matching[0]["read"] is True
+
+
+def test_budget_alert_threshold_is_advisory_and_zero_limits_do_not_alert(client: TestClient) -> None:
+    client.put(
+        "/api/v1/budgets",
+        json={"scope": "daily", "provider_id": "anthropic", "limit_usd": 1},
+    )
+    with Session(client.app.state.engine) as session:
+        session.add(
+            UsageRecord(
+                request_key="budget-alert-below-threshold",
+                provider_id="anthropic",
+                model="test-model",
+                input_tokens=10,
+                output_tokens=10,
+                estimated_cost_usd=0.799,
+                billing_status="estimated",
+                created_at=datetime.datetime.now(datetime.timezone.utc),
+            )
+        )
+        session.commit()
+    alerts = [
+        item for item in client.get("/api/v1/notifications").json()["notifications"]
+        if item["kind"] == "budget_near_limit"
+    ]
+    assert alerts == []  # below 80%
+
+    client.put(
+        "/api/v1/budgets",
+        json={"scope": "daily", "provider_id": "anthropic", "limit_usd": 0},
+    )
+    alerts = [
+        item for item in client.get("/api/v1/notifications").json()["notifications"]
+        if item["kind"] == "budget_near_limit"
+    ]
+    assert alerts == []  # zero remains a deny-by-default limit, not an alert target
+
+
+def test_unkeyed_agent_budget_alerts_are_separate_and_support_provider_wildcard(client: TestClient) -> None:
+    client.put(
+        "/api/v1/budgets",
+        json={"scope": "agent", "provider_id": "*", "limit_usd": 0.5},
+    )
+    with Session(client.app.state.engine) as session:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        session.add_all(
+            [
+                UsageRecord(
+                    request_key="agent-a-budget-use",
+                    provider_id="anthropic",
+                    model="test-model",
+                    agent_id="aaaaaaaa-1111",
+                    input_tokens=1,
+                    output_tokens=1,
+                    estimated_cost_usd=0.4,
+                    billing_status="estimated",
+                    created_at=now,
+                ),
+                UsageRecord(
+                    request_key="agent-b-budget-use",
+                    provider_id="anthropic",
+                    model="test-model",
+                    agent_id="bbbbbbbb-2222",
+                    input_tokens=1,
+                    output_tokens=1,
+                    estimated_cost_usd=0.39,
+                    billing_status="estimated",
+                    created_at=now,
+                ),
+            ]
+        )
+        session.commit()
+
+    alerts = [
+        item for item in client.get("/api/v1/notifications").json()["notifications"]
+        if item["kind"] == "budget_near_limit"
+    ]
+    assert len(alerts) == 1  # separate agent buckets; not 0.79 combined against one limit
+    assert alerts[0]["data"]["scope_label"] == "agent aaaaaaaa"
+    assert alerts[0]["data"]["percent"] == 80
 
 
 def test_read_all_is_idempotent(client: TestClient) -> None:

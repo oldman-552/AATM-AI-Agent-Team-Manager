@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 15:04 UTC
+2026-11-13 15:35 UTC
 
 Overall Project Status:
 Testing
@@ -12,15 +12,17 @@ Overall Completion:
 Roughly 80% of the specified local-first product surface is implemented and tested. Every capability that needs no paid provider call, no display, and no Windows host is built, exercised live and covered by tests. What remains open is either gated by design (live provider execution, real agent execution, GitHub execution) or impossible in this environment (Windows, PostgreSQL, Docker, Playwright). See BLOCKERS.txt for the itemised list; nothing below is claimed as done that is not.
 
 Current Phase:
-Phase 27 — Real local task execution
+Phase 28 — Advisory provider budget alerts
 
 Current Task:
-An executor that actually runs, behind the existing boundary
+Close the final API documentation and verification pass
 
 Current Activity:
-Task names a command via run:<name>; argv comes from .aatm/exec.json a human committed, never from the database; no shell; bare allow-listed argv0; sanitised env; process-group timeout; cooperative cancellation; fixed a write-transaction deadlock and a stale cancel flag
+Budget alert slice is complete and ready for review
 
 Recently Completed (most recent first):
+- Advisory provider-budget notifications: in-app feed now surfaces persisted usage at/above 80% of a positive scoped limit in English/Arabic/Persian; threshold does not alter the hard guard. Tests cover at-threshold, below-threshold, zero-limit and allowed-under-cap behavior.
+- Documentation accuracy pass: corrected obsolete execution, event stream, locale count, test count, and notification claims; expanded API documentation for opt-in local execution and budget alert semantics.
 - Real local task execution (opt-in): a bounded, allow-listed, shell-free subprocess runner. Two real defects fixed — cancellation could never reach a running task (write transaction held across the run → "database is locked", now committed first + SQLite WAL), and a stale cancel flag left stopped tasks in `running` forever (now refreshed). Verified live over HTTP with real command output recorded.
 - Live event stream (SSE): resumable cursor, bounded lifetime, heartbeat, honest "polled" labelling; live panel in Operations.
 - Operations view: audit log with filtering, usage and costs, and a local resource monitor whose recommendation is explicitly advisory.
@@ -28,7 +30,7 @@ Recently Completed (most recent first):
 - Memory context selection: deterministic budgeted retrieval with an explicit exclusion list, and extractive summaries labelled as such.
 - Self-healing surface: classified database errors with rollback-before-close, queue health, and a capability table where only the two genuine automatic recoveries are marked automatic.
 - Fixed an oversized body returning 500 behind a proxy (now drained, bounded, and a real 413).
-- Permission levels completed to the specification's nine levels, each naming the boundary that enforces it.
+- Agent authorization: ten deny-by-default permission scopes are declared and enforced; `task:assign` is Manager-only and approval scopes remain non-executing gates.
 - Request hardening: 1 MB streamed body cap enforced by counting bytes rather than trusting Content-Length, plus nosniff/frame-deny/no-referrer/CSP headers on every response.
 - Fixed a quadratic project-timeline query (N+1 across tables); added performance ceilings so a regression fails the suite.
 - RTL verification: found and fixed Arabic rendering Latin digits (now ١٣/١١/٢٠٢٦) and three unlocalized formatters; added a CSS invariant checker proven to catch three injected defects.
@@ -42,7 +44,7 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Continuous verification and documentation accuracy. Next candidates: Windows/PowerShell parity review (static only), release packaging notes, and a final cross-cutting audit.
+- Phase 28 budget alert and cross-document accuracy slice. Code, translated messages, API docs, implementation checklist, status, README, changelog and test report updated; full backend/frontend verification passed.
 
 Upcoming Tasks:
 - The consent/accounting surface that must precede any paid provider call; wiring an authorized model call into the executor.
@@ -69,7 +71,7 @@ External Dependencies:
 Python/npm dependencies installed (@types/node added for the RTL checker). No provider key exists in this environment and no paid request has ever been made. No Arena session was used.
 
 Tests:
-- Passed: 241 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 20 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint.
+- Passed: 244 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 20 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint. Budget-alert focused suites: 16 passed.
 - Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
 - Pending: Windows/PowerShell, PostgreSQL, Docker, Playwright E2E, pixel-level RTL rendering.
 
@@ -80,10 +82,10 @@ Operating System:
 Ubuntu/Linux development environment; Windows 11 not available for verification.
 
 Last Successful Build:
-2026-11-13 14:24 UTC — TypeScript/Vite production build plus RTL checker.
+2026-11-13 15:32 UTC — `npm run verify`: TypeScript, 20 Vitest tests, Vite production build, and RTL checker.
 
 Last Successful Test:
-2026-11-13 14:26 UTC — 220 backend tests and 20 frontend tests.
+2026-11-13 15:35 UTC — 244 backend tests passed; frontend verification at 15:32 UTC passed (20 tests, typecheck, build, RTL checker).
 
 Remaining Work:
 - Gated by design: live provider execution behind consent/accounting (a task now runs a local command, never a model), GitHub push/PR execution, per-user authorization.

@@ -430,3 +430,33 @@ Tests executed: pytest 241 passed (21 new); live HTTP run: task completed with r
 Results: Backend 220 -> 241; execution remains off by default (409 without the flag); two would-have-shipped-silently defects fixed
 Problems: None
 Solutions: None
+
+[2026-11-13 15:31 UTC] Phase 28 — Advisory provider budget alerts — Warn at 80% without changing the hard budget guard
+Task: Warn at 80% without changing the hard budget guard
+Action performed: Derived scoped budget alerts from persisted usage; translated in en/ar/fa; corrected implementation, API, status and test documentation
+Files created: None
+Files modified: backend/app/notifications.py, backend/tests/test_notifications.py, web/src/i18n.ts, README.md, STATUS.txt, IMPLEMENTATION_STATUS.md, API_DOCUMENTATION.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: backend pytest: 244 passed, 1 upstream Starlette/httpx warning; focused notifications/provider API suites: 16 passed; npm run verify: TypeScript clean, 20 Vitest passed, production build and RTL CSS checker passed
+Results: At/above 80% alert is advisory only; under-cap estimate remains allowed by BudgetGuard. Below threshold and zero budget produce no alert.
+Problems: None.
+Solutions: Kept BudgetGuard unchanged; notification derives only from stored usage and read state remains server-persisted.
+
+[2026-11-13 15:33 UTC] Phase 28 — Advisory provider budget alerts — Final verification after scoped alert and mixed billing coverage
+Task: Final verification after scoped alert and mixed billing coverage
+Action performed: Added scoped-agent and wildcard-provider regression coverage; distinguished mixed estimate/confirmed usage; reran full suites and synchronized current test counts
+Files created: None
+Files modified: backend/app/notifications.py, backend/tests/test_notifications.py, web/src/i18n.ts, README.md, STATUS.txt, IMPLEMENTATION_STATUS.md, API_DOCUMENTATION.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: backend pytest: 244 passed, 1 upstream Starlette/httpx warning; focused notifications/provider API suites: 16 passed; npm run verify: TypeScript clean, 20 Vitest passed, production build and RTL CSS checker passed
+Results: Budget alert at >=80% is advisory; per-agent buckets and wildcard providers are handled; mixed confirmed/estimated records are identified; requests below the hard budget cap remain allowed.
+Problems: None.
+Solutions: No code path in BudgetGuard was changed; hard denial behavior is covered by the under-cap assertion.
+
+[2026-11-13 15:35 UTC] Phase 28 — Advisory provider budget alerts — Close the final API documentation and verification pass
+Task: Close the final API documentation and verification pass
+Action performed: Documented generic notification id semantics, reran the full backend suite, and synchronized final verification timestamps
+Files created: None
+Files modified: backend/app/notifications.py, backend/tests/test_notifications.py, web/src/i18n.ts, README.md, STATUS.txt, IMPLEMENTATION_STATUS.md, API_DOCUMENTATION.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: backend pytest: 244 passed, 1 upstream Starlette/httpx warning at 15:35 UTC; npm run verify: TypeScript clean, 20 Vitest passed, production build and RTL CSS checker passed at 15:32 UTC
+Results: Advisory notification only at >=80%; no changes to BudgetGuard hard denial path; scoped budgets and mixed billing basis are covered.
+Problems: None.
+Solutions: No shortcuts or fabricated test results; exact command outcomes are recorded.

@@ -10,7 +10,7 @@ The complete product specification is preserved in [`AATM_MASTER_DEVELOPMENT_PRO
 
 | | |
 |---|---|
-| Backend | FastAPI + SQLAlchemy 2 + Alembic — **241 tests** |
+| Backend | FastAPI + SQLAlchemy 2 + Alembic — **244 tests** |
 | Frontend | React 18 + TypeScript + Vite — **20 tests** |
 | Languages | English, Arabic, Persian — **646 keys each**, parity enforced by test |
 | Database | SQLite by default (WAL enabled); any SQLAlchemy URL via config |
@@ -97,7 +97,7 @@ Interactive docs at `http://127.0.0.1:8000/docs`. Full route reference and reque
 ```
 backend/
   app/            FastAPI routers, domain modules, execution, events
-  tests/          29 test modules, 241 tests
+  tests/          29 test modules, 244 tests
   migrations/     13 Alembic revisions
 web/
   src/            React views, typed API client, i18n resources

@@ -231,6 +231,10 @@ Returns the stored workspace plus a read-only Git status (`branch`, `head_commit
 
 Returns read-only metadata for an AATM-owned per-task Git worktree: `available`, task state, worktree path, base/head commits, cleanliness, changed-file names, and diffstat. File contents are never included. A missing worktree returns `available: false`; a task from another project is hidden as 404; invalid worktree ownership/path metadata returns 409. This endpoint does not modify, merge, or delete worktree contents.
 
+### `GET /projects/{project_id}/workspace/tasks/{task_id}/diff`
+
+Returns a text patch from the task worktree's recorded base commit; the diff command itself is capped at 256 KiB of output and 15 seconds of runtime. The response includes `truncated` and `max_bytes`; untracked files are omitted (their names remain in the metadata endpoint). External diff and text-conversion helpers are disabled. No task/project ownership is bypassed, and the endpoint performs no write, commit, merge, or delete.
+
 ### `POST /projects/{project_id}/workspace` → 201
 
 ```json

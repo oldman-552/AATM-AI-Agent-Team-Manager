@@ -50,3 +50,20 @@ def session_scope(factory: sessionmaker[Session]) -> Iterator[Session]:
         yield db
     finally:
         db.close()
+
+
+def safe_close(db: Session) -> None:
+    """Close a session, rolling back first so a failed transaction cannot linger.
+
+    Without the rollback, a session that hit a database error keeps its broken
+    transaction and connection state. The next request that reuses a pooled
+    connection can then fail for reasons unrelated to its own work. Rolling back
+    before closing guarantees each request starts from a clean state.
+    """
+    try:
+        if db.in_transaction():
+            db.rollback()
+    except Exception:  # pragma: no cover - a broken connection is already unusable
+        pass
+    finally:
+        db.close()

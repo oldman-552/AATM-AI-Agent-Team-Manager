@@ -1,12 +1,15 @@
 """HTTP endpoints for real project, agent, task, and dashboard state."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import func, select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app import __version__
 from app.agents import AgentError, is_assignable, validate_scopes
 from app.audit import add_event
+from app.db import safe_close
+from app.recovery import classify_database_error
 from app.models import Agent, AuditEvent, Project, Task
 from app.roles import DEFAULT_AGENT_ROLES
 from app.schemas import (
@@ -29,13 +32,27 @@ def get_session(request: Request):
     try:
         yield db
     finally:
-        db.close()
+        safe_close(db)
 
 
 @router.get("/health")
-def health(request: Request, db: Session = Depends(get_session)) -> dict[str, object]:
-    """Report application and database health based on an actual DB query."""
-    db.execute(text("SELECT 1"))
+def health(request: Request, response: Response, db: Session = Depends(get_session)) -> dict[str, object]:
+    """Report application and database health based on an actual DB query.
+
+    A failing probe returns ``503`` with a classified cause instead of an opaque
+    500: a health endpoint is exactly where an operator needs the reason. The
+    process is alive, so the payload is still a normal JSON body.
+    """
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError as exc:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {
+            "status": "degraded",
+            "application": request.app.title,
+            "version": __version__,
+            "database": classify_database_error(exc),
+        }
     return {
         "status": "ok",
         "application": request.app.title,

@@ -45,6 +45,10 @@ class BodySizeLimitMiddleware:
         if declared is not None:
             try:
                 if int(declared) > self.max_bytes:
+                    # Drain the announced body before replying. Answering and
+                    # closing mid-upload makes an intermediary (Vite's dev proxy,
+                    # for example) report its own 500 instead of our 413.
+                    await self._drain(receive, int(declared))
                     await self._reject(scope, receive, send)
                     return
             except ValueError:
@@ -73,6 +77,23 @@ class BodySizeLimitMiddleware:
             await self.app(scope, limited_receive, send)
         except _BodyTooLarge:
             await self._reject(scope, receive, send)
+
+    async def _drain(self, receive: Receive, declared: int, hard_cap: int = 32_000_000) -> None:
+        """Read and discard the announced body, bounded hard.
+
+        The cap is only an announcement; the hard bound stops a client that
+        claims a huge body and never sends it from holding the connection open.
+        """
+        remaining = min(declared, hard_cap)
+        while True:
+            message = await receive()
+            if message["type"] != "http.request":
+                return
+            remaining -= len(message.get("body", b""))
+            # Stop on the declared length or on the final chunk, whichever comes
+            # first: draining must never wait for a body the client stopped sending.
+            if remaining <= 0 or not message.get("more_body"):
+                return
 
     async def _reject(self, scope: Scope, receive: Receive, send: Send) -> None:
         response = JSONResponse(

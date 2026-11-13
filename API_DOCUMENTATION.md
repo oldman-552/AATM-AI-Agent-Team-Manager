@@ -424,3 +424,15 @@ Assignments only ever name registered workers whose role matches; unmatched task
 Permissions remain deny-by-default. The three approval-only scopes are Manager-reserved and are refused for workers *before* the grant is consulted, so a bad row cannot silently confer merge rights. No scope authorises executing a gated action in this build.
 
 A Manager plan (`POST /planning/apply`) now skips any agent that has not declared `task:write`, recording `agent_lacks_task_write_scope` instead of quietly assigning work to an agent with no declared permission.
+
+## Self-healing and recovery
+
+- `GET /recovery` — one honest page: a real database probe with timing and a SQLite integrity check, queue health (recoverable vs exhausted tasks, retry ceiling), and a capability table. Each capability states whether it is detected, whether AATM acts **automatically**, and what it actually does.
+- `GET /recovery/database` — a real `SELECT 1` with elapsed time and, on failure, a classified cause.
+- Only two recoveries are marked `automatic: true`: expired-lease reclaim by the orchestrator, and restart survival through durable SQLite state. Browser and provider failures are reported as `handled: false` with the reason they cannot occur here, rather than claimed as covered.
+
+### Database errors
+
+Unhandled `SQLAlchemyError` becomes a classified JSON body instead of an opaque 500: `locked`/`constraint` → `409`, `schema`/`corrupt`/`unavailable` → `503`, each with `advice` and an explicit `automatic_recovery: false`. `GET /health` returns `200` when the probe succeeds and `503` with `status: "degraded"` when it fails.
+
+Sessions now roll back before closing, so a failed transaction cannot poison the next request that reuses a pooled connection. Retries are restricted to genuine lock contention: an integrity error would fail identically on retry, so retrying it would only hide the defect.

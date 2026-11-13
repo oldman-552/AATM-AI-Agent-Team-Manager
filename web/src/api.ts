@@ -226,6 +226,23 @@ export type ManagerPlan = {
   plan_id: string
 }
 
+export type RecoveryReport = {
+  database: { ok: boolean; elapsed_ms: number; slow?: boolean; category: string; note: string; advice?: string; integrity: { ok: boolean; result: string } | null }
+  queue: {
+    by_state: Record<string, number>
+    recoverable_tasks: number
+    exhausted_tasks: number
+    running_with_lease: number
+    retry_ceiling: number
+    note: string
+  }
+  capabilities: { failure: string; detected_by: string; handled: boolean; automatic: boolean; action: string }[]
+  summary: { detected: number; automatic: number; not_applicable: string[] }
+  idempotency: string
+  checked_at: string
+  note: string
+}
+
 export type AgentScopeList = {
   scopes: string[]
   default: string
@@ -664,6 +681,11 @@ export const api = {
     request<NotificationSummary & { marked_read: number }>('/api/v1/notifications/read-all', { method: 'POST' }),
   analytics: (days = 14) => request<AnalyticsOverview>(`/api/v1/analytics?days=${days}`),
   resources: (configuredMax = 2) => request<ResourceReport>(`/api/v1/system/resources?configured_max=${configuredMax}`),
+  recovery: () => request<RecoveryReport>('/api/v1/recovery'),
+  databaseHealth: () =>
+    request<{ ok: boolean; elapsed_ms: number; slow: boolean; category: string; note: string; advice?: string }>(
+      '/api/v1/recovery/database',
+    ),
   checkpoints: (taskId: string) => request<{ task_id: string; checkpoints: TaskCheckpoint[] }>(`/api/v1/tasks/${taskId}/checkpoints`),
   createCheckpoint: (taskId: string, payload: { label: string; note?: string; state?: Record<string, unknown> }) =>
     request<{ checkpoint: TaskCheckpoint; created: boolean }>(`/api/v1/tasks/${taskId}/checkpoints`, {

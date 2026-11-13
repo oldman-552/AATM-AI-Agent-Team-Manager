@@ -360,3 +360,13 @@ Tests executed: pytest 181 passed; vitest 13 passed; tsc clean; build OK; RTL ch
 Results: Backend 178 -> 181 tests; i18n 557 -> 563 keys x3
 Problems: None
 Solutions: None
+
+[2026-11-13 14:09 UTC] Phase 21 — Self-healing and recovery — Recovery capability, classified database errors and proxy-correct 413
+Task: Recovery capability, classified database errors and proxy-correct 413
+Action performed: Added recovery module and endpoints, rollback-before-close sessions, global DB error handler, health degradation, and body draining
+Files created: backend/app/recovery.py, backend/app/recovery_api.py, backend/tests/test_recovery.py, web/src/RecoveryPanel.tsx
+Files modified: backend/app/db.py, backend/app/api.py, backend/app/main.py, backend/app/hardening.py, backend/tests/test_hardening.py, web/src/api.ts, web/src/SettingsView.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 195 passed, 1 warning; pyflakes clean; vitest 13 passed; tsc clean; build OK (JS 476.30 kB); RTL check 0 physical; live: recovery 200 with 5 detected/2 automatic, oversized body 413 through both API and proxy
+Results: Backend 181 -> 195 tests; i18n 563 -> 583 keys x3; proxy 500 -> correct 413
+Problems: None
+Solutions: None

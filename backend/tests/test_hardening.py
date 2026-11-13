@@ -109,3 +109,75 @@ def test_security_headers_are_not_duplicated(client: TestClient) -> None:
     response = client.get("/api/v1/health")
     duplicates = [key for key in set(response.headers.keys()) if len(response.headers.get_list(key)) > 1]
     assert duplicates == []
+
+
+def test_oversized_body_is_drained_before_the_413(client: TestClient) -> None:
+    """The client must receive a real 413, not a broken pipe.
+
+    Draining matters behind an intermediary: if the server answers and closes
+    mid-upload, Vite's dev proxy reports its own 500 instead of our clear 413.
+    """
+    import asyncio
+
+    from app.hardening import BodySizeLimitMiddleware
+
+    received_all = {"value": False}
+
+    async def inner(scope, receive, send):  # pragma: no cover - must not be reached
+        raise AssertionError("handler ran for an oversized body")
+
+    sent: list[dict] = []
+    chunks = [b"x" * 500_000, b"x" * 500_000, b"x" * 200_000]
+
+    async def receive():
+        if chunks:
+            more = len(chunks) > 1
+            body = chunks.pop(0)
+            if not more:
+                received_all["value"] = True  # the announced body was fully consumed
+            return {"type": "http.request", "body": body, "more_body": more}
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        sent.append(message)
+
+    middleware = BodySizeLimitMiddleware(inner, max_bytes=1_000_000)
+    scope = {
+        "type": "http", "method": "POST", "path": "/api/v1/projects",
+        "headers": [(b"content-length", b"1200000")],
+    }
+    asyncio.run(middleware(scope, receive, send))
+
+    assert sent[0]["status"] == 413
+    assert received_all["value"] is True, "the body was not drained before replying"
+
+
+def test_drain_is_bounded_for_a_client_that_under_delivers(client: TestClient) -> None:
+    """A client that announces more than it sends must not hang the server."""
+    import asyncio
+
+    from app.hardening import BodySizeLimitMiddleware
+
+    async def inner(scope, receive, send):  # pragma: no cover
+        raise AssertionError("unreachable")
+
+    sent: list[dict] = []
+    calls = {"n": 0}
+
+    async def receive():
+        calls["n"] += 1
+        if calls["n"] > 3:
+            # Pretend the peer stops sending without closing.
+            await asyncio.sleep(3600)
+        return {"type": "http.request", "body": b"y" * 1_000, "more_body": True}
+
+    async def send(message):
+        sent.append(message)
+
+    middleware = BodySizeLimitMiddleware(inner, max_bytes=100)
+    scope = {
+        "type": "http", "method": "POST", "path": "/x",
+        "headers": [(b"content-length", b"200"), (b"transfer-encoding", b"chunked")],
+    }
+    asyncio.run(asyncio.wait_for(middleware(scope, receive, send), timeout=2))
+    assert sent[0]["status"] == 413

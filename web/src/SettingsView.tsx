@@ -5,6 +5,7 @@ import { Save, SlidersHorizontal, Undo2 } from 'lucide-react'
 
 import { formatDateTime } from './format'
 import { api, AppPreferences } from './api'
+import RecoveryPanel from './RecoveryPanel'
 
 type Draft = Omit<AppPreferences, 'updated_at'>
 
@@ -132,6 +133,8 @@ export default function SettingsView({ onTheme, onLanguage }: {
         <div className="panel-header"><div><span className="panel-kicker">{t('settingsSecurity')}</span><h3>{t('settingsSecurityTitle')}</h3></div></div>
         <p className="form-note">{settings.data.note}</p>
       </section>
+
+      <RecoveryPanel />
     </>
   )
 }

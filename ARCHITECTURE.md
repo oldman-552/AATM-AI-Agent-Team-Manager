@@ -43,7 +43,8 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 22. **Execution timeline** (`backend/app/timeline.py`) — a read-only projection of transitions, checkpoints, task audits, reviews and approval requests; every entry names its `source` table, and nothing is inferred.
 23. **Cooperative cancellation** (`backend/app/cancellation.py`) — intent is recorded first, honouring happens at a safe boundary, finished work is never rewritten, and the orchestrator applies pending cancellations before claiming.
 24. **Agent control center** (`backend/app/agent_center.py`) — per-agent live state assembled from tasks, audit rows, usage records, leases and browser profiles, with an explicit `honesty` block; absent data is `null`.
-25. **Project builder** (`backend/app/blueprints.py`) — a deterministic rule engine that turns a described idea into an eleven-section plan with provenance for every requirement; applying is explicit, re-validated and inert.
+25. **Self-healing and recovery** (`backend/app/recovery.py`) — classified database errors with rollback-before-close, bounded transient retry restricted to lock contention, queue health, and a capability table that marks only genuine automatic recoveries as automatic.
+26. **Project builder** (`backend/app/blueprints.py`) — a deterministic rule engine that turns a described idea into an eleven-section plan with provenance for every requirement; applying is explicit, re-validated and inert.
 
 ## Planned components
 

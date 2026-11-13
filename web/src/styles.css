@@ -615,3 +615,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .check-row input { margin-top: 2px; }
 .agent-scope-tag { font-size: 10px; padding: 1px 5px; border-radius: 6px; background: rgba(183,121,31,.16); color: #b7791f; margin-inline-start: 6px; }
 .agent-scope-tag.manager { background: rgba(130,148,255,.16); color: #8294ff; }
+
+/* --- Recovery panel ------------------------------------------------------ */
+.recovery-panel { display: flex; flex-direction: column; gap: 10px; }
+.recovery-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.recovery-counts > div { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.recovery-counts > div.attention { border-color: rgba(183,121,31,.5); background: rgba(183,121,31,.08); }
+.recovery-counts span { display: flex; gap: 5px; align-items: center; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.recovery-counts strong { font-size: 17px; }
+.recovery-counts small { font-size: 11px; color: var(--muted); }
+.recovery-table td, .recovery-table th { font-size: 12px; }
+.recovery-na td { opacity: .6; }
+.recovery-tag { font-size: 10px; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+.recovery-tag.auto { background: rgba(47,133,90,.16); color: var(--success, #2f855a); }
+.recovery-tag.manual { background: rgba(183,121,31,.16); color: #b7791f; }
+.recovery-tag.na { background: rgba(120,120,120,.16); color: var(--muted); }

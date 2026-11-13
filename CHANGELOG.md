@@ -9,6 +9,15 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Self-healing and recovery slice
+
+- `GET /api/v1/recovery`: an honest capability table (five detected, **two genuinely automatic**, two explicitly not applicable), a real database probe with a SQLite integrity check, and queue health.
+- Database errors are classified instead of returning an opaque 500 (`locked`/`constraint` → 409, `schema`/`corrupt`/`unavailable` → 503) with actionable advice; `/health` degrades to `503` with the cause rather than raising.
+- Request sessions now roll back before closing, so one failed transaction cannot poison the next request on a pooled connection. Transient retry is restricted to lock contention — an integrity error is never retried.
+- **Fixed**: an oversized body behind a proxy returned 500 instead of 413, because the server replied and closed mid-upload. The body is now drained (bounded) before replying, verified through the Vite proxy.
+- Recovery panel in Settings showing the capability table, queue health and integrity result; 583 keys × en/ar/fa.
+- Backend tests 181 → 195.
+
 ### Permission levels completed to the specification (nine levels)
 
 - The scope set grew from six to ten scopes covering all nine named levels: added `pull_request:plan`, `merge:approve`, `production:approve` and `external:approve`.

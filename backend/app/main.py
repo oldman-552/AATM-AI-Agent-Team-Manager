@@ -3,8 +3,10 @@
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app import __version__
@@ -29,6 +31,8 @@ from app.browser_api import router as browser_router
 from app.timeline_api import router as timeline_router
 from app.blueprint_api import router as blueprint_router
 from app.hardening import BodySizeLimitMiddleware, SecurityHeadersMiddleware
+from app.recovery import classify_database_error
+from app.recovery_api import router as recovery_router
 from app.workspace_api import router as workspace_router
 from app.provider_api import ops_router, provider_router
 from app.provider_store import seed_provider_defaults
@@ -109,6 +113,7 @@ def create_app(
     app.include_router(browser_router)
     app.include_router(timeline_router)
     app.include_router(blueprint_router)
+    app.include_router(recovery_router)
     app.include_router(router)
     app.include_router(workflow_router)
     app.include_router(provider_router)
@@ -130,6 +135,17 @@ def create_app(
     # stamp hardening headers on every response including middleware rejections.
     app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
+
+    @app.exception_handler(SQLAlchemyError)
+    async def database_error_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
+        """Return a classified cause instead of an opaque 500.
+
+        The message is deliberately operational, not a stack trace: it names the
+        category and what to do, and states that the transaction was rolled back.
+        """
+        detail = classify_database_error(exc)
+        status_code = 409 if detail["category"] in {"locked", "constraint"} else 503
+        return JSONResponse({"detail": detail}, status_code=status_code)
 
     @app.get("/", include_in_schema=False)
     def root() -> dict[str, str]:

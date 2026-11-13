@@ -1,0 +1,41 @@
+AATM — PRIORITIZED NEXT ACTIONS
+===============================
+
+COMPLETED — P0 safe provider abstraction boundary (2026-11-13 12:50 UTC)
+Result: Offline provider boundary implemented and tested: contracts, credential references, estimate pricing, hard budget guard, five routing policies, provider API/config persistence (Alembic 0002), Providers UI, and 20 new backend tests. Arena remains hard-blocked at adapter and API level; no live provider request or secret handling occurred. Backend 29 tests and frontend 5 tests pass; production build passes.
+
+P0 — Register the Anthropic provider for real, authorized, budget-capped usage
+Description: Add the authorization surface that is deliberately missing: an authenticated, per-request consent flow (with an explicit cost estimate shown before confirming), server-side token accounting using the provider's tokenizer, confirmed-billing import/reconciliation, and an audit review of the first real paid request. Requires the user's explicit authorization and a key supplied only via env: or the OS keyring.
+Dependencies: User authorization; a real API key in env/keyring; decision on authentication model.
+Expected outcome: A verified live request path with confirmed billing, or a documented decision to stay offline.
+Do NOT: enable live execution in the HTTP API before the consent/authorization/accounting tests exist; never accept raw keys over HTTP.
+
+P1 — Durable orchestrator and recovery (highest remaining product value)
+Description: Turn the state-based ready queue into a real scheduler: bounded concurrency, dependency-aware dispatch, lease/heartbeat ownership, crash recovery that reconciles orphaned `running` tasks, retry/backoff policy using `retry_count`, and cancellation propagation. Must remain provider-agnostic and testable with a fake executor so no live model is required.
+Dependencies: Existing workflow state machine and task_transitions history.
+Expected outcome: A verified scheduler that can be killed mid-run and resume without duplicating work.
+First steps: `backend/app/orchestrator.py` with a `TaskExecutor` protocol, a fake executor for tests, lease columns plus migration 0003, recovery tests that simulate an interrupted run.
+
+P2 — Independent QA / review records on top of the workflow
+Description: Persist review verdicts with evidence, link them to the `reviewing → approved | rework_required` transitions instead of relying on free-text notes, and expose review history in the UI.
+Dependencies: Workflow state machine.
+Expected outcome: Reviewer separation with verifiable evidence rather than a note string.
+
+P3 — Authentication and authorization for the local API
+Description: Single-user local token or OS-user-bound auth, CSRF-safe mutation policy, and per-project authorization checks; loopback binding stays the default. Must precede any paid provider execution path.
+Dependencies: Decision on the local auth model.
+Expected outcome: Mutating endpoints reject unauthenticated callers, with tests.
+
+P4 — Browser-based visual and RTL verification
+Description: Install Playwright and add E2E coverage for English LTR, Arabic RTL, and Persian RTL: navigation, forms, dialogs, tables, charts, dates/numbers, mixed technical content, and responsive breakpoints.
+Dependencies: Playwright availability in the environment.
+Expected outcome: Screenshot/interaction evidence; replaces the current unit-only i18n confidence.
+
+P5 — Windows 11 verification, PostgreSQL integration, backup/restore
+Description: Execute the PowerShell install/start/stop/update/uninstall path on Windows 11, run the suite against PostgreSQL, and implement + test backup/restore of the SQLite database and project metadata.
+Dependencies: Windows host; PostgreSQL server; approved backup design.
+
+P6 — Later product phases
+Description: Agent lifecycle/permissions, Manager planning loop, persistent Playwright profiles and Browser Wall, project-isolated memory with retrieval/versioning, Git workspaces and approval-gated GitHub workflows, cost/resource monitoring dashboards, full navigation, cross-platform release packaging.
+Dependencies: Verified orchestrator, auth, providers where required.
+Expected outcome: Phased delivery; no feature marked complete without passing tests.

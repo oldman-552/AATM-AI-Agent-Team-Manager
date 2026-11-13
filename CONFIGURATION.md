@@ -1,0 +1,39 @@
+# Configuration
+
+## Runtime configuration available in the Phase 1 foundation
+
+The backend uses Pydantic Settings and reads a `.env` file from its process working directory. `scripts/start.*` runs from the repository root. The supported initial settings are:
+
+| Environment variable | Default | Purpose |
+| --- | --- | --- |
+| `HOST` | `127.0.0.1` | Backend bind address. Keep loopback for local use. |
+| `PORT` | `8000` | Backend port used by the start scripts. |
+| `DATABASE_URL` | SQLite under `~/.aatm/aatm.db` | SQLAlchemy database URL. SQLite parent folders are created automatically. |
+| `CORS_ORIGINS` | `http://localhost:5173`, `http://127.0.0.1:5173` | JSON list of allowed browser origins. |
+| `ALLOWED_HOSTS` | `localhost`, `127.0.0.1`, `[::1]`, `testserver` | Trusted Host middleware allowlist. Use a JSON list if changing it. |
+| `AATM_HOME` | `~/.aatm` | Process environment override for the default SQLite data directory, used when `DATABASE_URL` is not set. |
+| `AATM_UI_HOST` | `127.0.0.1` in start scripts | Vite bind address in shell/PowerShell startup scripts. |
+| `AATM_UI_PORT` | `5173` in start scripts | Vite port. |
+
+Copy `.env.example` to `.env` only if you need to override defaults. `.env` is ignored by Git. Never put credentials in Vite `VITE_*` variables or frontend files.
+
+For PostgreSQL, install the included psycopg driver and use a SQLAlchemy URL such as `postgresql+psycopg://user:password@host/database`; keep secret values in a protected local environment and do not log them. PostgreSQL has not been integration-tested yet.
+
+| `AATM_MODEL_PRICING` | built-in conservative default | JSON object of local cost estimates, for example `{"<model>": {"input_per_million_usd": 3.0, "output_per_million_usd": 15.0}}`. These are **estimates** used for budget enforcement, not official or confirmed prices. |
+
+## Provider settings
+
+Provider configuration, routing, budgets, and usage are managed through the API/UI and stored in the database — not in `.env`.
+
+- `credential_ref` accepts only `env:NAME` or `keyring:service/account`. The secret value itself stays in the environment or the OS keyring and is never stored by AATM.
+- Example: export `ANTHROPIC_API_KEY` in the process environment, then set `credential_ref` to `env:ANTHROPIC_API_KEY`.
+- `base_url` is limited to `api.anthropic.com` or a loopback address.
+- Arena cannot be enabled through configuration: the adapter is blocked and the API returns 409.
+
+### Live execution is intentionally not exposed
+
+`GET /api/v1/providers*` and `POST /api/v1/providers/route` never contact a provider. The Anthropic adapter can execute only from in-process code that passes an explicit authorization flag; `load_settings()` forces `live_requests_allowed=False` for the HTTP application. Enabling real provider traffic is a deliberate future change that must add authorization, consent UX, and verified budget tests first.
+
+### Billing reality
+
+Claude API usage is billed separately from a Claude subscription. AATM currently records only **local cost estimates** (`billing_status="estimated"`); it does not call any provider billing API and cannot confirm charges. No paid request can occur from the HTTP API in this build. Paid usage requires (a) an explicitly enabled provider, (b) a resolvable credential reference, (c) a positive budget limit, and (d) explicit per-request consent.

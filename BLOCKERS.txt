@@ -1,0 +1,43 @@
+AATM BLOCKERS AND ENVIRONMENT LIMITATIONS
+=========================================
+
+1. Arena provider integration is blocked pending a compliant, non-bypass path.
+   Date detected: 2026-11-13
+   Affected feature: Arena Local Bridge provider adapter and live Arena request testing.
+   Technical cause: Inspected upstream `Gandhara2077/arena-local-bridge` v1.1.0 at commit `403122cf575b82aa519cad7c81a4cfe7d224d474`. It exposes a local OpenAI-compatible API, but its implementation automates Arena's undocumented web UI, calls `grecaptcha.enterprise.execute` to obtain chat-submit tokens, and describes hiding Playwright automation signals. The AATM specification prohibits bypassing CAPTCHA and other provider protections; upstream docs also characterize Arena runtime behavior as undocumented/unstable.
+   Attempts to resolve it: Read the upstream README, SKILL/API notes, security notes, configuration, server, bridge, session, and browser/reCAPTCHA source. No Arena account or bridge runtime was used.
+   Required intervention: Verify an officially permitted/supported route that does not evade CAPTCHA, authentication, rate limits, or anti-bot controls; otherwise this integration must remain disabled. No credentials should be sent in chat.
+   Workaround: Continue independent platform work; the current AATM CRUD foundation has no provider calls. A future compliant provider can be integrated behind the provider interface.
+   Current status: BLOCKED — policy/permission verification required. See `PROVIDER_RESEARCH.md`.
+
+2. Windows 11 verification is unavailable in this Linux execution environment.
+   Date detected: 2026-11-13
+   Affected feature: Windows installation, startup/shutdown, credential-store integration, and cross-platform tests.
+   Technical cause: No Windows host or Windows runner is available in this session.
+   Attempts to resolve it: Not applicable; this is an environment boundary.
+   Required intervention: Run the documented Windows test path on a Windows 11 machine or CI runner before claiming Windows support verified.
+   Workaround: Develop platform-neutral code and provide PowerShell scripts; label Windows verification as pending.
+   Current status: OPEN — validation limitation.
+
+3. Docker Engine is not installed in the current environment.
+   Date detected: 2026-11-13
+   Affected feature: Optional container-based/PostgreSQL deployment and Docker-based integration tests.
+   Technical cause: `docker` executable is unavailable.
+   Attempts to resolve it: Confirmed with `docker --version`; no installation attempted because Phase 1 uses local SQLite and Docker is optional.
+   Required intervention: Install Docker only if/when a justified container workflow is introduced.
+   Workaround: Use the file-backed SQLite development database.
+   Current status: OPEN — non-blocking for current work.
+
+4. Live provider execution is deliberately not exposed and therefore unverified end to end.
+   Date detected: 2026-11-13
+   Affected feature: Real Anthropic API traffic, per-request consent UX, confirmed billing reconciliation.
+   Technical cause: The HTTP application hard-codes live request execution off; the adapter is reachable only from authorized in-process code and is tested with an injected fake SDK client. No real API key exists in this environment, and no paid request may be made without explicit user authorization.
+   Attempts to resolve it: Built and tested the full offline boundary (configuration, health, routing, budgets, usage, redaction). No live call was attempted.
+   Required intervention: Explicit user authorization plus a real key supplied through `env:` or the OS keyring, then verification of consent flow, token accounting, and confirmed billing.
+   Workaround: Continue offline-safe product work (orchestration, memory, GitHub, QA, UI).
+   Current status: GATED — by design, not a defect.
+
+Additional verification limits:
+- PostgreSQL is configurable and the psycopg driver is included, but there is no PostgreSQL server available here and its integration is untested.
+- The full UI has not had browser-based visual/E2E testing; only production build, Vitest resource tests, and HTTP/Vite-proxy smoke checks were run. Playwright is not installed in this environment.
+- Visual RTL layout (Arabic/Persian alignment, spacing, mixed technical content, dates and numbers) is unverified; only translation completeness, parity and direction are unit-tested.

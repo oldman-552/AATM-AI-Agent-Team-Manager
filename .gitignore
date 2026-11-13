@@ -1,0 +1,39 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# User data, browser profiles, databases, and runtime logs
+.aatm/
+.aatm-home/
+data/
+browser-profiles/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# JavaScript/build output
+node_modules/
+web/node_modules/
+web/dist/
+web/.vite/
+.vite/
+*.tsbuildinfo
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

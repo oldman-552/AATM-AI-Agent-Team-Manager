@@ -1,0 +1,53 @@
+# AATM Architecture
+
+## Current status
+
+This is the current Phase 1 architecture and a target boundary map, not a declaration that every planned component exists. The starting repository was a README-only skeleton.
+
+## Principles
+
+- Local-first and loopback-bound by default.
+- Persist observable state in a relational database.
+- Keep provider, orchestration, browser, project, and UI boundaries independent.
+- Do not model provider behavior until its actual supported protocol is inspected.
+- Render dashboard statistics from API/database state; use explicit loading/error/empty states.
+- Treat destructive actions, paid calls, merges, and deployments as approval-gated operations.
+- Avoid Redis, RabbitMQ, Docker, or distributed services without measured need.
+
+## Current modules
+
+1. **Web UI** — React + TypeScript + Vite, TanStack Query, i18next, relative typed API client. Current functional views: Dashboard, Projects, Agents, Tasks (with workflow actions), Providers (offline configuration, routing dry run, budgets). English/Arabic/Persian resources with 216 keys each and a Vitest parity test; language selection persists; Arabic/Persian set `dir=rtl`.
+2. **HTTP API** — FastAPI/Pydantic; versioned `/api/v1`; local default bind; configured Trusted Host and CORS middleware.
+3. **Persistence** — SQLAlchemy 2.x and Alembic (revisions `0001_initial`, `0002_provider_boundary`). Current records: projects, agent registrations, tasks, task transitions, audit events, provider configurations (references only), provider budget limits, usage records, and app settings. SQLite is the zero-setup default; a PostgreSQL URL can be configured with psycopg (not yet integration-tested).
+
+5. **Provider boundary** (`backend/app/providers/`) — provider-agnostic contracts (`ProviderAdapter`, `ProviderHealth`, `CostEstimate`, `ProviderRequest`, `Authorization`), credential **references** (`env:`/`keyring:`), a configurable pricing/estimate table, a hard budget guard, and a deterministic routing engine with five policies. `ArenaBridgeAdapter` is a permanently blocked stub. `AnthropicAdapter` uses the official SDK but is reachable only through an explicitly authorized in-process call; no HTTP route exposes it, and `load_settings()` hard-codes `live_requests_allowed=False`.
+
+6. **Workflow service** (`backend/app/workflow.py`) — an explicit state machine with dependency gating (`completed`/`approved` satisfy dependencies), evidence requirements for failure/approval/rework, retry counting, and replay-safe idempotency keys backed by an append-only `task_transitions` table.
+7. **Progress tooling** — atomic status/log/state writer, secret-pattern redaction, and heartbeat/idle detection in `backend/app/progress.py` and `scripts/progress_reporter.py`.
+8. **Setup scripts** — shell and PowerShell starter install/start/stop/update/uninstall scripts. Linux path is being exercised; Windows is pending.
+
+## Planned components
+
+- **Application services** — a durable orchestrator (scheduler, bounded concurrency, retries, crash recovery), approval policy, and project workflows isolated from HTTP handlers.
+- **Provider adapters** — the contract exists; Arena remains blocked until a compliant supported route is verified; Anthropic live execution stays gated behind explicit authorization, consent and budgets.
+- **Browser manager** — Playwright persistent contexts, per-agent data directories, exclusive profile locks, and observable health.
+- **Workspace/Git services** — isolated worktrees; protected merge/deploy boundaries.
+- **Memory and QA** — project-isolated memory and independent, evidence-based review records.
+
+## Current workflow boundary
+
+The API persists projects, agent registrations, task metadata, validated task state transitions, provider configuration/health/budgets, and observable audit events.
+
+Explicit non-claims:
+- Creating, assigning, or moving a task **does not execute it**; the ready queue is a query, not a scheduler.
+- The default Manager is an unconfigured identity, not an active model.
+- Provider health and routing are dry runs; no live model request is possible over HTTP.
+- Approvals, Git workflows, browser sessions, memory, and recovery remain future work.
+
+### Provider data flow (offline)
+
+`ProviderConfig` (reference only) → `ProviderContext` (config + settings + budget guard + credential store) → adapter `health()`/`authorize()` → `RoutingEngine` decision. The only path to a real provider call is `AnthropicAdapter.execute()`, which requires an in-process caller, an explicit `live_execution_authorized` flag, a resolvable credential reference, explicit paid consent, and a passing budget check. Tests inject a fake SDK client.
+
+## Local process topology
+
+For local development, Vite serves the UI and proxies relative `/api/v1` requests to FastAPI on `127.0.0.1`. Browser-facing code does not hardcode `localhost` for API calls. Hosted preview runs may bind Vite to `0.0.0.0` as required by the preview host; regular project scripts bind both services to loopback. Backend host validation remains restrictive.

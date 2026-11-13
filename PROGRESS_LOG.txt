@@ -1,0 +1,112 @@
+AATM DEVELOPMENT HISTORY
+========================
+
+[2026-11-13 10:20 UTC] Phase 1 — Repository inspection
+Task: Establish the real repository state before implementation.
+Action performed: Inspected branch, status, tracked files, README, recent history, runtime versions, and available container tooling. Repository was clean and contained only README.md; Python 3.11 and Node.js 22 are available; Docker is not installed.
+Files created: None.
+Files modified: None.
+Tests executed: Environment/version checks only.
+Results: Confirmed there was no pre-existing application to preserve and no uncommitted work.
+Problems: No Docker installation; Windows cannot be exercised in this Linux session.
+Solutions: Plan a local-first, no-Docker development path; keep Windows validation explicitly pending.
+
+[2026-11-13 10:22 UTC] Phase 1 — Specification preservation
+Task: Save the user's complete AATM master development prompt in the repository.
+Action performed: Added AATM_MASTER_DEVELOPMENT_PROMPT.md with the full product specification and execution instructions.
+Files created: AATM_MASTER_DEVELOPMENT_PROMPT.md, STATUS.txt, PROGRESS_LOG.txt.
+Files modified: None.
+Tests executed: Not yet; prompt file will be checked with the implementation review.
+Results: Prompt and initial progress state are now present in the working tree.
+Problems: None.
+Solutions: None.
+
+[2026-11-13 10:28 UTC] Phase 1 — Foundation scaffold
+Task: Establish a runnable local backend/frontend baseline and cross-platform setup entry points.
+Action performed: Added FastAPI routes for live health/dashboard data and project/agent/task records; SQLAlchemy persistence models; 20 role templates; React/TypeScript/Vite views; English, Arabic, and Persian resources with RTL direction; local install/start/stop scripts; initial architecture and security documentation.
+Files created: backend/app/*, backend/tests/test_api.py, backend/requirements.txt, web/*, scripts/*, .env.example, .gitignore, and initial product documentation.
+Files modified: README.md, STATUS.txt, IMPLEMENTATION_STATUS.md, NEXT_ACTIONS.txt.
+Tests executed: None yet; dependency installation and test/build verification are next.
+Results: Initial source foundation is present; no provider integration or agent execution is claimed.
+Problems: External dependencies are not installed yet; Windows runtime verification is unavailable here.
+Solutions: Test on the available Linux/Node environment first; retain the Windows path as explicitly pending.
+
+[2026-11-13 10:35 UTC] Phase 1 — First verification and reliability additions
+Task: Exercise the first API/UI vertical slice and make database/progress setup durable.
+Action performed: Installed backend/frontend dependencies; corrected frontend type-check failures; added explicit Alembic schema migration, live API/Vite proxy checks, SQLite file-persistence coverage, SQLite foreign-key enforcement, and an atomic secret-redacting status/event heartbeat tool with tests.
+Files created: backend/app/migrate.py, backend/app/progress.py, backend/migrations/*, backend/tests/test_progress.py, scripts/progress_reporter.py.
+Files modified: backend/app/main.py, backend/app/api.py, backend/app/db.py, backend/tests/test_api.py, web/src/App.tsx, web/src/i18n.ts, web/src/styles.css, web/vite.config.ts, scripts/install.sh, scripts/install.ps1, backend/requirements.txt, backend/alembic.ini.
+Tests executed: Initial API tests (5 passed); initial frontend TypeScript/Vite production build (passed); live API health/dashboard/role-count and Vite proxy smoke checks (passed). The newly added tests are pending.
+Results: Real API state is served through the relative frontend API path; migration ran on application startup. No AI execution/provider call is implemented.
+Problems: Initial TypeScript build failed on unused imports and an interpolation type; a Starlette/httpx deprecation warning was emitted by TestClient.
+Solutions: Fixed the TypeScript errors; warnings are documented for follow-up, and the runtime/test path remains functional.
+
+[2026-11-13 10:39 UTC] Phase 2 — Provider discovery and compliance review
+Task: Inspect the actual Arena Local Bridge repository and determine a verified, permitted integration boundary before implementing any adapter.
+Action performed: Shallow-cloned the public upstream repository into ignored `.aatm/research/arena-local-bridge`, inspected README/SKILL/security/config/server/bridge/browser/session code at commit `403122cf575b82aa519cad7c81a4cfe7d224d474`, and documented actual local OpenAI-compatible endpoints, auth/session behavior, limitations, and the AATM no-bypass decision.
+Files created: PROVIDER_RESEARCH.md.
+Files modified: BLOCKERS.txt, NEXT_ACTIONS.txt, IMPLEMENTATION_STATUS.md, STATUS.txt.
+Tests executed: Static source/documentation inspection; no live Arena bridge or account was used.
+Results: Protocol details are now sourced, but the inspected version includes browser-based web automation, CAPTCHA token generation, and anti-automation masking; no provider call or adapter was made because that conflicts with the user's explicit no-bypass requirement.
+Problems: Arena integration cannot proceed safely without a compliant supported path; no account credentials were available or requested.
+Solutions: Documented a concrete blocker and will continue independent work rather than bypassing protections.
+
+[2026-11-13 10:43 UTC] Phase 1 — Foundation — Final regression verification and provider-policy review
+Task: Final regression verification and provider-policy review
+Action performed: Completed backend/API, frontend build, installation/startup smoke checks, progress reporter checks, and Arena Local Bridge source inspection.
+Files created: None
+Files modified: STATUS.txt, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, BLOCKERS.txt, PROVIDER_RESEARCH.md
+Tests executed: 9 passed; TypeScript/Vite build passed; pip check, npm audit, shell syntax and Python compile passed.
+Results: Local API/Vite proxy and Linux start/stop smoke checks passed. Arena runtime not called due CAPTCHA/anti-automation policy conflict.
+Problems: Windows, PostgreSQL, full RTL/browser E2E remain untested; Starlette emitted one TestClient/httpx deprecation warning.
+Solutions: Documented limitations and preserved a no-bypass boundary; all executed foundation checks passed.
+
+[2026-11-13 10:47 UTC] Phase 1 — Foundation — Final regression and startup configuration verification
+Task: Final regression and startup configuration verification
+Action performed: Re-ran the 9-test backend suite, TypeScript/Vite build, shell/Python/dependency checks, and npm audit. Confirmed startup scripts honor .env/runtime ports and the UI proxy reaches the API.
+Files created: None
+Files modified: STATUS.txt, TESTING_REPORT.md, NEXT_ACTIONS.txt
+Tests executed: 9 passed (one Starlette/httpx deprecation warning); frontend build passed; pip check passed; npm audit reported 0 vulnerabilities; shell syntax/Python compile passed.
+Results: Alternate-port startup and relative API proxy passed; temporary .env test passed and was cleaned up.
+Problems: Windows, PostgreSQL, full RTL/browser E2E remain untested; Arena integration remains blocked by anti-bot/CAPTCHA conflict.
+Solutions: Retained a local-only default and documented all unverified capabilities; no Arena account or CAPTCHA endpoint was used.
+
+[2026-11-13 10:48 UTC] Phase 1 — Foundation — Publish the prompt and tested foundation to the current GitHub branch
+Task: Publish the prompt and tested foundation to the current GitHub branch
+Action performed: Final verification passed: 9 backend tests; frontend production build; Linux install/start/stop and .env/proxy smoke; progress reporter unit/CLI; shell syntax; Python compilation; pip check; npm audit.
+Files created: backend/app and migration foundation, web React/Vite shell and i18n resources, cross-platform scripts and progress reporter, progress, architecture, installation, security, API, provider research and test documentation
+Files modified: README.md
+Tests executed: 9 passed; build passed; pip check passed; npm audit reported 0 vulnerabilities; shell/Python checks passed.
+Results: AATM UI/API smoke and local start/stop tests passed. Arena integration remains disabled due no-bypass conflict.
+Problems: One Starlette/httpx deprecation warning; Windows/PostgreSQL/visual E2E untested.
+Solutions: Recorded limitations; no Arena credentials or CAPTCHA flow used.
+
+[2026-11-13 10:49 UTC] Phase 1 — Foundation — Commit and publish the verified prompt and local-first foundation
+Task: Commit and publish the verified prompt and local-first foundation
+Action performed: Completed a 1,505-line master prompt content review, refreshed final verification timestamps, reviewed staged paths/modes/size and ignored build/runtime artifacts, and ran a staged credential-pattern scan; only a deliberate test fixture secret placeholder matched.
+Files created: None
+Files modified: STATUS.txt, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md
+Tests executed: Latest run: 9 backend tests passed with one Starlette/httpx deprecation warning; frontend build, shell/Python checks, pip check and npm audit passed.
+Results: No .env, build outputs, local databases, node_modules or virtualenv are staged; staged changes contain no real credentials.
+Problems: Windows/PostgreSQL/visual browser E2E are unverified; Arena bridge remains blocked by anti-CAPTCHA compliance.
+Solutions: Review confined to intended source/docs; test-only fake secret value is included to verify redaction.
+
+[2026-11-13 10:50 UTC] Phase 1 — Foundation published — Continue autonomous development on the next safe product slice
+Task: Continue autonomous development on the next safe product slice
+Action performed: Committed the master prompt, 61 additional repository foundation/docs/test files (62 files total) as 8b2badfd0e22be70984a80c4fc22f2f81f8386a0; pushed only arena/28ecf5c8-aatm-ai-agent-team-manager and verified origin points to the same commit.
+Files created: None
+Files modified: STATUS.txt, NEXT_ACTIONS.txt
+Tests executed: The pushed commit contains the final verified tree: 9 backend tests passed with one deprecation warning; frontend build, shell/Python checks, pip check, npm audit and local startup/proxy smoke passed.
+Results: GitHub branch push succeeded; remote SHA matches local commit. No pull request was opened.
+Problems: Windows, PostgreSQL and browser E2E remain unverified; no compliant Arena integration route has been established.
+Solutions: Kept provider capability disabled and documented the blocker; continuing independent local-first work.
+
+[2026-11-13 12:50 UTC] Phase 1 — Provider boundary & workflow state machine — P0 safe provider abstraction boundary
+Task: P0 safe provider abstraction boundary
+Action performed: Implemented and verified the offline provider boundary plus a task workflow state machine
+Files created: backend/app/providers/__init__.py, backend/app/providers/contracts.py, backend/app/providers/credentials.py, backend/app/providers/pricing.py, backend/app/providers/budgets.py, backend/app/providers/context.py, backend/app/providers/adapters.py, backend/app/providers/routing.py, backend/app/providers/registry.py, backend/app/provider_store.py, backend/app/provider_api.py, backend/app/workflow.py, backend/app/workflow_api.py, backend/app/audit.py, backend/migrations/versions/0002_provider_boundary.py, backend/tests/test_provider_boundary.py, backend/tests/test_provider_api.py, backend/tests/test_workflow.py, web/src/ProvidersView.tsx, web/src/i18n.test.ts, web/vitest.config.ts
+Files modified: backend/app/models.py, backend/app/schemas.py, backend/app/api.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, web/package.json
+Tests executed: Backend pytest 29 passed; frontend vitest 5 passed; tsc --noEmit; vite build
+Results: All suite runs passed. Live smoke test: task assigned→running→completed with replay-safe transitions, provider dry-run routing with no usage record.
+Problems: Initial TypeScript build error (missing icon import, assertion typing) and one budget test threshold error; both fixed.
+Solutions: Fixed imports/assertions; one upstream Starlette/httpx deprecation warning remains.

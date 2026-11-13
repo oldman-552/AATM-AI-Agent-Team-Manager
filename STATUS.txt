@@ -12,16 +12,17 @@ Overall Completion:
 Roughly 80% of the specified local-first product surface is implemented and tested. Basis: the implementation checklist has 75 entries; a status-label tally finds 45 clearly complete, 28 mixed/partial, and 2 without a clear status. Giving partial entries half credit yields 78.67%, rounded to 80%. This is a checklist-row estimate, not weighted by effort or criticality. The complete 1,505-line, 27-part master prompt is preserved in the repository; implementation of its requirements is estimated at 80%. Remaining work is gated by design (live provider/AI-agent execution, GitHub execution, distributed worker scheduling) or environment-limited (Windows, PostgreSQL, Docker, Playwright). See `IMPLEMENTATION_STATUS.md` and `BLOCKERS.txt`; no pending item is counted as complete.
 
 Current Phase:
-Phase 33 — Distributed worker scheduling and workspace isolation
+Phase 33 — Distributed worker scheduling and workspace integration
 
 Current Task:
-Define safe worker ownership and per-worktree execution for same-project task concurrency
+Implement safe cross-process worker ownership and a reviewed path for integrating per-task worktree changes
 
 Current Activity:
-API run requests sharing a database are serialized by an expiring row lock, and active task/run leases are heartbeated by the orchestrator. Independent worker processes and same-project worktree isolation are not yet implemented.
+API run requests sharing a database are serialized by an expiring row lock, and active task/run leases are heartbeated by the orchestrator. The opt-in local executor now prepares an owned, detached Git worktree per task, enabling same-project concurrency without writes to the shared source workspace; unsupported/non-Git workspaces remain serialized. Distributed worker scheduling and automatic task-worktree integration are not implemented.
 
 Recently Completed (most recent first):
-- Bounded parallel execution: the orchestrator now claims a bounded independent batch, commits leases before work, runs executor calls in a bounded `ThreadPoolExecutor` (one worker at cap one; parallel only above one), renews active leases and applies task state changes on the main session/thread. Each worker uses its own SQLAlchemy session; same-project tasks do not run together because they may mutate one workspace. Barrier and heartbeat tests prove overlap, session isolation, same-project exclusion, failure isolation and renewal during long work. A GitHub Actions workflow now defines backend and frontend validation; remote execution is not yet observed.
+- Same-project task worktree isolation: the opt-in local executor creates or safely reuses a detached Git worktree per task on the orchestrator thread, then executes in that worktree. Two real tasks from one project were verified to run in distinct directories without writing to the source workspace. Non-Git workspaces remain serialized by project; worktree changes are preserved for inspection/retry but are not automatically merged back. Backend suite, frontend verify, and hosted PostgreSQL smoke all passed on main after merge.
+- Bounded parallel execution: the orchestrator claims a bounded independent batch, commits leases before work, runs executor calls in a bounded `ThreadPoolExecutor` (one worker at cap one; parallel only above one), renews active leases and applies task state changes on the main session/thread. Each worker uses its own SQLAlchemy session; workspaces without proven per-task Git isolation remain serialized per project. Barrier and heartbeat tests prove overlap, session isolation, failure isolation and renewal during long work.
 - Opt-in adaptive dispatch cap: `AATM_ADAPTIVE_CONCURRENCY` applies the local CPU/memory/disk recommendation to the per-run dispatch budget, never above `AATM_MAX_CONCURRENCY`. Existing running tasks are deducted; zero free slots claims no work. Same-process run requests serialize. Status API and Operations UI expose the mode and cap. Parallel execution and lease heartbeats run within one orchestrator pass; API run requests sharing a database serialize across processes. A distributed multi-worker scheduler remains unimplemented.
 - Advisory provider-budget notifications: in-app feed now surfaces persisted usage at/above 80% of a positive scoped limit in English/Arabic/Persian; threshold does not alter the hard guard. Tests cover at-threshold, below-threshold, zero-limit and allowed-under-cap behavior.
 - Documentation accuracy pass: corrected obsolete execution, event stream, locale count, test count, and notification claims; expanded API documentation for opt-in local execution and budget alert semantics.
@@ -46,10 +47,10 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Phase 33 distributed worker scheduling remains open. Latest local verification: 261 backend passed, one PostgreSQL-only test skipped locally; 20 frontend tests, TypeScript, production build and RTL checks passed. The hosted backend, frontend, and PostgreSQL jobs all passed on revision f52ed89 using Node 24-compatible action majors (CI run 43468376686).
+- Phase 33 distributed worker scheduling and safe task-worktree integration remain open. Latest local verification: 262 backend passed, one PostgreSQL-only test skipped locally; 20 frontend tests, TypeScript, production build and RTL checks passed. On main merge commit `55990a3`, hosted backend, frontend, and PostgreSQL migration/lock jobs all passed (CI run 43471340502).
 
 Upcoming Tasks:
-- Distributed task-worker scheduling and per-worktree isolation; expand PostgreSQL coverage beyond migration/lock smoke; Windows CI verification and release packaging.
+- Distributed task-worker scheduling, safe review/integration of task-worktree changes, and expanded PostgreSQL coverage beyond migration/lock smoke; Windows CI verification and release packaging.
 - The consent/accounting surface that must precede any paid provider call; wiring an authorized model call into the executor.
 - GitHub push/PR execution behind an approval (recorded plans exist; execution does not).
 - Pixel-level browser visual testing once a display-capable environment exists.

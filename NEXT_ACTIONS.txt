@@ -1,6 +1,9 @@
 AATM — PRIORITIZED NEXT ACTIONS
 ===============================
 
+COMPLETED — Same-project task isolation with Git worktrees (2026-11-13 17:18 UTC)
+Result: The opt-in local executor now makes an owned detached Git worktree per task before dispatch; tasks with proven per-task Git workspaces can run concurrently, while non-Git/invalid workspaces remain serialized per project. Worktrees persist for inspection/retry and are not merged into the source workspace. Verification: 262 backend passed, 1 PostgreSQL-only test skipped locally; frontend `npm run verify` passed (20 tests, TypeScript, production build, RTL check); PR #7 merged as `55990a3`, with all backend, frontend, and PostgreSQL migration/lock CI jobs passing on main (run `43471340502`).
+
 COMPLETED — PostgreSQL migration/run-lock CI smoke (2026-11-13 16:57 UTC)
 Result: PostgreSQL 16 CI service applied all migrations and passed shared database-lock acquisition/contention/release. The test is skipped locally when `AATM_TEST_POSTGRES_URL` is absent, so full PostgreSQL application integration and backup/restore remain unverified. Upgraded GitHub Actions to Node 24-compatible major versions; backend, frontend, and PostgreSQL jobs passed on revision `f52ed89`.
 
@@ -69,7 +72,7 @@ Description: Execute the PowerShell install/start/stop/update/uninstall path on 
 Dependencies: Windows host; PostgreSQL server; approved backup design.
 
 P6 (remaining) — Later product phases
-Description: Consent/accounting before any live paid model request; model-driven Manager and independent worker execution; distributed worker scheduling and worktree isolation for same-project tasks; browser automation; approval-gated GitHub push/PR operations; per-user authorization; distributed CI coverage for Windows and release packaging.
+Description: Consent/accounting before any live paid model request; model-driven Manager and independent worker execution; distributed worker scheduling and safe review/integration of same-project task-worktree changes; browser automation; approval-gated GitHub push/PR operations; per-user authorization; distributed CI coverage for Windows and release packaging.
 Note: deterministic planning, agent lifecycle/scopes, profile storage/Browser Wall, evidence-based analytics, timelines, notifications, memory, local Git workspaces, budgets/resources, checkpoints and local-only command execution are already implemented to the boundaries documented in `IMPLEMENTATION_STATUS.md`.
 Dependencies: User consent and provider credentials for paid traffic; compliant policy path for Arena; display/Windows/PostgreSQL/Docker/Playwright environments for their respective tests.
 Expected outcome: Phased delivery; no feature marked complete without passing tests and real evidence.

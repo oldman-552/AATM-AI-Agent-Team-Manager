@@ -50,3 +50,12 @@ Direct API calls then need `-H "Authorization: Bearer $AATM_AUTH_TOKEN"`. The UI
 ### Billing reality
 
 Claude API usage is billed separately from a Claude subscription. AATM currently records only **local cost estimates** (`billing_status="estimated"`); it does not call any provider billing API and cannot confirm charges. No paid request can occur from the HTTP API in this build. Paid usage requires (a) an explicitly enabled provider, (b) a resolvable credential reference, (c) a positive budget limit, and (d) explicit per-request consent.
+
+## Backup settings
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `AATM_BACKUP_DIR` | `$AATM_HOME/backups` | Where `scripts/backup.py` writes backups and manifests. |
+| `DATABASE_URL` | `sqlite:///~/.aatm/aatm.db` | The database that backup/restore operates on. Only SQLite is supported by the bundled tool. |
+
+See `BACKUP_AND_RESTORE.md` for the full procedure and safety properties.

@@ -18,6 +18,7 @@ AATM is a local-first AI engineering command center in early development. The co
 - Isolated local Git workspaces per project with branch creation and read-only status (no merge/push/fetch).
 - Project-isolated memory with scoped entries, keyword retrieval, version history and export.
 - Local CPU/memory/disk telemetry with an advisory (never auto-applied) concurrency recommendation.
+- `scripts/backup.py` for consistent, verified, guarded SQLite backups and restores.
 - Optional local bearer-token authentication plus CSRF-hardened mutations; the token is injected by the Vite proxy and never reaches the browser.
 - Ubuntu shell and Windows PowerShell dependency/start/stop/update/uninstall entry points (Windows execution remains unverified here).
 - Atomic progress event/status writer and a five-minute heartbeat command.

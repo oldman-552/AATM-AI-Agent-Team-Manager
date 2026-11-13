@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:13 UTC
+2026-11-13 13:14 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 6 — Projects and Memory
+Phase 10 — Cost and Resources
 
 Current Task:
-Project-isolated memory with versioning and retrieval
+Local resource monitoring and adaptive concurrency guidance
 
 Current Activity:
-Added memory service, API, migration 0006, Memory view and isolation tests
+Added resource sampling module, system API, UI summary and tests
 
 Recently Completed:
 - Saved AATM_MASTER_DEVELOPMENT_PROMPT.md in the repository.

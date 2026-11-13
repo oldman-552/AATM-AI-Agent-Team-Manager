@@ -160,3 +160,13 @@ Tests executed: Backend pytest 72 passed; frontend vitest 5 passed; tsc --noEmit
 Results: Cross-project isolation verified for list, search, direct lookup, delete and rollback; versioning and rollback-as-new-version verified; global entries shared deliberately.
 Problems: A blank search query returned 200 instead of a validation error.
 Solutions: Rejected blank queries explicitly in the API and covered it with a test.
+
+[2026-11-13 13:14 UTC] Phase 10 — Cost and Resources — Local resource monitoring and adaptive concurrency guidance
+Task: Local resource monitoring and adaptive concurrency guidance
+Action performed: Implemented and verified local CPU/memory/disk telemetry with a bounded advisory concurrency recommendation
+Files created: backend/app/resources.py, backend/app/system_api.py, backend/tests/test_resources.py
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 78 passed; frontend vitest 5 passed; tsc --noEmit; vite build; live proxy resource smoke
+Results: Real local measurements returned; recommendation stayed bounded and explicitly advisory.
+Problems: An unused helper remained after an early draft.
+Solutions: Removed it and hoisted the datetime import; pyflakes is clean.

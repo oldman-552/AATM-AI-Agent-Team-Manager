@@ -28,9 +28,10 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 7. **Workspaces** (`backend/app/workspaces.py`) — isolated local Git repositories per project under a configurable root, with branch creation, read-only status/diff, strict path-escape protection, and a scrubbed non-interactive Git environment. Merges, pushes, fetches and deletions are not implemented.
 8. **Memory** (`backend/app/memory.py`) — scoped, project-isolated knowledge with deterministic keyword retrieval, monotonic version history, rollback-as-new-version, export and audited deletion.
 9. **Quality and approvals** (`backend/app/quality.py`) — reviewer separation, evidence-gated verdicts that drive the workflow, and approval gates that record decisions for paid/deploy/merge/delete operations without executing them.
-10. **Resource telemetry** (`backend/app/resources.py`) — standard-library CPU/memory/disk sampling with a bounded advisory concurrency recommendation; nothing is uploaded and nothing is auto-applied.
-11. **Progress tooling** — atomic status/log/state writer, secret-pattern redaction, and heartbeat/idle detection in `backend/app/progress.py` and `scripts/progress_reporter.py`.
-12. **Setup scripts** — shell and PowerShell starter install/start/stop/update/uninstall scripts. Linux path is being exercised; Windows is pending.
+10. **Backup and restore** (`backend/app/backup.py`, `scripts/backup.py`) — online SQLite backup with SHA-256 manifests, verification before restore, preserved previous copies, and retention pruning.
+11. **Resource telemetry** (`backend/app/resources.py`) — standard-library CPU/memory/disk sampling with a bounded advisory concurrency recommendation; nothing is uploaded and nothing is auto-applied.
+12. **Progress tooling** — atomic status/log/state writer, secret-pattern redaction, and heartbeat/idle detection in `backend/app/progress.py` and `scripts/progress_reporter.py`.
+13. **Setup scripts** — shell and PowerShell starter install/start/stop/update/uninstall scripts. Linux path is being exercised; Windows is pending.
 
 ## Planned components
 

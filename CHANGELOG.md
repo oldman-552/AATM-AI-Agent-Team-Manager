@@ -31,6 +31,7 @@
 - Project-isolated memory with global/project/agent/task/decision scopes, deterministic keyword retrieval, version history with rollback-as-new-version, JSON export and audited deletion.
 - Alembic revision `0006_memory`; Memory view with a project-scope selector.
 - Local resource telemetry (CPU/memory/disk) with a bounded, explicitly advisory concurrency recommendation and a summary in the Tasks view.
-- Backend tests 9 → 78; Vitest resource tests added (5).
+- Local backup/restore CLI using SQLite's online backup API, with SHA-256 manifests, integrity verification, guarded restore that preserves the previous database, and retention pruning.
+- Backend tests 9 → 86; Vitest resource tests added (5).
 
 - Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, backup/restore, authentication, and Windows verification remain incomplete. Approval gates record decisions but do not perform the gated operations.

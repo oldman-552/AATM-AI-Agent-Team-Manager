@@ -254,6 +254,15 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Backup and restore (CLI)
+
+Backup is a local operator command, not an HTTP endpoint — destructive operations are deliberately not exposed over the API.
+
+- `scripts/backup.py create --name <name>` — consistent online SQLite backup plus a manifest with SHA-256.
+- `scripts/backup.py list` / `verify --name <name>` — hash + `PRAGMA integrity_check` verification.
+- `scripts/backup.py restore --name <name> --allow-overwrite --yes` — verified restore with a preserved previous copy.
+- `scripts/backup.py prune --keep N` — retention cleanup.
+
 ## System resources
 
 ### `GET /system/resources?configured_max=2`

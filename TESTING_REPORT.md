@@ -1,5 +1,11 @@
 # Testing Report
 
+## 2026-11-13 16:59 UTC — Refreshed GitHub Actions
+
+- CI run `43468002519` passed on PR revision `e3f8751`: backend tests, frontend verification, and PostgreSQL 16 migration/run-lock smoke.
+- The workflow uses the current Node 24-compatible major versions of checkout, setup-python, and setup-node actions.
+- Only the `ubuntu-latest` runner-image migration notice remains; no action-runtime deprecation warning appeared in this run.
+
 ## 2026-11-13 16:57 UTC — Hosted PostgreSQL verification
 
 - PR CI run `43467593617` completed successfully: backend suite, frontend verification, and the PostgreSQL 16 migration/run-lock smoke all passed.

@@ -112,3 +112,140 @@ def test_memory_writes_are_audited(client: TestClient) -> None:
     write(client, project_id=alpha)
     events = [event["event_type"] for event in client.get("/api/v1/events").json()]
     assert "memory.created" in events
+
+
+# --- Context selection and summarization ---------------------------------
+
+
+def seed(client: TestClient, project_id: str, **entries) -> dict:
+    written = {}
+    for key, payload in entries.items():
+        body = {"project_id": project_id, **payload}
+        response = client.post("/api/v1/memory", json=body)
+        assert response.status_code == 201, response.text
+        written[key] = response.json()["entry"]["id"] if "entry" in response.json() else response.json()["id"]
+    return written
+
+
+def test_context_respects_the_word_budget_and_explains_omissions(client: TestClient) -> None:
+    project = client.post("/api/v1/projects", json={"name": "Context"}).json()
+    task = client.post("/api/v1/tasks", json={"title": "Scratch work", "project_id": project["id"]}).json()
+    seed(
+        client,
+        project["id"],
+        decision={
+            "scope": "decision",
+            "title": "Use SQLite for local storage",
+            "content": "We decided SQLite is the default because setup must be zero. " * 12,
+            "tags": ["database"],
+        },
+        note={
+            "scope": "task",
+            "task_id": task["id"],
+            "title": "Scratch pad",
+            "content": "Random working notes about the cache. " * 20,
+        },
+    )
+
+    body = client.get(
+        "/api/v1/memory/context", params={"project_id": project["id"], "word_budget": 60}
+    ).json()
+    assert body["budget"]["unit"] == "words"
+    assert body["budget"]["words_used"] <= 60
+    assert body["budget"]["words_remaining"] >= 0
+    assert "not provider tokens" in body["budget"]["note"]
+
+    # Everything is accounted for: selected + excluded == candidates.
+    assert body["stats"]["selected"] + body["stats"]["excluded"] == body["stats"]["candidates"]
+    for item in body["excluded"]:
+        assert "over_budget" in item["reason"] or item["reason"] == "empty"
+    # A summarized entry carries a real method, never a fabricated paraphrase.
+    for item in body["selected"]:
+        assert item["included_as"] in ("full", "summary")
+        assert item["words"] > 0
+        if item["included_as"] == "summary":
+            assert item["summary_method"] == "extractive"
+
+
+def test_context_prefers_decisions_over_scratch_notes(client: TestClient) -> None:
+    project = client.post("/api/v1/projects", json={"name": "Priority"}).json()
+    task = client.post("/api/v1/tasks", json={"title": "Notes host", "project_id": project["id"]}).json()
+    seed(
+        client,
+        project["id"],
+        decision={"scope": "decision", "title": "Chosen database", "content": "SQLite is the default."},
+        note={
+            "scope": "task",
+            "task_id": task["id"],
+            "title": "Unrelated note",
+            "content": "A note about something else entirely.",
+        },
+    )
+    body = client.get(
+        "/api/v1/memory/context", params={"project_id": project["id"], "word_budget": 10}
+    ).json()
+    assert body["selected"], body
+    # The decision outranks the note when only one can fit.
+    assert body["selected"][0]["scope"] == "decision"
+
+
+def test_context_is_deterministic(client: TestClient) -> None:
+    project = client.post("/api/v1/projects", json={"name": "Stable"}).json()
+    for index in range(4):
+        seed(
+            client,
+            project["id"],
+            **{f"e{index}": {"title": f"Entry {index}", "content": "Alpha beta gamma delta."}},
+        )
+    params = {"project_id": project["id"], "word_budget": 30, "q": "alpha"}
+    first = client.get("/api/v1/memory/context", params=params).json()
+    second = client.get("/api/v1/memory/context", params=params).json()
+    assert [item["memory_id"] for item in first["selected"]] == [item["memory_id"] for item in second["selected"]]
+    assert first["ranking"]["order"][0] == "relevance"
+
+
+def test_context_rejects_bad_budgets_and_unknown_scopes(client: TestClient) -> None:
+    assert client.get("/api/v1/memory/context", params={"word_budget": 5}).status_code == 422
+    assert client.get("/api/v1/memory/context", params={"word_budget": 99999}).status_code == 422
+    bad = client.get("/api/v1/memory/context", params={"scope": ["invented"]})
+    assert bad.status_code == 422
+    assert "Unknown scope" in bad.json()["detail"]
+
+
+def test_summary_is_extractive_not_invented(client: TestClient) -> None:
+    project = client.post("/api/v1/projects", json={"name": "Summarize"}).json()
+    content = (
+        "The API returns 413 for oversized bodies. "
+        "Sessions roll back before closing. "
+        "Recovery is classified by cause."
+    )
+    entry = client.post(
+        "/api/v1/memory",
+        json={"project_id": project["id"], "title": "Reliability notes", "content": content},
+    ).json()
+    entry_id = entry["entry"]["id"] if "entry" in entry else entry["id"]
+
+    summary = client.get(f"/api/v1/memory/summarize/{entry_id}", params={"max_words": 12}).json()
+    assert summary["method"] == "extractive"
+    assert summary["words"] <= 12
+    # Every sentence in the summary must exist verbatim in the source.
+    for sentence in summary["summary"].replace("…", "").split(". "):
+        cleaned = sentence.strip().rstrip(".")
+        if cleaned:
+            assert cleaned in content, f"invented text: {cleaned!r}"
+    assert client.get("/api/v1/memory/summarize/missing").status_code == 404
+
+
+def test_context_can_filter_by_scope(client: TestClient) -> None:
+    project = client.post("/api/v1/projects", json={"name": "Scoped"}).json()
+    task = client.post("/api/v1/tasks", json={"title": "Scoped task", "project_id": project["id"]}).json()
+    seed(
+        client,
+        project["id"],
+        decision={"scope": "decision", "title": "Decision A", "content": "Pick SQLite."},
+        task={"scope": "task", "task_id": task["id"], "title": "Task T", "content": "Task-level note."},
+    )
+    only_tasks = client.get(
+        "/api/v1/memory/context", params={"project_id": project["id"], "scope": ["task"]}
+    ).json()
+    assert [item["scope"] for item in only_tasks["selected"]] == ["task"]

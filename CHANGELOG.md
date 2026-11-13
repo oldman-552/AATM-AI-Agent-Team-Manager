@@ -9,6 +9,14 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Memory context selection and summarization (Part 9)
+
+- `GET /api/v1/memory/context`: deterministic, budgeted context selection (relevance → scope priority → recency → title) with an explicit `excluded[]` list so a dropped requirement can never be silent.
+- `GET /api/v1/memory/summarize/{id}`: **extractive** summaries only — sentences copied verbatim. The method is stated in the payload, and the budget reports `unit: "words"` rather than pretending to count provider tokens.
+- A relevant entry that would overflow the budget is reduced to a verbatim extract before being excluded.
+- Context selection panel in the Memory view with a budget bar, per-entry `full`/`extract` tags and the exclusion list; 597 keys × en/ar/fa.
+- Backend tests 195 → 201.
+
 ### Self-healing and recovery slice
 
 - `GET /api/v1/recovery`: an honest capability table (five detected, **two genuinely automatic**, two explicitly not applicable), a real database probe with a SQLite integrity check, and queue health.

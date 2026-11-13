@@ -7,6 +7,8 @@ recorded by the caller's own access control — the isolation guarantee is that
 memory never leaks through global search, listing, or keyword retrieval.
 """
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
@@ -25,6 +27,7 @@ from app.memory import (
     search_memory,
     upsert_memory,
 )
+from app.memory_context import DEFAULT_WORD_BUDGET, MAX_WORD_BUDGET, ContextError, select_context, summarize_entry
 from app.models import MemoryEntry
 
 router = APIRouter(prefix="/api/v1/memory")
@@ -99,6 +102,46 @@ def create_or_version(payload: MemoryUpsert, db: Session = Depends(get_session))
     db.commit()
     db.refresh(row)
     return {"entry": _serialize(row), "created": created}
+
+
+@router.get("/context")
+def get_context(
+    project_id: str | None = Query(default=None),
+    q: str = Query(default="", max_length=2000),
+    word_budget: int = Query(default=DEFAULT_WORD_BUDGET, ge=10, le=MAX_WORD_BUDGET),
+    scope: list[str] = Query(default=[]),
+    agent_id: str | None = Query(default=None),
+    task_id: str | None = Query(default=None),
+    db: Session = Depends(get_session),
+) -> dict[str, object]:
+    """Select the memory that fits a word budget, and explain every omission."""
+    try:
+        return select_context(
+            db,
+            project_id=project_id,
+            query=q,
+            word_budget=word_budget,
+            include_scopes=list(scope),
+            agent_id=agent_id,
+            task_id=task_id,
+        )
+    except ContextError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/summarize/{entry_id}")
+def get_summary(
+    entry_id: str,
+    max_words: int = Query(default=40, ge=5, le=400),
+    q: str = Query(default=""),
+    db: Session = Depends(get_session),
+) -> dict[str, object]:
+    """An extractive summary: real sentences from the entry, never a paraphrase."""
+    entry = db.get(MemoryEntry, entry_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Memory entry not found.")
+    terms = [word.lower() for word in re.findall(r"[A-Za-z0-9_\-]+", q)]
+    return {**summarize_entry(entry, max_words=max_words, query_terms=terms), "title": entry.title}
 
 
 @router.get("/search")

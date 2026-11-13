@@ -436,3 +436,12 @@ A Manager plan (`POST /planning/apply`) now skips any agent that has not declare
 Unhandled `SQLAlchemyError` becomes a classified JSON body instead of an opaque 500: `locked`/`constraint` → `409`, `schema`/`corrupt`/`unavailable` → `503`, each with `advice` and an explicit `automatic_recovery: false`. `GET /health` returns `200` when the probe succeeds and `503` with `status: "degraded"` when it fails.
 
 Sessions now roll back before closing, so a failed transaction cannot poison the next request that reuses a pooled connection. Retries are restricted to genuine lock contention: an integrity error would fail identically on retry, so retrying it would only hide the defect.
+
+## Memory context selection and summarization
+
+- `GET /memory/context?project_id=&q=&word_budget=60&scope=&agent_id=&task_id=` — selects the memory that fits a **word** budget. Deterministic ranking: relevance (keyword overlap), then scope priority (`decision` 100, `project` 70, `global` 60, `agent` 40, `task` 30), then recency, then title.
+- Returns `selected[]` (`included_as`: `full` | `summary`, plus `words` and `relevance`), `excluded[]` with the reason each entry was omitted, and `stats` where `selected + excluded == candidates`.
+- The budget reports `unit: "words"` and says plainly that these are **not provider tokens**: AATM has no tokenizer for an arbitrary model, and a fake token count would be worse than an honest approximation.
+- `GET /memory/summarize/{entry_id}?max_words=&q=` — an **extractive** summary. Sentences are copied verbatim and `method` is `extractive` (or `title_only` when the entry has no body). AATM has no model to paraphrase with, so it never invents one.
+
+When an entry would exceed the remaining budget, it is reduced to a verbatim extract before being dropped: losing a relevant decision entirely is more expensive than including it in part.

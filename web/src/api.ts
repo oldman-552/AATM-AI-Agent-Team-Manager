@@ -226,6 +226,20 @@ export type ManagerPlan = {
   plan_id: string
 }
 
+export type MemoryContext = {
+  project_id: string | null
+  query: string
+  budget: { word_budget: number; words_used: number; words_remaining: number; unit: string; note: string }
+  selected: {
+    memory_id: string; title: string; scope: string; kind: string; relevance: number
+    words: number; included_as: 'full' | 'summary'; summary: string | null; summary_method: string | null
+  }[]
+  excluded: { memory_id: string; title: string; reason: string }[]
+  stats: { candidates: number; selected: number; summarized: number; excluded: number; by_kind: Record<string, number> }
+  ranking: { order: string[]; scope_priority: Record<string, number>; note: string }
+  note: string
+}
+
 export type RecoveryReport = {
   database: { ok: boolean; elapsed_ms: number; slow?: boolean; category: string; note: string; advice?: string; integrity: { ok: boolean; result: string } | null }
   queue: {
@@ -682,6 +696,13 @@ export const api = {
   analytics: (days = 14) => request<AnalyticsOverview>(`/api/v1/analytics?days=${days}`),
   resources: (configuredMax = 2) => request<ResourceReport>(`/api/v1/system/resources?configured_max=${configuredMax}`),
   recovery: () => request<RecoveryReport>('/api/v1/recovery'),
+  memoryContext: (params: { projectId?: string; q?: string; wordBudget?: number }) => {
+    const search = new URLSearchParams()
+    if (params.projectId) search.set('project_id', params.projectId)
+    if (params.q) search.set('q', params.q)
+    search.set('word_budget', String(params.wordBudget ?? 400))
+    return request<MemoryContext>(`/api/v1/memory/context?${search.toString()}`)
+  },
   databaseHealth: () =>
     request<{ ok: boolean; elapsed_ms: number; slow: boolean; category: string; note: string; advice?: string }>(
       '/api/v1/recovery/database',

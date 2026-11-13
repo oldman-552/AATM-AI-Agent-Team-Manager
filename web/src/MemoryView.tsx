@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, Check, CircleAlert, History, LoaderCircle, Plus, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { api, type MemoryScope } from './api'
+import MemoryContextPanel from './MemoryContextPanel'
 
 const scopes: MemoryScope[] = ['project', 'decision', 'agent', 'task', 'global']
 
@@ -191,6 +192,7 @@ export default function MemoryView() {
         <div className="state-panel"><span><BookOpen size={22} /></span><p>{t('memoryEmpty')}</p></div>
       )}
       {search.data && <p className="form-note">{search.data.retrieval}</p>}
+      <MemoryContextPanel projectId={projectId} />
     </>
   )
 }

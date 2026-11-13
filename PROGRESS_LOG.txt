@@ -370,3 +370,13 @@ Tests executed: pytest 195 passed, 1 warning; pyflakes clean; vitest 13 passed; 
 Results: Backend 181 -> 195 tests; i18n 563 -> 583 keys x3; proxy 500 -> correct 413
 Problems: None
 Solutions: None
+
+[2026-11-13 14:11 UTC] Phase 22 — Memory context and summarization — Budgeted context selection with extractive summaries
+Task: Budgeted context selection with extractive summaries
+Action performed: Added memory_context module, context and summarize endpoints, Memory view panel and tests
+Files created: backend/app/memory_context.py, web/src/MemoryContextPanel.tsx
+Files modified: backend/app/memory_api.py, backend/tests/test_memory.py, web/src/api.ts, web/src/MemoryView.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 201 passed, 1 warning; pyflakes clean; vitest 13 passed; tsc clean; build OK (JS 482.87 kB); RTL 0 physical; live: context 40/40 words, 1 exclusion with reason, extractive summary 13 words
+Results: Backend 195 -> 201 tests; i18n 583 -> 597 keys x3
+Problems: None
+Solutions: None

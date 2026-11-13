@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:35 UTC
+2026-11-13 13:36 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 13 — Reliability and Security
+Phase 14 — Cross-Platform Delivery
 
 Current Task:
-Full-stack regression pass across all slices
+Start/stop script correctness
 
 Current Activity:
-Ran endpoint sweep and a scripted end-to-end flow through the Vite proxy
+Added --strictPort, a readiness poll and an actionable failure message; documented troubleshooting
 
 Recently Completed (most recent first):
 - Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.

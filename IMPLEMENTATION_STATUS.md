@@ -15,7 +15,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [ ] English/Arabic/Persian resources, RTL direction and key parity — **TESTED** for resource correctness (652 keys per language in the current tree; `web/src/i18n.test.ts` asserts identical key sets, no empty values, Arabic/Persian as distinct languages, and RTL direction for `ar`/`fa`). Visual layout/RTL browser verification remains **NOT STARTED**.
 - [ ] Loopback/host/CORS baseline — **TESTED** (middleware and loopback defaults exist; dedicated tests assert untrusted Host rejection at 400 and that a hostile origin receives no `access-control-allow-origin` header). Real multi-user authentication remains absent.
 - [ ] Local setup scripts — **TESTED** for Linux install/start/stop smoke flow; Windows PowerShell and update/uninstall paths are **IMPLEMENTED** but not executed.
-- [ ] Phase 1 regression suite/build — **TESTED** (current run: 261 backend tests pass; 20 frontend Vitest tests pass; TypeScript/Vite production build and RTL CSS checks pass; see `TESTING_REPORT.md`).
+- [ ] Phase 1 regression suite/build — **TESTED** (current run: 261 backend tests pass and the PostgreSQL-only smoke test is skipped without its CI service; 20 frontend Vitest tests pass; TypeScript/Vite production build and RTL CSS checks pass; see `TESTING_REPORT.md`).
 
 ## Phase 2 — AI Providers
 
@@ -76,7 +76,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 8 — QA and Intelligence
 
 - [ ] Independent QA/review records — **TESTED** (server-side reviewer separation: self-review is rejected; `approved` needs concrete checks plus recorded output; `rework_required` needs a summary; verdicts drive the workflow and are replay-safe, audited, and exposed in the task UI).
-- [ ] Automated quality/test workflows — **TESTED locally** (current backend suite: 261 tests; frontend: 20 Vitest tests; `npm run verify` includes typecheck, tests, production build and RTL CSS invariants). GitHub Actions CI is defined in `.github/workflows/ci.yml` for push, pull request and manual runs; its first hosted execution remains **NOT VERIFIED**.
+- [ ] Automated quality/test workflows — **TESTED locally** (current backend suite: 261 passed plus 1 PostgreSQL-only skipped test locally; frontend: 20 Vitest tests; `npm run verify` includes typecheck, tests, production build and RTL CSS invariants). GitHub Actions CI is defined in `.github/workflows/ci.yml` for push, pull request and manual runs; its backend/frontend hosted jobs passed on PR #7 revision `c04cea9`; the newly added PostgreSQL service job awaits its first hosted run.
 - [ ] Evidence-based agent analytics — **TESTED** for delivery analytics and the AI Team Intelligence Center: counts, throughput, cycle time, review/rework measures and per-agent complexity-weighted metrics derive from stored rows, expose sample sizes, keep rule-based assessments separate from measurements, and use `null` for missing data.
 
 ## Phase 9 — Recovery and Approvals

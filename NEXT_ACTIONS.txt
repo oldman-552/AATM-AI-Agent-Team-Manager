@@ -1,6 +1,9 @@
 AATM — PRIORITIZED NEXT ACTIONS
 ===============================
 
+IN PROGRESS — PostgreSQL integration verification
+Result: Added a CI-only PostgreSQL smoke test and a PostgreSQL 16 service job to apply the migrations and test database-lock contention. The test is explicitly skipped locally when `AATM_TEST_POSTGRES_URL` is absent; first hosted run is pending after the workflow update is pushed.
+
 COMPLETED — P6 database-wide orchestrator run lock (2026-11-13 16:43 UTC)
 Result: Migration 0014 adds a singleton expiring lock. API run requests sharing a database now serialize across processes; owner-conditional renewal/release, expiry takeover, and migration 0014 upgrade/downgrade/re-upgrade are tested. The orchestrator renews the run lock alongside task leases from its primary thread. This is a global API-run guard, not a distributed task worker pool. Verification: 261 backend tests; 54 focused orchestration/execution/cancellation/lock tests; frontend verify remains green (20 tests, typecheck, build and RTL).
 

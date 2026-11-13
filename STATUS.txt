@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 16:44 UTC
+2026-11-13 16:55 UTC
 
 Overall Project Status:
 Testing
@@ -46,7 +46,7 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Phase 32 API run coordination and CI scaffold completed locally: 261 backend tests; 20 frontend tests, TypeScript, production build and RTL checks passed. Lease renewal and database-wide run locking are tested. One upstream Starlette/httpx deprecation warning remains. GitHub Actions workflow syntax and job structure were parsed locally; hosted execution is pending.
+- Phase 32 API run coordination and CI scaffold completed locally: 261 backend tests passed locally (one PostgreSQL-only test skipped); 20 frontend tests, TypeScript, production build and RTL checks passed. Lease renewal and database-wide run locking are tested. One upstream Starlette/httpx deprecation warning remains. Backend/frontend GitHub Actions passed on revision c04cea9; a PostgreSQL service job was added and awaits its first hosted run.
 
 Upcoming Tasks:
 - Distributed task-worker scheduling and per-worktree isolation for same-project tasks; first hosted CI run after the branch is pushed.
@@ -74,7 +74,7 @@ External Dependencies:
 Python/npm dependencies installed (@types/node added for the RTL checker). No provider key exists in this environment and no paid request has ever been made. No Arena session was used.
 
 Tests:
-- Passed at 2026-11-13 16:44 UTC: 261 backend tests (one upstream Starlette/httpx deprecation warning); 20 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle. The backend suite includes migration round trips. Earlier live HTTP smokes through the Vite proxy covered timeline, cancellation, control center and blueprint.
+- Passed at 2026-11-13 16:55 UTC: 261 backend tests (one upstream Starlette/httpx deprecation warning); 20 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle. The backend suite includes migration round trips. Earlier live HTTP smokes through the Vite proxy covered timeline, cancellation, control center and blueprint.
 - Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
 - Pending: Windows/PowerShell, PostgreSQL, Docker, Playwright E2E, pixel-level RTL rendering.
 
@@ -88,7 +88,7 @@ Last Successful Build:
 2026-11-13 16:34 UTC — `npm run verify`: TypeScript, 20 Vitest tests, Vite production build, and RTL checker.
 
 Last Successful Test:
-2026-11-13 16:44 UTC — 261 backend tests passed. Frontend `npm run verify` passed at 16:34 UTC (20 tests, typecheck, production build, RTL checker).
+2026-11-13 16:55 UTC — 261 backend tests passed. Frontend `npm run verify` passed at 16:34 UTC (20 tests, typecheck, production build, RTL checker).
 
 Remaining Work:
 - Gated by design: live provider execution behind consent/accounting (a task now runs a local command, never a model), GitHub push/PR execution, per-user authorization.

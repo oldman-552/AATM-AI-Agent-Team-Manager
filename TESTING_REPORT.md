@@ -1,5 +1,11 @@
 # Testing Report
 
+## 2026-11-13 16:55 UTC — PostgreSQL integration CI job
+
+- Added a conditional PostgreSQL smoke test that applies all migrations and exercises shared database-lock acquisition/contention/release. Extended GitHub Actions with a PostgreSQL 16 service job.
+- Local backend suite: **261 passed, 1 skipped** (the skip requires the PostgreSQL service); focused orchestration/run-lock/executor/cancellation suite: **54 passed, 1 skipped**. Existing upstream Starlette/httpx warning remains.
+- PostgreSQL was not available locally, so the integration is not claimed as verified. The earlier backend/frontend CI jobs passed on `c04cea9`; the newly added PostgreSQL job will run after this update is pushed.
+
 ## 2026-11-13 16:44 UTC — Database-wide run serialization
 
 - Added migration `0014_orchestrator_run_lock` and a conditional-update singleton lease shared by API processes using the same database. Runs are rejected with 409 while another process owns the lock; active long runs renew both task leases and the database run lock from the orchestrator thread. Owner checks, expiry takeover, cross-session exclusion, API rejection, and successful-release behavior are covered by tests. Alembic `0014` upgrade, downgrade to `0013`, and re-upgrade were also exercised on a temporary SQLite database.

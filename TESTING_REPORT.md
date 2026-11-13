@@ -8,7 +8,8 @@
 ## 2026-11-13 12:57 UTC — Backend tests (current)
 
 - Latest command: `cd backend && ../.venv/bin/python -m pytest`.
-- Result: **66 passed, 1 warning** (57 new tests across this session).
+- Result: **72 passed, 1 warning** (63 new tests across this session).
+- `tests/test_memory.py` (6 tests): strict cross-project isolation for list/search/get/delete/rollback; deliberate global sharing with `include_global=false` opt-out; scope binding validation (project/agent/task requirements, unknown project, blank content); keyed versioning (v1 → v2 with the same id and `created: false`); rollback-as-new-version; version history; ranked keyword retrieval; blank-query rejection; JSON export; audit events.
 - `tests/test_auth.py` (8 tests): token mode enforces bearer auth (health public, 401 with `WWW-Authenticate`); non-bearer/garbage schemes rejected; tokens never echoed; missing token configuration fails closed at startup; unknown mode falls back to `off`; cross-origin mutations are 403 even in `off` mode while same-origin and allow-listed origins work; cross-origin reads stay unauthenticated-CORS-denied; token mode still blocks hostile origins.
 - `tests/test_workspaces.py` (7 tests): branch-name validation (`main`/`master`, traversal, `refs//head`, trailing slash rejected); workspace path cannot escape the root; a real local repository is cloned into an isolated workspace and its source stays clean; API lifecycle (create → duplicate 409 → branch creation → protected branch 422 → status → audited removal); unknown project/missing workspace; non-repository source rejected; cloning a local source preserves history and files.
 - `tests/test_quality.py` (7 tests): self-review rejected; blank checks rejected; approval requires concrete checks and recorded output; replay returns `created: false`; verdict conflicts rejected; rework requires a summary and increments retries; unknown reviewer/task rejected; reviews before completion rejected; approval gates record decisions without executing anything; double decisions rejected; review and approval audit events written.
@@ -16,6 +17,7 @@
 - Migration `0003_task_leases` verified: upgrade → columns present → downgrade to `0002_provider_boundary` → columns removed → re-upgrade → columns restored (file-backed SQLite).
 - Migration `0004_reviews_approvals` verified the same way (upgrade → `review_records`/`approval_requests` present → downgrade to `0003_task_leases` → removed → re-upgrade → present).
 - Migration `0005_project_workspaces` verified the same way (upgrade → table present → downgrade to `0004_reviews_approvals` → removed → re-upgrade → present).
+- Migration `0006_memory` verified the same way (upgrade → `memory_entries`/`memory_versions` present → downgrade to `0005_project_workspaces` → removed → re-upgrade → present).
 - New coverage this slice:
   - `tests/test_provider_boundary.py` (10 tests): credential-reference validation and secret redaction; configurable pricing marked as estimate-only; budget consent/no-limit/limit-exceeded/idempotent-commit behaviour; monthly and per-scope limits; Arena hard block; Claude execution gating (disabled without explicit authorization, produces no call without consent, records usage once on replay, blocks when the global switch is off); credential redaction in provider errors; routing that never selects a paid provider without consent and never records usage; deterministic policies; and a socket-blocking test proving health/routing open no sockets.
   - `tests/test_provider_api.py` (6 tests): catalog contains no secret values; raw credentials and unknown fields are rejected; references are accepted and clearable; Arena cannot be enabled (409); budgets plus dry-run routing with zero usage records; settings validation and absence of any execute route; untrusted Host and hostile Origin rejection.
@@ -27,8 +29,8 @@
 ## 2026-11-13 12:57 UTC — Frontend tests and build (current)
 
 - `cd web && npm test` (Vitest 2.1.9) → **5 passed**.
-  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (282 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
-- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1647 modules, `dist/assets/index-CJNKwuQJ.css` 30.60 kB, `dist/assets/index-B2CbjxMp.js` 347.91 kB.
+  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (309 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
+- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1649 modules, `dist/assets/index-miHmjQHE.css` 32.25 kB, `dist/assets/index-D33IOqM-.js` 361.06 kB.
 - First TypeScript run failed twice: a missing `Send` icon import in `ProvidersView.tsx` and an invalid Vitest assertion overload in `i18n.test.ts`. Both were fixed before the passing run.
 
 ## 2026-11-13 — Frontend build (historical)
@@ -64,6 +66,7 @@
 - Cleanup: `.aatm-home` (git-ignored smoke database) only; no credentials, no provider traffic.
 - Notable: binding uvicorn to `0.0.0.0` makes the API reject the preview Host with 400 (by design). Only Vite is exposed for previews; the API stays loopback-bound.
 - Orchestrator endpoints were re-verified on a restarted server: startup applied migration `0003_task_leases`, `/api/v1/orchestrator/status` reported `executor.configured: false` with the refusal reason, and the same payload was served through the Vite proxy.
+- Memory isolation verified live: versioned writes (v1→v2, same id), a global entry visible everywhere, Alpha's private entry absent from Beta's list and search, and the same payload served through the Vite proxy.
 - Authentication verified live through the real Vite proxy: direct API without a token → 401; `/health` → 200; with token → 200; through the proxy with **no** browser token → 200 (proxy injects); a `grep` of `web/src` and `web/dist` found no occurrence of the token; preview-host proxying → 200; hostile-origin POST → 403.
 - Review/approval flow re-verified live after restarting on migration `0004_reviews_approvals`: self-review returned 409; a check-free approval returned 409; an independent review with a concrete check moved the task to `approved`; an approval request was recorded then approved with the response stating the gated action is not executed; the approvals list was readable through the Vite proxy.
 

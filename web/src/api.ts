@@ -255,6 +255,27 @@ export type WorkspaceResponse = {
   note?: string
 }
 
+export type MemoryScope = 'global' | 'project' | 'agent' | 'task' | 'decision'
+
+export type MemoryEntry = {
+  id: string
+  project_id: string | null
+  scope: MemoryScope
+  key: string | null
+  title: string
+  content: string
+  agent_id: string | null
+  task_id: string | null
+  tags: string[]
+  version: number
+  created_at: string
+  updated_at: string
+}
+
+export type MemoryVersion = { version: number; title: string; content: string; created_at: string }
+
+export type MemorySearchResult = { entry: MemoryEntry; score: number }
+
 export type WorkflowDefinition = {
   transitions: Record<string, string[]>
   dependency_satisfied_states: string[]
@@ -330,6 +351,42 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+  memory: (projectId: string | null, includeGlobal = true) =>
+    request<{ entries: MemoryEntry[]; scopes: MemoryScope[]; isolation: string }>(
+      `/api/v1/memory?${new URLSearchParams({
+        ...(projectId ? { project_id: projectId } : {}),
+        include_global: String(includeGlobal),
+      }).toString()}`,
+    ),
+  saveMemory: (payload: {
+    title: string
+    content: string
+    scope: MemoryScope
+    key?: string | null
+    project_id?: string | null
+    tags?: string[]
+  }) => request<{ entry: MemoryEntry; created: boolean }>('/api/v1/memory', { method: 'POST', body: JSON.stringify(payload) }),
+  memoryEntry: (entryId: string, projectId: string | null) =>
+    request<{ entry: MemoryEntry; history: MemoryVersion[] }>(
+      `/api/v1/memory/${entryId}?${new URLSearchParams(projectId ? { project_id: projectId } : {}).toString()}`,
+    ),
+  rollbackMemory: (entryId: string, version: number, projectId: string | null) =>
+    request<{ entry: MemoryEntry }>(
+      `/api/v1/memory/${entryId}/rollback/${version}?${new URLSearchParams(projectId ? { project_id: projectId } : {}).toString()}`,
+      { method: 'POST' },
+    ),
+  deleteMemory: (entryId: string, projectId: string | null) =>
+    request<{ deleted: boolean; id: string }>(
+      `/api/v1/memory/${entryId}?${new URLSearchParams(projectId ? { project_id: projectId } : {}).toString()}`,
+      { method: 'DELETE' },
+    ),
+  searchMemory: (query: string, projectId: string | null) =>
+    request<{ results: MemorySearchResult[]; query: string; retrieval: string }>(
+      `/api/v1/memory/search?${new URLSearchParams({
+        q: query,
+        ...(projectId ? { project_id: projectId } : {}),
+      }).toString()}`,
+    ),
   workspace: (projectId: string) => request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`),
   createWorkspace: (projectId: string, payload: { local_source?: string | null; branch?: string | null }) =>
     request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`, {

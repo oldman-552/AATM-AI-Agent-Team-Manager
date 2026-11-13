@@ -140,3 +140,13 @@ Tests executed: Backend pytest 58 passed; frontend vitest 5 passed; tsc --noEmit
 Results: All suites pass. Real repositories cloned into isolated workspaces, source repos left clean, traversal and protected-branch attempts rejected, removal audited.
 Problems: The stored-path lookup re-derived the directory slug from the project title, so a branch operation failed after creation; branch names like 'refs//head' also passed validation.
 Solutions: Persisted workspace_path is now authoritative and re-validated against the root; branch validation rejects '//', trailing '/' and trailing dots.
+
+[2026-11-13 13:11 UTC] Phase 13 — Security — Local authentication and CSRF hardening
+Task: Local authentication and CSRF hardening
+Action performed: Implemented and verified opt-in local bearer-token auth with server-side proxy token injection and cross-origin mutation blocking
+Files created: backend/app/auth.py, backend/tests/test_auth.py
+Files modified: backend/app/main.py, web/vite.config.ts, scripts/start.sh, .env.example, README.md, SECURITY.md, CONFIGURATION.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 66 passed; frontend vitest 5 passed; tsc --noEmit; vite build; live proxy auth smoke
+Results: Token mode enforces 401 without a token and 200 with it; the Vite proxy injects the token with no browser exposure; hostile-origin mutations return 403.
+Problems: None; the middleware is default-off so existing tests and local workflows are unaffected.
+Solutions: Added both-mode coverage (off and token) plus a bundle scan for the token value.

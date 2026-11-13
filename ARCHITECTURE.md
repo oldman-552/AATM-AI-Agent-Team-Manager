@@ -16,9 +16,9 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 
 ## Current modules
 
-1. **Web UI** — React + TypeScript + Vite, TanStack Query, i18next, relative typed API client. Current functional views: Dashboard, Projects, Agents, Tasks (with workflow actions and review forms), Approvals, Providers (offline configuration, routing dry run, budgets), and a per-project workspace panel. English/Arabic/Persian resources with 282 keys each and a Vitest parity test; language selection persists; Arabic/Persian set `dir=rtl`.
+1. **Web UI** — React + TypeScript + Vite, TanStack Query, i18next, relative typed API client. Current functional views: Dashboard, Projects, Agents, Tasks (with workflow actions and review forms), Memory, Approvals, Providers (offline configuration, routing dry run, budgets), and a per-project workspace panel. English/Arabic/Persian resources with 309 keys each and a Vitest parity test; language selection persists; Arabic/Persian set `dir=rtl`.
 2. **HTTP API** — FastAPI/Pydantic; versioned `/api/v1`; local default bind; configured Trusted Host and CORS middleware.
-3. **Persistence** — SQLAlchemy 2.x and Alembic (revisions `0001_initial`, `0002_provider_boundary`, `0003_task_leases`, `0004_reviews_approvals`, `0005_project_workspaces`). Current records: projects, agent registrations, tasks, task transitions, audit events, provider configurations (references only), provider budget limits, usage records, and app settings, plus task lease/backoff columns. SQLite is the zero-setup default; a PostgreSQL URL can be configured with psycopg (not yet integration-tested).
+3. **Persistence** — SQLAlchemy 2.x and Alembic (revisions `0001_initial`, `0002_provider_boundary`, `0003_task_leases`, `0004_reviews_approvals`, `0005_project_workspaces`, `0006_memory`). Current records: projects, agent registrations, tasks, task transitions, audit events, provider configurations (references only), provider budget limits, usage records, and app settings, plus task lease/backoff columns. SQLite is the zero-setup default; a PostgreSQL URL can be configured with psycopg (not yet integration-tested).
 
 4. **Provider boundary** (`backend/app/providers/`) — provider-agnostic contracts (`ProviderAdapter`, `ProviderHealth`, `CostEstimate`, `ProviderRequest`, `Authorization`), credential **references** (`env:`/`keyring:`), a configurable pricing/estimate table, a hard budget guard, and a deterministic routing engine with five policies. `ArenaBridgeAdapter` is a permanently blocked stub. `AnthropicAdapter` uses the official SDK but is reachable only through an explicitly authorized in-process call; no HTTP route exposes it, and `load_settings()` hard-codes `live_requests_allowed=False`.
 
@@ -26,9 +26,10 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 
 6. **Workflow service** (`backend/app/workflow.py`) — an explicit state machine with dependency gating (`completed`/`approved` satisfy dependencies), evidence requirements for failure/approval/rework, retry counting, and replay-safe idempotency keys backed by an append-only `task_transitions` table.
 7. **Workspaces** (`backend/app/workspaces.py`) — isolated local Git repositories per project under a configurable root, with branch creation, read-only status/diff, strict path-escape protection, and a scrubbed non-interactive Git environment. Merges, pushes, fetches and deletions are not implemented.
-8. **Quality and approvals** (`backend/app/quality.py`) — reviewer separation, evidence-gated verdicts that drive the workflow, and approval gates that record decisions for paid/deploy/merge/delete operations without executing them.
-9. **Progress tooling** — atomic status/log/state writer, secret-pattern redaction, and heartbeat/idle detection in `backend/app/progress.py` and `scripts/progress_reporter.py`.
-10. **Setup scripts** — shell and PowerShell starter install/start/stop/update/uninstall scripts. Linux path is being exercised; Windows is pending.
+8. **Memory** (`backend/app/memory.py`) — scoped, project-isolated knowledge with deterministic keyword retrieval, monotonic version history, rollback-as-new-version, export and audited deletion.
+9. **Quality and approvals** (`backend/app/quality.py`) — reviewer separation, evidence-gated verdicts that drive the workflow, and approval gates that record decisions for paid/deploy/merge/delete operations without executing them.
+10. **Progress tooling** — atomic status/log/state writer, secret-pattern redaction, and heartbeat/idle detection in `backend/app/progress.py` and `scripts/progress_reporter.py`.
+11. **Setup scripts** — shell and PowerShell starter install/start/stop/update/uninstall scripts. Linux path is being exercised; Windows is pending.
 
 ## Planned components
 

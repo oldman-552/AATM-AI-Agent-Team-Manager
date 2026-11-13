@@ -240,6 +240,20 @@ Removes only the AATM-created workspace directory after re-validating that it is
 
 Not implemented (and deliberately not reachable): merge, push, fetch from remotes, force operations, and branch deletion. No Git command runs with credentials, and `GIT_TERMINAL_PROMPT=0` plus a scrubbed environment prevent interactive prompts.
 
+## Project memory (isolated, versioned)
+
+Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry is bound to a project and is **only** visible/editable within that project; `global` entries are shared. Retrieval is deterministic local keyword overlap — no embeddings and no network call.
+
+- `GET /memory?project_id=&scope=&include_global=true` — visible entries. Omitting `project_id` returns global entries only.
+- `POST /memory` → 201 — `{title, content, scope, key?, project_id?, agent_id?, task_id?, tags?}`. Providing an existing `key` inside the same project creates a **new version** instead of a duplicate (`created: false`).
+- `GET /memory/search?q=&project_id=&limit=` — scored results restricted to visible memory. A blank query is rejected.
+- `GET /memory/{entry_id}?project_id=` — entry plus full version history; 404 when the entry belongs to another project.
+- `POST /memory/{entry_id}/rollback/{version}` — restores content from an earlier version **as a new version** (history is never rewritten).
+- `DELETE /memory/{entry_id}?project_id=` — explicit deletion, including its history, with an audit event.
+- `GET /memory/export?project_id=` — JSON export of visible memory.
+
+Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
+
 ## Audit events added in this slice
 
-`task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `project.workspace_created`, `project.workspace_branch_created`, `project.workspace_removed`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.
+`task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `project.workspace_created`, `project.workspace_branch_created`, `project.workspace_removed`, `memory.created`, `memory.versioned`, `memory.rolled_back`, `memory.deleted`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.

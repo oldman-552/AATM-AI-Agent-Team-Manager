@@ -15,6 +15,7 @@ from app.db import build_engine, make_session_factory
 from app.migrate import upgrade_database
 from app.models import Agent, AuditEvent
 from app.orchestrator_api import router as orchestrator_router
+from app.memory_api import router as memory_router
 from app.quality_api import router as quality_router
 from app.workspace_api import router as workspace_router
 from app.provider_api import ops_router, provider_router
@@ -97,6 +98,7 @@ def create_app(
     app.include_router(orchestrator_router)
     app.include_router(quality_router)
     app.include_router(workspace_router)
+    app.include_router(memory_router)
     resolved_origins = allowed_origins or settings.cors_origins
     app.add_middleware(LocalAuthMiddleware, config=AuthConfig.from_settings(resolved_origins))
 

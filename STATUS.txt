@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:00 UTC
+2026-11-13 13:11 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 6/7 — Project workspaces and Git isolation
+Phase 13 — Security
 
 Current Task:
-Isolated local Git workspaces per project
+Local authentication and CSRF hardening
 
 Current Activity:
-Added workspace service, API, migration 0005, workspace panel in the Projects view and real-repository tests
+Added auth middleware, 8 auth tests, proxy token injection, startup fail-closed config, docs and env documentation
 
 Recently Completed:
 - Saved AATM_MASTER_DEVELOPMENT_PROMPT.md in the repository.

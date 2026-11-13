@@ -65,8 +65,8 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [ ] Basic project records — **TESTED** (create/list and persistence tests pass).
 - [x] Isolated Git workspaces per project — **TESTED** with real throwaway repositories (create from a local source or fresh init, branch creation, read-only status, strict root-escape and branch-name validation, audited removal). Merge/push/fetch/branch-deletion are intentionally absent.
 - [ ] Project Builder and delivery plan — **NOT STARTED**.
-- [ ] Global/project/agent/task/decision memory — **NOT STARTED**.
-- [ ] Memory search, retrieval, summarization, versioning, export, cleanup — **NOT STARTED**.
+- [ ] Global/project/agent/task/decision memory — **TESTED** for isolation and scoping (project-bound memory never appears in another project's list, search, export or direct lookup; global entries are shared deliberately).
+- [ ] Memory search, retrieval, summarization, versioning, export, cleanup — **IN PROGRESS / TESTED** for deterministic keyword retrieval, versioning with rollback-as-new-version, JSON export, explicit deletion and audit events. Summarization (which would require a provider) remains **NOT STARTED**.
 
 ## Phase 7 — GitHub and Workspaces
 

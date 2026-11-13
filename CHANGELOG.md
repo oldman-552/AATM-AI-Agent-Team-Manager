@@ -28,6 +28,8 @@
 - Workspace panel in the Projects view.
 - Optional local bearer-token authentication (`AATM_AUTH_MODE=token`) with constant-time comparison, fail-closed startup, and a Vite proxy that injects the token server-side so the browser bundle carries no secret.
 - CSRF hardening: state-changing requests with a foreign `Origin` are rejected even when auth is off.
-- Backend tests 9 → 66; Vitest resource tests added (5).
+- Project-isolated memory with global/project/agent/task/decision scopes, deterministic keyword retrieval, version history with rollback-as-new-version, JSON export and audited deletion.
+- Alembic revision `0006_memory`; Memory view with a project-scope selector.
+- Backend tests 9 → 72; Vitest resource tests added (5).
 
 - Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, backup/restore, authentication, and Windows verification remain incomplete. Approval gates record decisions but do not perform the gated operations.

@@ -4,6 +4,7 @@ import {
   Activity,
   ArrowDownLeft,
   ArrowRight,
+  BookOpen,
   Bot,
   Check,
   CircleAlert,
@@ -27,16 +28,18 @@ import {
 import { useTranslation } from 'react-i18next'
 import { api, type Agent, type AuditEvent, type Project, type Task, type WorkflowDefinition } from './api'
 import ApprovalsView from './ApprovalsView'
+import MemoryView from './MemoryView'
 import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
-type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'approvals' | 'providers'
+type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'memory' | 'approvals' | 'providers'
 
 const navigation: { id: View; label: string; icon: typeof Activity }[] = [
   { id: 'dashboard', label: 'dashboard', icon: Activity },
   { id: 'projects', label: 'projects', icon: FolderKanban },
   { id: 'agents', label: 'agents', icon: UsersRound },
   { id: 'tasks', label: 'tasks', icon: ListTodo },
+  { id: 'memory', label: 'memorySection', icon: BookOpen },
   { id: 'approvals', label: 'approvalSection', icon: ShieldCheck },
   { id: 'providers', label: 'providerSection', icon: PlugZap },
 ]
@@ -201,6 +204,7 @@ function App() {
           {view === 'projects' && <ProjectsView />}
           {view === 'agents' && <AgentsView />}
           {view === 'tasks' && <TasksView />}
+          {view === 'memory' && <MemoryView />}
           {view === 'approvals' && <ApprovalsView />}
           {view === 'providers' && <ProvidersView />}
         </div>

@@ -97,6 +97,26 @@
 - Inspected upstream Arena Local Bridge v1.1.0 at commit `403122cf575b82aa519cad7c81a4cfe7d224d474` from its public repository.
 - Result: Actual local OpenAI-compatible protocol and bearer-key/session behavior documented in `PROVIDER_RESEARCH.md`. No live bridge or Arena account was used because the inspected source includes CAPTCHA token generation/anti-automation behavior that conflicts with the explicit no-bypass requirement.
 
+## 2026-11-13 13:35 UTC — Full-stack regression pass
+
+All read endpoints answered 200 through the real Vite proxy: `health, dashboard, projects, agents, tasks, approvals, providers, memory, analytics, notifications, settings, events, orchestrator/status, agent-roles, agents/scopes, agents/blocked, system/resources, settings/export, planning/proposals`.
+
+One end-to-end flow exercised every slice in sequence on the same project:
+
+| Step | Observed |
+| --- | --- |
+| Workspace create | local repo initialised; read-only status reported `main` and clean |
+| Checkpoint | sequence 1 recorded |
+| Memory write | keyed entry at version 1 |
+| Workflow | `assigned → running → completed` |
+| Self-review by the assignee | **409** "A task cannot be reviewed by the agent that is assigned to it." |
+| Approval with no checks | **409** "Approval requires at least one concrete check with a result." |
+| Approval without recorded output | **409** "Approval requires recorded task output as evidence." |
+| Review by a different agent | verdict `approved`; task moved to `approved` |
+| Review replay with the same idempotency key | `created: false`; state unchanged |
+| Pull-request plan | `awaiting_approval`, `executed: false` |
+| Analytics | throughput and review counts included the completed work |
+
 ## Not yet tested
 
 - Windows 11 PowerShell path; no Windows host is available.

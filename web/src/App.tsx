@@ -16,6 +16,7 @@ import {
   Clock3,
   Command,
   Cpu,
+  FileSearch,
   FolderGit2,
   FolderKanban,
   Languages,
@@ -42,6 +43,7 @@ import TaskTimelineView, { CancelControls } from './TaskTimelineView'
 import AgentCenterView from './AgentCenterView'
 import { formatDateTime, formatNumber } from './format'
 import ProjectBuilderView from './ProjectBuilderView'
+import OpsView from './OpsView'
 import { ManagerPlanPanel } from './components/ManagerPlanPanel'
 import { AgentControls } from './components/AgentControls'
 import { CheckpointPanel } from './components/CheckpointPanel'
@@ -49,10 +51,11 @@ import { PullRequestPlans } from './components/PullRequestPlans'
 import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
-type View = 'dashboard' | 'projects' | 'builder' | 'agents' | 'center' | 'tasks' | 'memory' | 'analytics' | 'browsers' | 'approvals' | 'providers' | 'settings'
+type View = 'dashboard' | 'ops' | 'projects' | 'builder' | 'agents' | 'center' | 'tasks' | 'memory' | 'analytics' | 'browsers' | 'approvals' | 'providers' | 'settings'
 
 const navigation: { id: View; label: string; icon: typeof Activity }[] = [
   { id: 'dashboard', label: 'dashboard', icon: Activity },
+  { id: 'ops', label: 'opsSection', icon: FileSearch },
   { id: 'projects', label: 'projects', icon: FolderKanban },
   { id: 'builder', label: 'builderSection', icon: Sparkles },
   { id: 'agents', label: 'agents', icon: UsersRound },
@@ -224,6 +227,7 @@ function App() {
 
         <div className="page-content">
           {view === 'dashboard' && <DashboardView onNavigate={setView} />}
+          {view === 'ops' && <OpsView />}
           {view === 'projects' && <ProjectsView />}
           {view === 'builder' && <ProjectBuilderView />}
           {view === 'agents' && <AgentsView />}

@@ -390,3 +390,13 @@ Tests executed: pytest 212 passed, 1 warning; pyflakes clean; vitest 13 passed; 
 Results: Backend 201 -> 212 tests; i18n 597 -> 621 keys x3; found and fixed a success-rate denominator bug
 Problems: None
 Solutions: None
+
+[2026-11-13 14:15 UTC] Phase 24 — Operations view and bundle splitting — Expose audit log, usage and resources; split the vendor bundle
+Task: Expose audit log, usage and resources; split the vendor bundle
+Action performed: Added OpsView with three panels, navigation entry, and manualChunks vendor split
+Files created: web/src/OpsView.tsx
+Files modified: web/src/App.tsx, web/src/i18n.ts, web/src/styles.css, web/vite.config.ts
+Tests executed: pytest 212 passed; vitest 13 passed; tsc clean; build OK with no chunk warnings (react 181.21 kB, data 87.39 kB, app 231.82 kB, CSS 50.41 kB); RTL 0 physical; six endpoints 200 through the Vite proxy
+Results: i18n 621 -> 638 keys x3; no chunk exceeds 500 kB
+Problems: None
+Solutions: None

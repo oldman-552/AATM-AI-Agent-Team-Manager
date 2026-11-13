@@ -9,6 +9,12 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Operations view and bundle splitting
+
+- New **Operations** view consolidating three sections the specification lists but the UI did not expose: Logs & Audit (a filterable event log), Usage & Costs (with the honest note that an empty column means *no call was made*, not that calls were free), and the Resource Monitor (nullable ratios rendered as "—", with the concurrency recommendation labelled advisory).
+- **Bundle split**: vendor code is now separated from application code (react 181 kB, data 87 kB, app 232 kB), so a UI edit no longer invalidates the framework cache and no chunk exceeds the 500 kB warning threshold. CSS 50.41 kB, all gzipped sizes under 56 kB.
+- 638 translated keys × en/ar/fa.
+
 ### AI Team Intelligence Center (Part 13)
 
 - `GET /api/v1/intelligence?days=90`: per-agent measured metrics — tasks, success rate, **complexity-weighted** points, rework, reviews received, median completion time and estimated cost.

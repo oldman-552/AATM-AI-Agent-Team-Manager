@@ -663,3 +663,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .intelligence-assessment-head small { color: var(--muted); font-size: 11px; margin-inline-start: auto; }
 .intelligence-assessments p { margin: 0; font-size: 12px; }
 .intelligence-recommendation { color: var(--accent); }
+
+/* --- Operations view ----------------------------------------------------- */
+.ops-event-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-block-size: 420px; overflow-y: auto; }
+.ops-event-list li { display: grid; grid-template-columns: minmax(140px, 200px) 1fr auto; gap: 8px; align-items: baseline; font-size: 12px; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.ops-event-type { font-family: var(--mono, monospace); font-size: 11px; color: var(--accent); overflow-wrap: anywhere; }
+.ops-event-summary { overflow-wrap: anywhere; }
+.ops-event-list small { color: var(--muted); font-size: 10px; }
+.ops-counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.ops-counts > div { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.ops-counts span { display: flex; gap: 4px; align-items: center; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.ops-counts strong { font-size: 17px; }
+.ops-counts small { font-size: 10px; color: var(--muted); }
+.ops-reasons { margin: 0; padding-inline-start: 18px; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }

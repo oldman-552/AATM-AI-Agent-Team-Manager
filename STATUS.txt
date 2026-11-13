@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 14:13 UTC
+2026-11-13 14:15 UTC
 
 Overall Project Status:
 Testing
@@ -12,15 +12,16 @@ Overall Completion:
 Roughly 80% of the specified local-first product surface is implemented and tested. Every capability that needs no paid provider call, no display, and no Windows host is built, exercised live and covered by tests. What remains open is either gated by design (live provider execution, real agent execution, GitHub execution) or impossible in this environment (Windows, PostgreSQL, Docker, Playwright). See BLOCKERS.txt for the itemised list; nothing below is claimed as done that is not.
 
 Current Phase:
-Phase 23 — AI Team Intelligence Center
+Phase 24 — Operations view and bundle splitting
 
 Current Task:
-Fair, measured agent performance with labelled rule-based assessments
+Expose audit log, usage and resources; split the vendor bundle
 
 Current Activity:
-Complexity weighting, success denominator including failures and excluding cancellations, sample-sufficiency flags, null-not-zero metrics, separate assessed fields with thresholds and caveats; 24 new keys x3
+Filterable audit log, usage/cost panel with an honest empty-state note, resource monitor with nullable ratios and advisory labelling; 17 new keys x3; vendor chunk split removed the 500 kB warning
 
 Recently Completed (most recent first):
+- Operations view: audit log with filtering, usage and costs, and a local resource monitor whose recommendation is explicitly advisory.
 - AI Team Intelligence Center: complexity-weighted, sample-aware agent metrics, with rule-based assessments kept separate from measurements (no ranking by task count).
 - Memory context selection: deterministic budgeted retrieval with an explicit exclusion list, and extractive summaries labelled as such.
 - Self-healing surface: classified database errors with rollback-before-close, queue health, and a capability table where only the two genuine automatic recoveries are marked automatic.
@@ -71,7 +72,7 @@ Tests:
 - Pending: Windows/PowerShell, PostgreSQL, Docker, Playwright E2E, pixel-level RTL rendering.
 
 Build Status:
-Frontend production build passed (CSS 45.85 kB, JS 468.17 kB).
+Frontend production build passed (CSS 50.41 kB; JS split into react 181.21 kB, data 87.39 kB, app 231.82 kB — no chunk over 500 kB).
 
 Operating System:
 Ubuntu/Linux development environment; Windows 11 not available for verification.

@@ -1,109 +1,138 @@
 # AATM — AI Agent Team Manager
 
-AATM is a local-first AI engineering command center in early development. The complete product specification is preserved in [`AATM_MASTER_DEVELOPMENT_PROMPT.md`](AATM_MASTER_DEVELOPMENT_PROMPT.md). This repository began as a README-only skeleton; the foundation plus the provider-boundary and task-workflow slices described below are what exists today.
+A local-first command center for managing a team of AI agents: projects, tasks, a durable orchestrator, memory, planning, reviews, approvals, and honest reporting about what actually ran.
 
-## Current verified foundation
+Everything runs on your machine against SQLite. There is no cloud dependency, no telemetry, and **no paid model call in the default build** — every capability that could spend money or touch the network is either off by default or refuses outright.
 
-- FastAPI API with a real database health check and database-backed dashboard counts.
-- SQLAlchemy models and an Alembic initial migration for projects, agent registrations, tasks, and audit events.
-- Local SQLite default, with a configurable SQLAlchemy database URL.
-- A persisted, deliberately unconfigured Manager identity and 20 default worker-role templates.
-- Project/agent/task record creation and listing; task assignment records; worker registration capped at 20.
-- React + TypeScript + Vite UI for Dashboard, Projects, Agents, Tasks, Memory, Analytics, Approvals, Providers, and Settings, using a relative `/api/v1` path through the Vite proxy.
-- English, Arabic, and Persian resources with 450 keys each, a key-parity/RTL unit test, a persisted selector, and `dir=rtl` for Arabic/Persian.
-- Offline provider boundary: safe credential references, offline health, deterministic routing policies, and hard server-side budget enforcement — with **no** HTTP endpoint that performs a live model request.
-- Task workflow state machine: validated transitions, dependency-gated ready queue, evidence requirements, replay-safe idempotency, and append-only history.
-- Durable orchestrator: lease-based claims, bounded concurrency, backoff retries, crash recovery, and inspection/recovery endpoints — with execution disabled by default.
-- Independent QA reviews (reviewer separation + concrete checks) and audited approval gates for paid/deploy/merge/delete operations (decisions recorded, actions not executed).
-- Isolated local Git workspaces per project with branch creation and read-only status (no merge/push/fetch).
-- Project-isolated memory with scoped entries, keyword retrieval, version history and export.
-- Local CPU/memory/disk telemetry with an advisory (never auto-applied) concurrency recommendation.
-- `scripts/backup.py` for consistent, verified, guarded SQLite backups and restores.
-- Durable task checkpoints with an explicit resume plan (never "auto-resumed").
-- Approval-gated pull-request plans that show the exact commands and never call the network.
-- Delivery analytics computed only from stored rows, with explicit sample sizes and no synthetic scores.
-- In-app notifications derived from real pending work, with server-side read state.
-- A Settings page for validated, non-secret preferences (never API keys).
-- Deterministic Manager planning with reviewable, explicitly applied assignment proposals.
-- Agent lifecycle states and deny-by-default permission scopes enforced server-side.
-- Isolated browser profile directories with exclusive locks (no browser automation is implemented).
-- Optional local bearer-token authentication plus CSRF-hardened mutations; the token is injected by the Vite proxy and never reaches the browser.
-- Ubuntu shell and Windows PowerShell dependency/start/stop/update/uninstall entry points (Windows execution remains unverified here).
-- Atomic progress event/status writer and a five-minute heartbeat command.
+The complete product specification is preserved in [`AATM_MASTER_DEVELOPMENT_PROMPT.md`](AATM_MASTER_DEVELOPMENT_PROMPT.md).
 
-**Not implemented yet:** live provider traffic, real agent execution, orchestration over real executors, persistent browser profiles, memory, GitHub workflows, independent QA/recovery/approvals, confirmed billing reconciliation, backup/restore, and production authentication. Creating or moving a task record does not execute it; the Manager record does not make AI calls. Arena integration remains blocked pending a compliant supported route.
+## At a glance
 
-## Run locally
+| | |
+|---|---|
+| Backend | FastAPI + SQLAlchemy 2 + Alembic — **241 tests** |
+| Frontend | React 18 + TypeScript + Vite — **20 tests** |
+| Languages | English, Arabic, Persian — **646 keys each**, parity enforced by test |
+| Database | SQLite by default (WAL enabled); any SQLAlchemy URL via config |
+| Migrations | 13, upgrade/downgrade round-tripped |
+| Layout | RTL verified by a CSS invariant checker (0 physical `left`/`right`) |
 
-Prerequisites: Python 3.11+ and Node.js 20+ with npm. Docker is not required for the SQLite path.
+## Quick start
 
-Ubuntu/Linux:
+Requires Python 3.11+ and Node.js 20+.
 
 ```bash
 scripts/install.sh
-scripts/start.sh
-# Open http://127.0.0.1:5173
+scripts/start.sh          # API on 127.0.0.1:8000, UI on 127.0.0.1:5173
 scripts/stop.sh
 ```
 
-Windows PowerShell:
+Windows PowerShell equivalents (`install.ps1`, `start.ps1`, `stop.ps1`) are provided but **unverified** — no Windows host was available.
 
-```powershell
-.\scripts\install.ps1
-.\scripts\start.ps1
-# Open http://127.0.0.1:5173
-.\scripts\stop.ps1
-```
-
-The API binds to `127.0.0.1:8000` by default. The web development server also binds to loopback when started by these scripts; the Arena preview invocation explicitly overrides the web host so its preview can proxy requests. See [`INSTALLATION.md`](INSTALLATION.md).
-
-## API and tests
-
-- Health: `GET /api/v1/health`
-- Providers (offline): `GET /api/v1/providers`, `GET /api/v1/providers/{id}/health`, `POST /api/v1/providers/route`
-- Workflow: `GET /api/v1/tasks/workflow`, `GET /api/v1/tasks/ready`, `PATCH /api/v1/tasks/{id}/state`
-- Quality: `GET|POST /api/v1/tasks/{id}/reviews`, `GET|POST /api/v1/approvals`
-- Workspaces: `GET|POST|DELETE /api/v1/projects/{id}/workspace`, `POST .../workspace/branches`
-- Memory: `GET|POST /api/v1/memory`, `GET /api/v1/memory/search`, `POST /api/v1/memory/{id}/rollback/{version}`
-- System: `GET /api/v1/system/resources`
-- Checkpoints: `GET|POST|DELETE /api/v1/tasks/{id}/checkpoints`, `GET /api/v1/tasks/{id}/resume-plan`
-- Browser profiles: `GET|POST|DELETE /api/v1/browser-profiles`, `POST .../{id}/lock`, `POST .../{id}/unlock`
-- Agents: `PATCH /api/v1/agents/{id}/state`, `PATCH /api/v1/agents/{id}/permissions`, `GET /api/v1/agents/scopes`, `GET /api/v1/agents/blocked`
-- Planning: `GET /api/v1/planning/proposals`, `POST /api/v1/planning/apply`
-- Preferences: `GET|PATCH /api/v1/settings`, `POST /api/v1/settings/reset`, `GET /api/v1/settings/export`
-- Notifications: `GET /api/v1/notifications`, `POST /api/v1/notifications/read`, `POST /api/v1/notifications/read-all`
-- Analytics: `GET /api/v1/analytics` (+ `/throughput`, `/cycle-time`, `/reviews`, `/rework`, `/approvals`, `/activity`)
-- Pull-request plans: `GET|POST /api/v1/projects/{id}/pull-requests`, `POST .../{plan}/decision`, `POST .../{plan}/execute` (always refuses)
-- Orchestrator: `GET /api/v1/orchestrator/status`, `POST /api/v1/orchestrator/recover`
-- Dashboard: `GET /api/v1/dashboard`
-- OpenAPI UI: `http://127.0.0.1:8000/docs`
-- API routes and request examples: [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md)
+Verify it yourself:
 
 ```bash
-(cd backend && ../.venv/bin/python -m pytest)
-(cd web && npm run build)
+(cd backend && ../.venv/bin/python -m pytest -o addopts="" -q)
+(cd web && npm run verify)     # tsc + vitest + build + RTL checker
 ```
 
-## Progress tracking
+## What actually works
 
-The required progress records are in the repository root: `STATUS.txt`, `PROGRESS_LOG.txt`, `IMPLEMENTATION_STATUS.md`, `BLOCKERS.txt`, and `NEXT_ACTIONS.txt`. To record significant activity atomically:
+**Records and workflow**
+- Projects, agents, tasks with a validated state machine, dependency gating, replay-safe idempotency and append-only history.
+- Agent lifecycle states and ten deny-by-default permission scopes, enforced server-side.
+- Durable orchestrator: lease-based claims, bounded concurrency, exponential backoff with a retry ceiling, crash recovery for expired leases.
+- Cooperative cancellation as a two-step protocol that never rewrites finished work.
+
+**Execution (opt-in, local only)**
+- `LocalProcessExecutor` runs one named, allow-listed command per task inside its isolated workspace.
+- **A task names a command; it never contains one.** The argv lives in `.aatm/exec.json` that a human committed — executing a command string from the database would make every task title remote code execution.
+- Off unless `AATM_EXECUTION_ENABLED=1`. No shell, bare allow-listed `argv[0]`, contained cwd, environment stripped to `PATH`/`LANG`, process-group kill on timeout, capped output.
+
+**Memory and planning**
+- Project-isolated memory with scopes, keyword retrieval, version history, rollback and export.
+- Budgeted memory context selection with an explicit exclusion list, plus extractive summaries labelled as such.
+- Deterministic Manager planning producing reviewable proposals that are re-validated on apply.
+
+**Reporting**
+- Analytics computed only from stored rows, with sample sizes stated and no synthetic scores.
+- AI Team Intelligence Center: complexity-weighted agent metrics where thin samples are flagged, empty metrics are `null` never `0`, and rule-based assessments are kept in separate fields from measurements. No ranking by task count.
+- Live audit stream over SSE with a resumable cursor and its transport labelled honestly as *polled*.
+- Self-healing surface: classified database errors, queue health, and a capability table where only the two genuinely automatic recoveries are marked automatic.
+
+**Safety and operations**
+- Approval-gated pull-request plans showing exact commands, never calling the network.
+- Isolated browser profile directories with exclusive locks (no browser is launched).
+- Optional bearer-token auth with the token injected by the dev proxy, never shipped to the browser; CSRF-hardened mutations.
+- Verified SQLite backup/restore, request-body caps, security headers, and a progress system that never claims work occurred just because a timestamp changed.
+
+## What is deliberately not built
+
+Roughly 20% of the specification is open, and none of it is silently skipped:
+
+| Category | Item |
+|---|---|
+| Gated by design | Live paid provider calls — the consent/accounting surface does not exist, and nothing spends money without it |
+| Gated by design | Model-driven task execution — the executor runs local commands, never a model |
+| Gated by design | GitHub push/PR execution — plans are recorded and approval-gated; nothing executes |
+| Blocked on policy | Arena integration — the upstream bridge generates CAPTCHA tokens and hides automation signals, contradicting the no-bypass requirement. See [`BLOCKERS.txt`](BLOCKERS.txt) |
+| Environment-limited | Windows 11, PostgreSQL, Docker, Playwright — unavailable on the development host; recorded as limits, never simulated |
+
+Creating or moving a task record does not execute it unless execution is explicitly enabled. The Manager record makes no AI calls. **No paid request has ever been made.**
+
+## API surface
+
+Health, dashboard, projects, agents, tasks, workflow, orchestrator, memory, planning, quality/reviews, approvals, workspaces, checkpoints, browser profiles, providers (offline), analytics, intelligence, recovery, notifications, settings, events, and a live SSE stream.
+
+```bash
+curl http://127.0.0.1:8000/api/v1/health
+curl http://127.0.0.1:8000/api/v1/orchestrator/status
+curl -N "http://127.0.0.1:8000/api/v1/events/stream?max_seconds=10"
+```
+
+Interactive docs at `http://127.0.0.1:8000/docs`. Full route reference and request examples: [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md).
+
+## Project layout
+
+```
+backend/
+  app/            FastAPI routers, domain modules, execution, events
+  tests/          29 test modules, 241 tests
+  migrations/     13 Alembic revisions
+web/
+  src/            React views, typed API client, i18n resources
+scripts/          install/start/stop/update/uninstall (sh + ps1), backup, progress reporter
+```
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [`STATUS.txt`](STATUS.txt) | Live status, current phase, verified test counts |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Modules and the guarantees each one holds |
+| [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md) | Every endpoint, including the executor's safety rules |
+| [`TESTING_REPORT.md`](TESTING_REPORT.md) | Test strategy and what each guard protects |
+| [`SECURITY.md`](SECURITY.md) | Threat model and security boundaries |
+| [`BLOCKERS.txt`](BLOCKERS.txt) | Blocked and environment-limited items |
+| [`NEXT_ACTIONS.txt`](NEXT_ACTIONS.txt) | Prioritised remaining work |
+| [`PROGRESS_LOG.txt`](PROGRESS_LOG.txt) | Chronological development log |
+| [`INSTALLATION.md`](INSTALLATION.md) · [`CONFIGURATION.md`](CONFIGURATION.md) | Setup and configuration |
+| [`CHANGELOG.md`](CHANGELOG.md) | What changed and why |
+
+To record progress atomically:
 
 ```bash
 .venv/bin/python scripts/progress_reporter.py event \
-  --phase 'Phase 1 — Foundation' --task 'Describe the task' \
-  --action 'What was done' --activity 'What is happening now' \
-  --tests 'Not run' --results 'Event recorded; no verification claimed'
+  --phase 'Phase 28 — ...' --task '...' --action '...' \
+  --activity '...' --tests 'Not run' --results 'Event recorded; no verification claimed'
 ```
-
-For a 5-minute heartbeat while development is active, run `python scripts/progress_reporter.py heartbeat`. It marks stale activity idle and never claims work occurred just because a timestamp was updated. The heartbeat is a helper process; it is not left running automatically by the app.
 
 ## Status and security
 
-- Latest development state: [`STATUS.txt`](STATUS.txt)
-- Feature checklist: [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)
-- Known limitations: [`BLOCKERS.txt`](BLOCKERS.txt)
-- Configuration: [`CONFIGURATION.md`](CONFIGURATION.md)
-- Security boundaries: [`SECURITY.md`](SECURITY.md)
-- Test results: [`TESTING_REPORT.md`](TESTING_REPORT.md)
+**The application is not production-ready.** Do not expose the API to an untrusted network. There is no multi-user authentication or per-user authorization. Never commit secrets, credentials, or browser profiles — the repository contains none, and a tracked-file secret scan is clean.
 
-The application is not production-ready. Do not expose the API to an untrusted network. No API credentials are supported by the current foundation; never commit secrets or browser profiles.
+Provider keys, when they eventually exist, are read only from environment variables or the OS keyring; no HTTP endpoint accepts a raw key.
+
+## License
+
+See the repository for licensing terms.

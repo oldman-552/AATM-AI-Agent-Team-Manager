@@ -55,6 +55,7 @@ def record_review(
     summary: str = "",
     checks: list[object] | None = None,
     idempotency_key: str,
+    task_worktree_head: str | None = None,
 ) -> tuple[ReviewRecord, bool]:
     if verdict not in VERDICTS:
         raise ReviewError(f"Verdict must be one of: {', '.join(VERDICTS)}.")
@@ -99,6 +100,7 @@ def record_review(
         verdict=verdict,
         summary=summary.strip()[:500],
         checks=cleaned,
+        task_worktree_head=task_worktree_head,
         idempotency_key=key,
         created_at=datetime.now(timezone.utc),
     )

@@ -1,9 +1,11 @@
 AATM — PRIORITIZED NEXT ACTIONS
 ===============================
 
-IN REVIEW — Safe text previews for untracked task-worktree files (2026-11-13 18:44 UTC)
-Result: Extended the merged diff preview with separate snippets for contained regular UTF-8 untracked files, bounded to 32 paths, 32 KiB/file, 128 KiB aggregate, 64 KiB path enumeration and five seconds. Binary files, symlinks, unsafe paths, non-regular and oversized files have no contents exposed. Local checks: 262 backend passed, 1 PostgreSQL-only test skipped; 8 focused workspace tests passed; frontend verify passed (21 tests, TypeScript, production build, RTL checks). PR #12 is open; all backend, frontend, and PostgreSQL CI jobs passed on run `43485091743`.
+IN PROGRESS — Review-bound, explicit local task-worktree integration (2026-11-13 19:21 UTC)
+Result: Added a distinct integration endpoint gated by the task's approved state and an independent approval record bound to the exact task-worktree HEAD SHA (migration `0015_review_worktree_head`). It only fast-forwards clean committed descendants into a clean, unchanged, non-protected local branch; it rejects post-review commits, dirty trees, binary/symlink/submodule changes, and incomplete/oversized previews. Git hooks are disabled and the global database lock serializes integration against orchestrator runs and workspace branch/deletion mutations. No task worktree is changed and no remote operation runs. Local verification passes: 265 backend tests (one PostgreSQL-only skip), 11 focused task-workspace/QA tests, and frontend verify (21 tests, TypeScript, production build, RTL). Hosted CI is pending.
 
+COMPLETED — Safe text previews for untracked task-worktree files (2026-11-13 18:54 UTC)
+Result: Extended the merged diff preview with separate snippets for contained regular UTF-8 untracked files, bounded to 32 paths, 32 KiB/file, 128 KiB aggregate, 64 KiB path enumeration and five seconds. Binary files, symlinks, unsafe paths, non-regular and oversized files have no contents exposed. PR #12 merged as `aa7b268a`; all backend, frontend, and PostgreSQL CI jobs passed.
 COMPLETED — Bounded task-worktree diff preview and Tasks UI (2026-11-13 18:21 UTC)
 Result: Added a read-only Git patch preview from each AATM worktree's recorded base, with a 256 KiB output cap, 15-second diff-command timeout, external diff/textconv disabled. The Tasks UI fetches it only on operator request and displays honest truncation and missing-worktree states in English/Arabic/Persian. Local verification: 262 backend passed, 1 PostgreSQL-only test skipped; 21 frontend tests, TypeScript, production build, RTL checks passed. PR #11 merged in main commit `0f7bab9`; all backend, frontend, and PostgreSQL migration/lock jobs passed on CI run `43482226737`.
 
@@ -81,7 +83,7 @@ Description: Execute the PowerShell install/start/stop/update/uninstall path on 
 Dependencies: Windows host; PostgreSQL server; approved backup design.
 
 P6 (remaining) — Later product phases
-Description: Consent/accounting before any live paid model request; model-driven Manager and independent worker execution; distributed worker scheduling and safe review/integration of same-project task-worktree changes; browser automation; approval-gated GitHub push/PR operations; per-user authorization; distributed CI coverage for Windows and release packaging.
+Description: Consent/accounting before any live paid model request; model-driven Manager and independent worker execution; distributed worker scheduling, plus an operator-facing UI and broader policies around the new review-gated local integration endpoint; browser automation; approval-gated GitHub push/PR operations; per-user authorization; distributed CI coverage for Windows and release packaging.
 Note: deterministic planning, agent lifecycle/scopes, profile storage/Browser Wall, evidence-based analytics, timelines, notifications, memory, local Git workspaces, budgets/resources, checkpoints and local-only command execution are already implemented to the boundaries documented in `IMPLEMENTATION_STATUS.md`.
 Dependencies: User consent and provider credentials for paid traffic; compliant policy path for Arena; display/Windows/PostgreSQL/Docker/Playwright environments for their respective tests.
 Expected outcome: Phased delivery; no feature marked complete without passing tests and real evidence.

@@ -518,6 +518,7 @@ export type Review = {
   verdict: 'approved' | 'rework_required'
   summary: string
   checks: ReviewCheck[]
+  task_worktree_head?: string | null
   created_at: string
 }
 

@@ -10,6 +10,14 @@
 - The endpoint is read-only: it never changes, commits, merges or deletes task worktrees. Tests cover tracked and untracked text, per-file and aggregate output limits, binary/symlink omission, missing worktrees, cross-project isolation and invalid ownership metadata.
 - Verification: 262 backend tests passed locally, one PostgreSQL-only test skipped; 21 frontend tests, TypeScript, production build, and RTL checks passed. Hosted CI run `43485091743` passed the backend, frontend, and PostgreSQL migration/lock jobs. One upstream Starlette/httpx deprecation warning remains.
 
+### Review-gated local task-worktree integration
+
+- Added `POST /api/v1/projects/{project_id}/workspace/tasks/{task_id}/integrate` as a distinct explicit operation; diff and status previews remain read-only.
+- Independent review records now bind to the exact task-worktree HEAD SHA (migration `0015_review_worktree_head`). Integration requires the task to be approved and a matching approved review, preventing commits made after review from being integrated.
+- Only clean committed descendants of the recorded base can fast-forward into a clean non-protected local project branch whose HEAD has not moved. The full textual diff must fit the preview cap; binary, symlink, submodule, truncated, stale, or dirty cases fail closed. Git hooks are disabled for the operation, task worktrees remain unchanged, and no remote operation occurs.
+- Integration and project branch/deletion mutations share the database-backed orchestrator lock. Tests cover real fast-forward, review-SHA binding, post-review changes, binary and dirty-workspace rejection, idempotent retry, audit event, hook suppression, and lock contention.
+- Local verification: 265 backend tests passed, one PostgreSQL-only test skipped; 21 frontend tests, TypeScript, production build and RTL checks passed. Focused workspace/review tests cover the approval SHA, stale post-review commits, safe fast-forward, dirty/binary rejection, idempotency, audit, hook suppression and database-lock contention. Hosted CI has not run for this active branch.
+
 ### Bounded adaptive and parallel task dispatch
 
 - Added `AATM_MAX_CONCURRENCY` (bounded 1–20, default 1) and `AATM_ADAPTIVE_CONCURRENCY` (off by default). When enabled, local CPU/memory/disk telemetry can only reduce the per-run dispatch batch; existing running tasks are subtracted and a zero budget claims no task.

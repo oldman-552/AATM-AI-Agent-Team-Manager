@@ -197,6 +197,7 @@ Review history for one task. `GET /reviews?limit=100` lists recent reviews acros
 - `approved` requires at least one concrete non-empty check **and** recorded task output; `rework_required` requires a summary.
 - The verdict drives the existing state machine: `completed → reviewing → approved | rework_required`, so no new state path is invented.
 - Replaying an idempotency key returns `created: false`; reusing it for a different verdict is a 409.
+- When an AATM task worktree exists, the review stores its exact `task_worktree_head` SHA. This binds any later task-worktree integration gate to the version reviewed; later commits require a new approved review.
 - Audit events: `task.review_approved` / `task.review_rework_required`.
 
 ## Approval gates
@@ -217,7 +218,7 @@ Kinds: `paid_provider_request`, `protected_branch_merge`, `deployment`, `data_de
 { "status": "approved", "decided_by": "local-user", "note": "Reviewed the diff." }
 ```
 
-Records a human decision only. Deciding an already-decided request returns 409. The response states explicitly that the gated action is **not** executed by this build — no endpoint performs deployments, merges, deletions, or paid provider traffic.
+Records a human decision only. Deciding an already-decided request returns 409. The response states explicitly that generic approval requests do not execute their gated actions; deployments, remote merges, deletions, and paid provider traffic are not performed. Local task-worktree integration has a distinct endpoint and independent task-review gate described below.
 
 ## Project workspaces (isolated Git)
 
@@ -233,7 +234,11 @@ Returns read-only metadata for an AATM-owned per-task Git worktree: `available`,
 
 ### `GET /projects/{project_id}/workspace/tasks/{task_id}/diff`
 
-Returns a text patch from the task worktree's recorded base commit; the diff command itself is capped at 256 KiB of output and 15 seconds of runtime. The response includes `truncated` and `max_bytes`. Untracked paths are listed separately with previews only for contained regular UTF-8 text files no larger than 32 KiB; binary files, symlinks, unsafe paths, non-regular files, and oversized files have no content preview. Untracked previews are limited to 32 files and 128 KiB total; file enumeration is capped at 64 KiB and five seconds. External diff and text-conversion helpers are disabled. No task/project ownership is bypassed, and the endpoint performs no write, commit, merge, or delete.
+Returns a text patch from the task worktree's recorded base commit; the diff command itself is capped at 256 KiB of output and 15 seconds of runtime. The response includes `truncated` and `max_bytes`. Untracked paths are listed separately with previews only for contained regular UTF-8 text files no larger than 32 KiB; binary files, symlinks, unsafe paths, non-regular files, and oversized files have no content preview. Untracked previews are limited to 32 files and 128 KiB total; file enumeration is capped at 64 KiB and five seconds. External diff and text-conversion helpers are disabled. No task/project ownership is bypassed, and this endpoint performs no write, commit, merge, or delete.
+
+### `POST /projects/{project_id}/workspace/tasks/{task_id}/integrate`
+
+Explicitly fast-forwards a task commit into the project's current local branch. The task must already be `approved` by the independent review workflow, and an approved review record must match the exact current task-worktree HEAD (the review API stores that SHA). The project workspace must be clean, on a non-protected branch, and still at the task worktree's exact recorded base commit; the task worktree must be clean and contain committed descendant changes. The full text diff must fit the existing 256 KiB review cap. Binary, symlink, submodule, and other non-regular changes are refused. The operation is serialized against orchestrator runs and other workspace mutations by the shared database lock; Git hooks are disabled for the fast-forward. It never pushes, fetches, deletes, or modifies the task worktree. Repeated calls after successful integration are idempotent. Unsafe/stale/conflicting conditions return 409.
 
 ### `POST /projects/{project_id}/workspace` → 201
 

@@ -267,6 +267,7 @@ class ReviewRecord(Base):
     verdict: Mapped[str] = mapped_column(String(32), nullable=False)
     summary: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     checks: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    task_worktree_head: Mapped[str | None] = mapped_column(String(64), nullable=True)
     idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
 

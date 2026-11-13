@@ -5,11 +5,12 @@ Safety rules (all enforced here, not in the UI):
 * A project workspace lives strictly under the configured root; the resolved
   path must not escape it (path traversal and symlink escapes are rejected).
 * Branches are constrained to a safe charset and a per-project prefix.
-* Only local, non-destructive Git operations are used: clone (from a *local*
-  source path), branch creation, status, and diff statistics.
-* Merging into a protected branch, pushing, and deleting anything are **not**
-  implemented. `protected_branches` is recorded so a future merge gate can
-  consult it, and it cannot be bypassed here.
+* Network fetch/push and protected-branch merges are not implemented. A
+  separate, explicit endpoint can fast-forward an independently approved task
+  commit into a clean non-protected local branch under strict safety checks.
+* Workspace deletion is explicit, audited, and root-guarded; task worktrees are
+  not deleted by task integration. `protected_branches` is enforced by both
+  branch creation and the task-integration gate.
 * No credentials are read; Git subprocesses run with prompts disabled and a
   scrubbed environment so a remote URL could never block on a password prompt.
 """
@@ -257,7 +258,7 @@ def workspace_status(paths: WorkspacePaths) -> dict[str, object]:
         "changed_files": [line[3:] for line in changed][:200],
         "changed_count": len(changed),
         "diffstat": diffstat,
-        "note": "Read-only status. AATM never merges, pushes or deletes workspace content.",
+        "note": "Read-only status; this endpoint never merges, pushes or deletes workspace content.",
     }
 
 

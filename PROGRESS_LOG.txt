@@ -350,3 +350,13 @@ Tests executed: pytest 178 passed, 1 warning; pyflakes clean; measured medians: 
 Results: Backend 166 -> 178 tests; project timeline 7.8x faster; oversized bodies refused with 413
 Problems: None
 Solutions: None
+
+[2026-11-13 14:01 UTC] Phase 20 — Permission levels — Complete the nine specification permission levels
+Task: Complete the nine specification permission levels
+Action performed: Extended scopes to cover all nine named levels with a named enforcement boundary for each
+Files created: None
+Files modified: backend/app/agents.py, backend/app/agent_api.py, backend/app/planning.py, backend/tests/test_agent_lifecycle.py, backend/tests/test_planning.py, web/src/api.ts, web/src/components/AgentControls.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 181 passed; vitest 13 passed; tsc clean; build OK; RTL check 0 physical
+Results: Backend 178 -> 181 tests; i18n 557 -> 563 keys x3
+Problems: None
+Solutions: None

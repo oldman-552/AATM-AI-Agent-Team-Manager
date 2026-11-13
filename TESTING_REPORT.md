@@ -174,3 +174,15 @@ The checker's detection power was proven with a probe file containing `margin-le
 | `POST /api/v1/blueprints` | 5.0 ms |
 
 The project-timeline figure exposed a real N+1 query: the code called the per-task builder once per task, so query count grew with the number of tasks. It now issues one query per table for the whole project. The regression test asserts a generous ceiling, so it catches a return to quadratic behaviour without being flaky.
+
+## UI render smoke test
+
+`web/src/App.render.test.tsx` (jsdom) mounts the real `<App />` against mocked responses and clicks every navigation entry.
+
+The value is entirely in the guards, and each one was added because the test lied without it:
+
+- React reports render failures through `console.error` and unmounts the subtree rather than throwing, so an unguarded smoke test passes while a view is broken. The test fails on render-error messages.
+- The first click loop included the already-active Dashboard, so "markup changed" was never true and the loop re-tested one view. The active entry is skipped and every other entry must change the markup.
+- A deliberate `throw` was injected into a view to confirm the test fails; it does.
+
+Frontend total: 16 tests.

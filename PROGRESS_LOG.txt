@@ -400,3 +400,13 @@ Tests executed: pytest 212 passed; vitest 13 passed; tsc clean; build OK with no
 Results: i18n 621 -> 638 keys x3; no chunk exceeds 500 kB
 Problems: None
 Solutions: None
+
+[2026-11-13 14:19 UTC] Phase 25 — UI render smoke test — Prove views render, not just that endpoints respond
+Task: Prove views render, not just that endpoints respond
+Action performed: Added a jsdom render test that mounts the real app with mocked API data and clicks every navigation entry, plus three anti-vacuity guards
+Files created: web/src/App.render.test.tsx
+Files modified: web/vitest.config.ts, web/package.json
+Tests executed: vitest 16 passed (3 render + 7 RTL + 6 i18n); pytest 212 passed; tsc clean; build OK; deliberate-crash probe confirmed the test fails as intended
+Results: Frontend 13 -> 16 tests; closed a verification gap where a crashing view could ship undetected
+Problems: None
+Solutions: None

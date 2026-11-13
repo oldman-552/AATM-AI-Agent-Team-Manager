@@ -9,6 +9,12 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### UI render smoke test
+
+- Added a **jsdom render test** that mounts the real application with mocked API responses, clicks through every navigation section, and asserts the main region keeps real content after each swap.
+- **It catches what HTTP checks cannot.** A first version passed while a deliberately injected crash was live: React logs render errors to `console.error` and unmounts the subtree instead of throwing, and the click loop was silently re-testing the already-active Dashboard. The test now fails on React's render errors, skips the active entry, and asserts that the markup actually changed and that most sections were visited. Verified by injecting a throw and watching it fail.
+- Frontend tests 13 → 16.
+
 ### Operations view and bundle splitting
 
 - New **Operations** view consolidating three sections the specification lists but the UI did not expose: Logs & Audit (a filterable event log), Usage & Costs (with the honest note that an empty column means *no call was made*, not that calls were free), and the Resource Monitor (nullable ratios rendered as "—", with the concurrency recommendation labelled advisory).

@@ -11,12 +11,17 @@ from __future__ import annotations
 import json
 import os
 import re
+import stat
 from pathlib import Path
 
 from app.workspaces import WorkspaceError, WorkspacePaths, run_git, run_git_bounded, workspace_status
 
 WORKTREE_ROOT_NAME = ".aatm-task-worktrees"
 TASK_DIFF_PREVIEW_BYTES = 256 * 1024
+_UNTRACKED_LIST_BYTES = 64 * 1024
+_UNTRACKED_FILE_BYTES = 32 * 1024
+_UNTRACKED_TOTAL_BYTES = 128 * 1024
+_MAX_UNTRACKED_FILES = 32
 _SAFE_ID = re.compile(r"^[A-Za-z0-9-]{1,80}$")
 _COMMIT = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 
@@ -167,6 +172,101 @@ def inspect_task_worktree(
     }
 
 
+def _untracked_previews(worktree: Path) -> tuple[list[dict[str, object]], bool]:
+    """Capture small UTF-8 text previews for safe untracked regular files."""
+    listing, listing_truncated = run_git_bounded(
+        ["ls-files", "--others", "--exclude-standard", "-z"],
+        cwd=worktree,
+        max_output_bytes=_UNTRACKED_LIST_BYTES,
+        timeout=5,
+    )
+    names = [name for name in listing.split("\0") if name]
+    previews: list[dict[str, object]] = []
+    total_content_bytes = 0
+    was_truncated = listing_truncated or len(names) > _MAX_UNTRACKED_FILES
+    root = worktree.resolve()
+
+    for name in names[:_MAX_UNTRACKED_FILES]:
+        entry: dict[str, object] = {
+            "path": name,
+            "size_bytes": None,
+            "content": None,
+            "status": "unsafe",
+            "truncated": False,
+        }
+        if "\ufffd" in name or Path(name).is_absolute() or any(part in {"", ".", ".."} for part in name.split("/")):
+            previews.append(entry)
+            continue
+        candidate = worktree
+        symlinked = False
+        for part in name.split("/"):
+            candidate = candidate / part
+            if candidate.is_symlink():
+                symlinked = True
+                break
+        if symlinked:
+            entry["status"] = "symlink"
+            previews.append(entry)
+            continue
+        try:
+            resolved = candidate.resolve(strict=True)
+            if resolved == root or root not in resolved.parents:
+                previews.append(entry)
+                continue
+            metadata = candidate.stat(follow_symlinks=False)
+            entry["size_bytes"] = metadata.st_size
+            if not stat.S_ISREG(metadata.st_mode):
+                entry["status"] = "non_regular"
+                previews.append(entry)
+                continue
+            if metadata.st_size > _UNTRACKED_FILE_BYTES:
+                entry["status"] = "too_large"
+                entry["truncated"] = True
+                was_truncated = True
+                previews.append(entry)
+                continue
+            with candidate.open("rb") as stream:
+                content = stream.read(_UNTRACKED_FILE_BYTES + 1)
+        except OSError:
+            entry["status"] = "unreadable"
+            previews.append(entry)
+            continue
+
+        if b"\0" in content:
+            entry["status"] = "binary"
+            previews.append(entry)
+            continue
+        if len(content) > _UNTRACKED_FILE_BYTES:
+            entry["status"] = "too_large"
+            entry["truncated"] = True
+            was_truncated = True
+            previews.append(entry)
+            continue
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            entry["status"] = "binary"
+            previews.append(entry)
+            continue
+        budget = _UNTRACKED_TOTAL_BYTES - total_content_bytes
+        encoded = text.encode("utf-8")
+        if budget <= 0:
+            entry["status"] = "omitted_limit"
+            entry["truncated"] = True
+            was_truncated = True
+        else:
+            if len(encoded) > budget:
+                text = encoded[:budget].decode("utf-8", errors="ignore")
+                entry["truncated"] = True
+                was_truncated = True
+            entry["status"] = "text"
+            entry["content"] = text
+            total_content_bytes += len(text.encode("utf-8"))
+        previews.append(entry)
+
+    return previews, was_truncated
+
+
 def preview_task_worktree_diff(
     root: str | Path,
     source: str | Path,
@@ -210,6 +310,7 @@ def preview_task_worktree_diff(
     if len(encoded) > TASK_DIFF_PREVIEW_BYTES:
         diff = encoded[:TASK_DIFF_PREVIEW_BYTES].decode("utf-8", errors="ignore")
         truncated = True
+    untracked_files, untracked_truncated = _untracked_previews(target)
     return {
         "task_id": task_id,
         "base_commit": base_commit,
@@ -217,6 +318,9 @@ def preview_task_worktree_diff(
         "diff": diff,
         "truncated": truncated,
         "max_bytes": TASK_DIFF_PREVIEW_BYTES,
-        "untracked_included": False,
-        "note": "Read-only text preview only. Untracked files are omitted, and no task worktree is modified or merged.",
+        "untracked_files": untracked_files,
+        "untracked_included": any(item["status"] == "text" for item in untracked_files),
+        "untracked_truncated": untracked_truncated,
+        "untracked_max_bytes": _UNTRACKED_TOTAL_BYTES,
+        "note": "Read-only text preview only. Untracked regular UTF-8 files may be included within separate strict limits; binary, unsafe, and oversized output is omitted or truncated.",
     }

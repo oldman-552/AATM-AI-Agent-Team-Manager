@@ -572,7 +572,16 @@ export type TaskWorkspaceDiffResponse = {
     diff: string
     truncated: boolean
     max_bytes: number
-    untracked_included: false
+    untracked_files: Array<{
+      path: string
+      size_bytes: number | null
+      content: string | null
+      status: 'text' | 'binary' | 'symlink' | 'unsafe' | 'non_regular' | 'unreadable' | 'too_large' | 'omitted_limit'
+      truncated: boolean
+    }>
+    untracked_included: boolean
+    untracked_truncated: boolean
+    untracked_max_bytes: number
     note: string
   } | null
   note: string

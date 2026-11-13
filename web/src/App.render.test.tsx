@@ -53,7 +53,9 @@ const responses: Record<string, unknown> = {
     preview: {
       task_id: 'task-1', base_commit: 'a'.repeat(40), head_commit: 'b'.repeat(40),
       diff: 'diff --git a/README.md b/README.md\\n+task patch line\\n',
-      truncated: false, max_bytes: 262144, untracked_included: false, note: 'read-only',
+      truncated: false, max_bytes: 262144,
+      untracked_files: [{ path: 'new.txt', size_bytes: 20, content: 'new untracked preview', status: 'text', truncated: false }],
+      untracked_included: true, untracked_truncated: false, untracked_max_bytes: 131072, note: 'read-only',
     },
   },
   '/api/v1/orchestrator': {
@@ -248,6 +250,7 @@ describe('application render smoke test', () => {
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/workspace/tasks/task-1/diff'))).toBe(false)
     fireEvent.click(showDiff)
     expect(await screen.findByText(/task patch line/)).toBeTruthy()
+    expect(await screen.findByText(/new untracked preview/)).toBeTruthy()
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/workspace/tasks/task-1/diff'))).toBe(true)
     expectNoCrash()
   })

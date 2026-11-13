@@ -4,10 +4,11 @@
 
 ### Reviewable task-worktree diffs (read-only)
 
-- Added `GET /api/v1/projects/{project_id}/workspace/tasks/{task_id}/diff`, a project-scoped patch preview from the worktree's recorded base commit. Git output is capped at 256 KiB and the diff process at 15 seconds; external diff/textconv helpers are disabled. Untracked file contents are intentionally omitted.
-- Added a lazy-loaded preview to each project task in the Tasks UI, with clear base/head commits, unavailable/error/truncation states, and English/Arabic/Persian labels. Opening the preview is the only time the UI requests patch text.
-- The endpoint is read-only: it never changes, commits, merges or deletes task worktrees. Tests cover real tracked diffs, output truncation, missing worktrees, cross-project isolation and invalid ownership metadata.
-- Local verification: 262 backend tests passed, one PostgreSQL-only test skipped; 21 frontend tests, TypeScript, production build and RTL checks passed. Hosted CI is pending for this unreleased slice.
+- Added `GET /api/v1/projects/{project_id}/workspace/tasks/{task_id}/diff`, a project-scoped patch preview from the worktree's recorded base commit. Git diff output is capped at 256 KiB and the diff process at 15 seconds; external diff/textconv helpers are disabled.
+- Untracked paths are previewed separately only when they are contained regular UTF-8 text files no larger than 32 KiB, with caps of 32 files, 128 KiB aggregate text, 64 KiB for path enumeration, and five seconds for that enumeration. Binary files, symlinks, non-regular/oversized files and unsafe paths never return file contents.
+- Added a lazy-loaded preview to each project task in the Tasks UI, including per-file and aggregate truncation states, localized in English, Arabic and Persian. Opening the preview is the only time the UI requests patch text.
+- The endpoint is read-only: it never changes, commits, merges or deletes task worktrees. Tests cover tracked and untracked text, per-file and aggregate output limits, binary/symlink omission, missing worktrees, cross-project isolation and invalid ownership metadata.
+- Verification: 262 backend tests passed locally, one PostgreSQL-only test skipped; 21 frontend tests, TypeScript, production build, and RTL checks passed. Hosted CI run `43485091743` passed the backend, frontend, and PostgreSQL migration/lock jobs. One upstream Starlette/httpx deprecation warning remains.
 
 ### Bounded adaptive and parallel task dispatch
 

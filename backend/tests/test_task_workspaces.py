@@ -92,9 +92,36 @@ def test_same_project_tasks_run_in_distinct_persisted_worktrees(client: TestClie
         preview = diff_response.json()["preview"]
         assert diff_response.json()["available"] is True
         assert "+task-specific" in preview["diff"]
-        assert str(path) not in preview["diff"]  # untracked command output is not smuggled into the patch
-        assert preview["untracked_included"] is False
+        assert str(path) not in preview["diff"]  # untracked output is separate from the Git patch
+        assert preview["untracked_included"] is True
+        untracked_output = next(item for item in preview["untracked_files"] if item["path"] == "task-output.txt")
+        assert untracked_output["status"] == "text"
+        assert untracked_output["content"] == str(path)
         assert len(preview["diff"].encode("utf-8")) <= preview["max_bytes"]
+
+    private_file = tmp_path / "outside-secret.txt"
+    private_file.write_text("NEVER-RETURN-SECRET", encoding="utf-8")
+    (task_paths[0] / "binary.dat").write_bytes(b"prefix" + bytes([0]) + b"NEVER-RETURN-SECRET")
+    (task_paths[0] / "outside-link.txt").symlink_to(private_file)
+    (task_paths[0] / "oversized.txt").write_text("o" * (TASK_DIFF_PREVIEW_BYTES // 8 + 1), encoding="utf-8")
+    safe_preview = client.get(f"/api/v1/projects/{project_id}/workspace/tasks/{task_ids[0]}/diff").json()["preview"]
+    untracked_status = {item["path"]: item["status"] for item in safe_preview["untracked_files"]}
+    assert untracked_status["binary.dat"] == "binary"
+    assert untracked_status["outside-link.txt"] == "symlink"
+    assert untracked_status["oversized.txt"] == "too_large"
+    assert next(item for item in safe_preview["untracked_files"] if item["path"] == "oversized.txt")["content"] is None
+    assert "NEVER-RETURN-SECRET" not in str(safe_preview)
+
+    for index in range(5):
+        (task_paths[0] / f"new-{index}.txt").write_text("z" * 30_000, encoding="utf-8")
+    aggregate_preview = client.get(f"/api/v1/projects/{project_id}/workspace/tasks/{task_ids[0]}/diff").json()["preview"]
+    previewed_bytes = sum(
+        len(item["content"].encode("utf-8"))
+        for item in aggregate_preview["untracked_files"]
+        if item["content"] is not None
+    )
+    assert previewed_bytes <= aggregate_preview["untracked_max_bytes"]
+    assert aggregate_preview["untracked_truncated"] is True
 
     other_project_id = client.post("/api/v1/projects", json={"name": "Different project"}).json()["id"]
     cross_project = client.get(f"/api/v1/projects/{other_project_id}/workspace/tasks/{task_ids[0]}")

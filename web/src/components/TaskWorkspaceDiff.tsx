@@ -5,6 +5,16 @@ import { FileDiff, LoaderCircle } from 'lucide-react'
 
 import { api } from '../api'
 
+const untrackedStatusTranslation: Record<string, string> = {
+  binary: 'taskDiffBinary',
+  symlink: 'taskDiffSymlink',
+  unsafe: 'taskDiffUnsafe',
+  non_regular: 'taskDiffNonRegular',
+  unreadable: 'taskDiffUnreadable',
+  too_large: 'taskDiffTooLarge',
+  omitted_limit: 'taskDiffOmitted',
+}
+
 export default function TaskWorkspaceDiff({ projectId, taskId }: { projectId: string; taskId: string }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -36,12 +46,29 @@ export default function TaskWorkspaceDiff({ projectId, taskId }: { projectId: st
                     {' · '}{t('taskDiffHead')}: <code>{preview.head_commit.slice(0, 12)}</code>
                   </p>
                   <p className="form-note">
-                    {t('taskDiffReadOnly')}{' '}{t('taskDiffUntracked')}
+                    {t('taskDiffReadOnly')}{' '}
+                    {t('taskDiffUntracked')} ({preview.untracked_files.length})
                     {preview.truncated ? ` ${t('taskDiffTruncated')}` : ''}
                   </p>
                   {preview.diff ? (
                     <pre className="task-diff-preview" dir="ltr"><code>{preview.diff}</code></pre>
                   ) : <p className="form-note">{t('taskDiffEmpty')}</p>}
+                  {preview.untracked_files.length > 0 && (
+                    <div className="task-untracked-list">
+                      {preview.untracked_files.map((file) => (
+                        <section className="task-untracked-file" key={file.path}>
+                          <strong className="mono">{file.path}</strong>
+                          {file.status === 'text' && file.content !== null ? (
+                            <>
+                              {file.truncated && <p className="form-note">{t('taskDiffFileTruncated')}</p>}
+                              <pre className="task-diff-preview" dir="ltr"><code>{file.content}</code></pre>
+                            </>
+                          ) : <p className="form-note">{t(untrackedStatusTranslation[file.status] ?? 'taskDiffUnsafe')}</p>}
+                        </section>
+                      ))}
+                      {preview.untracked_truncated && <p className="form-note">{t('taskDiffListTruncated')}</p>}
+                    </div>
+                  )}
                 </>
               )
       )}

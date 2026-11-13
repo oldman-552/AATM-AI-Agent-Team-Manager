@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 19:38 UTC
+2026-11-13 20:05 UTC
 
 Overall Project Status:
 Testing
@@ -18,7 +18,7 @@ Current Task:
 Implement safe cross-process worker ownership and a reviewed path for integrating per-task worktree changes
 
 Current Activity:
-API run requests and workspace mutations sharing a database are serialized by the expiring singleton lock. The opt-in local executor prepares an owned, detached Git worktree per task; safe untracked UTF-8 text previews are merged in PR #12 (`aa7b268`). The current branch adds a separate explicit integration endpoint: independent approvals capture the exact worktree commit SHA, and only a clean committed descendant can fast-forward into an unchanged clean non-protected branch. Dirty, stale, oversized, binary, symlink, and submodule cases fail closed. This is not automatic task-worktree integration or a distributed worker scheduler.
+API run requests and workspace mutations sharing a database remain serialized by the expiring singleton lock. The opt-in local executor prepares an owned, detached Git worktree per task; safe untracked UTF-8 text previews are merged in PR #12 (`aa7b268`). The current branch adds review-SHA-bound explicit integration and, in migration `0016`, a tested foundation of 20 database-backed expiring worker permits. Permits are not yet wired to task dispatch, so this remains serialized operation—not a distributed worker scheduler. Next: atomic task claims and safe coordination between distributed run slots and workspace mutations.
 
 Recently Completed (most recent first):
 - Safe untracked task-file previews: only contained regular UTF-8 files no larger than 32 KiB are previewed, with 32-file and 128 KiB aggregate caps; binary files, symlinks, unsafe paths, and oversized/non-regular files have no content exposed. PR #12 merged as `aa7b268a`; CI passed backend, frontend, and PostgreSQL jobs.
@@ -51,10 +51,10 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- PR #13 includes review-bound integration and the localized confirmation UI; all three CI jobs passed on run `43493928261`. PR #12's untracked-text preview is merged. Distributed scheduling across independent worker processes remains open.
+- PR #13 includes review-bound integration and the localized confirmation UI; all three CI jobs passed on run `43494289033`. PR #12's untracked-text preview is merged. A tested database-backed worker-permit foundation is in progress; API dispatch remains serialized and distributed scheduling is not yet active.
 
 Upcoming Tasks:
-- Distributed task-worker scheduling and broader policy review for the explicit integration endpoint; expanded PostgreSQL coverage beyond migration/lock smoke; Windows CI verification and release packaging.
+- Wire global database worker permits into atomic task claims, then coordinate run slots with workspace-mutation exclusion before allowing concurrent API run requests; maintain bounded concurrency and main-thread-only ORM state writes. Broader policy review for task integration, expanded PostgreSQL coverage, Windows CI, and release packaging remain open.
 - The consent/accounting surface that must precede any paid provider call; wiring an authorized model call into the executor.
 - GitHub push/PR execution behind an approval (recorded plans exist; execution does not).
 - Pixel-level browser visual testing once a display-capable environment exists.

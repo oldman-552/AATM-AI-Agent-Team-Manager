@@ -358,6 +358,16 @@ class OrchestratorRunLock(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class OrchestratorWorkerSlot(Base):
+    """One database-wide execution permit, leased to an orchestrator run."""
+
+    __tablename__ = "orchestrator_worker_slots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+
 class AgentInstruction(Base):
     """An operator instruction recorded for an agent.
 

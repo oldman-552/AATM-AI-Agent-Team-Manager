@@ -2,6 +2,12 @@
 
 ## Unreleased — 2026-11-13
 
+### Distributed worker scheduling foundation (not yet active)
+
+- Migration `0016_distributed_worker_slots` creates and seeds 20 shared, expiring worker permits; the new slot service supports bounded acquisition, owner-only renewal/release, and expiry takeover.
+- Backend tests cover lease ownership, expiry, configured-cap bounds, and concurrent sessions competing for the same slot rows. The PostgreSQL CI smoke now checks the migration and permit lifecycle as well.
+- This change does **not** enable distributed task scheduling: API run requests still serialize on the existing database lock, and dispatch does not yet acquire permits. Follow-up work must add atomic task claims and coordinate worker leases with exclusive workspace mutations before lifting run serialization. Shared API processes must use a consistent configured concurrency limit.
+
 ### Reviewable task-worktree diffs (read-only)
 
 - Added `GET /api/v1/projects/{project_id}/workspace/tasks/{task_id}/diff`, a project-scoped patch preview from the worktree's recorded base commit. Git diff output is capped at 256 KiB and the diff process at 15 seconds; external diff/textconv helpers are disabled.

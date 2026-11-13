@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 17:43 UTC
+2026-11-13 17:46 UTC
 
 Overall Project Status:
 Testing
@@ -48,7 +48,7 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Phase 33 distributed worker scheduling and safe task-worktree integration remain open. Latest local verification for the inspection API: 262 backend passed, one PostgreSQL-only test skipped locally. Frontend was not rerun because no web files changed. This slice is on the active Arena branch and is not yet merged to main.
+- Phase 33 distributed worker scheduling and safe task-worktree integration remain open. The read-only inspection API merged in PR #9 as `59d25bd`; all backend, frontend, and PostgreSQL migration/lock checks passed on main (CI run `43475967793`). Local full backend verification: 262 passed, one PostgreSQL-only test skipped. Frontend was not rerun locally for this slice because no web files changed.
 
 Upcoming Tasks:
 - Distributed task-worker scheduling, safe review/integration of task-worktree changes, and expanded PostgreSQL coverage beyond migration/lock smoke; Windows CI verification and release packaging.
@@ -76,9 +76,10 @@ External Dependencies:
 Python/npm dependencies installed (@types/node added for the RTL checker). No provider key exists in this environment and no paid request has ever been made. No Arena session was used.
 
 Tests:
-- Passed at 2026-11-13 16:55 UTC: 261 backend tests (one upstream Starlette/httpx deprecation warning); 20 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle. The backend suite includes migration round trips. Earlier live HTTP smokes through the Vite proxy covered timeline, cancellation, control center and blueprint.
+- Passed locally at 2026-11-13 17:43 UTC: 262 backend tests; one PostgreSQL-only integration smoke skipped because no local PostgreSQL service is configured; one upstream Starlette/httpx deprecation warning. The backend suite includes migration round trips. Frontend `npm run verify` last passed earlier (20 Vitest tests, TypeScript, production build, RTL checker); it was not rerun for the read-only backend API slice.
+- Hosted CI on main merge commit `59d25bd` passed backend, frontend, and PostgreSQL migration/lock smoke (run `43475967793`).
 - Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
-- Pending: Windows/PowerShell, PostgreSQL, Docker, Playwright E2E, pixel-level RTL rendering.
+- Pending: full PostgreSQL application/backup testing, Windows/PowerShell, Docker, Playwright E2E, pixel-level RTL rendering.
 
 Build Status:
 Frontend production build passed (CSS 51.19 kB; JS split into react 181.71 kB, data 87.39 kB, app 237.46 kB — no chunk over 500 kB).
@@ -90,7 +91,7 @@ Last Successful Build:
 2026-11-13 16:34 UTC — `npm run verify`: TypeScript, 20 Vitest tests, Vite production build, and RTL checker.
 
 Last Successful Test:
-2026-11-13 16:55 UTC — 261 backend tests passed. Frontend `npm run verify` passed at 16:34 UTC (20 tests, typecheck, production build, RTL checker).
+2026-11-13 17:43 UTC — 262 backend tests passed, one PostgreSQL-only test skipped locally. Hosted CI on main commit `59d25bd` passed backend, frontend and PostgreSQL migration/lock jobs; local frontend verify last passed earlier (20 tests, typecheck, production build, RTL checker).
 
 Remaining Work:
 - Gated by design: live provider execution behind consent/accounting (a task now runs a local command, never a model), GitHub push/PR execution, per-user authorization.

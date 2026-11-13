@@ -10,11 +10,14 @@ Dependencies: User authorization; a real API key in env/keyring; decision on aut
 Expected outcome: A verified live request path with confirmed billing, or a documented decision to stay offline.
 Do NOT: enable live execution in the HTTP API before the consent/authorization/accounting tests exist; never accept raw keys over HTTP.
 
-P1 — Durable orchestrator and recovery (highest remaining product value)
-Description: Turn the state-based ready queue into a real scheduler: bounded concurrency, dependency-aware dispatch, lease/heartbeat ownership, crash recovery that reconciles orphaned `running` tasks, retry/backoff policy using `retry_count`, and cancellation propagation. Must remain provider-agnostic and testable with a fake executor so no live model is required.
-Dependencies: Existing workflow state machine and task_transitions history.
-Expected outcome: A verified scheduler that can be killed mid-run and resume without duplicating work.
-First steps: `backend/app/orchestrator.py` with a `TaskExecutor` protocol, a fake executor for tests, lease columns plus migration 0003, recovery tests that simulate an interrupted run.
+COMPLETED — P1 durable orchestrator and crash recovery (2026-11-13 12:57 UTC)
+Result: `backend/app/orchestrator.py` now implements lease-based claims, bounded concurrency, dependency-aware dispatch, exponential backoff with a retry ceiling, expired-lease recovery that survives a process restart, and inspection/recovery endpoints. 15 orchestrator tests pass with injected fake executors; migration 0003 verified up/down. Execution itself remains deliberately unavailable: `DisabledExecutor` refuses to run and no HTTP route can start a run.
+
+P1 — Real executor behind the orchestrator boundary (next)
+Description: Implement the first real `TaskExecutor` with cancellation propagation and graceful shutdown. It must remain provider-agnostic, run under the existing leases/backoff, and be verified with a local, deterministic executor (for example a bounded subprocess runner in a sandboxed project workspace) rather than by simulating success. Wire an authorized, explicitly consented provider call only after the auth and consent surface exists.
+Dependencies: Authentication/authorization decision; project workspace sandbox design.
+Expected outcome: One genuinely executed task with recorded output, evidence and audit trail — or an explicit decision to keep execution disabled.
+Do NOT: mark execution as complete without a real run; never fabricate output or evidence.
 
 P2 — Independent QA / review records on top of the workflow
 Description: Persist review verdicts with evidence, link them to the `reviewing → approved | rework_required` transitions instead of relying on free-text notes, and expose review history in the UI.

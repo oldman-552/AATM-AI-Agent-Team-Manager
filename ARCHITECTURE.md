@@ -16,11 +16,13 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 
 ## Current modules
 
-1. **Web UI** — React + TypeScript + Vite, TanStack Query, i18next, relative typed API client. Current functional views: Dashboard, Projects, Agents, Tasks (with workflow actions), Providers (offline configuration, routing dry run, budgets). English/Arabic/Persian resources with 216 keys each and a Vitest parity test; language selection persists; Arabic/Persian set `dir=rtl`.
+1. **Web UI** — React + TypeScript + Vite, TanStack Query, i18next, relative typed API client. Current functional views: Dashboard, Projects, Agents, Tasks (with workflow actions), Providers (offline configuration, routing dry run, budgets). English/Arabic/Persian resources with 228 keys each and a Vitest parity test; language selection persists; Arabic/Persian set `dir=rtl`.
 2. **HTTP API** — FastAPI/Pydantic; versioned `/api/v1`; local default bind; configured Trusted Host and CORS middleware.
-3. **Persistence** — SQLAlchemy 2.x and Alembic (revisions `0001_initial`, `0002_provider_boundary`). Current records: projects, agent registrations, tasks, task transitions, audit events, provider configurations (references only), provider budget limits, usage records, and app settings. SQLite is the zero-setup default; a PostgreSQL URL can be configured with psycopg (not yet integration-tested).
+3. **Persistence** — SQLAlchemy 2.x and Alembic (revisions `0001_initial`, `0002_provider_boundary`, `0003_task_leases`). Current records: projects, agent registrations, tasks, task transitions, audit events, provider configurations (references only), provider budget limits, usage records, and app settings, plus task lease/backoff columns. SQLite is the zero-setup default; a PostgreSQL URL can be configured with psycopg (not yet integration-tested).
 
-5. **Provider boundary** (`backend/app/providers/`) — provider-agnostic contracts (`ProviderAdapter`, `ProviderHealth`, `CostEstimate`, `ProviderRequest`, `Authorization`), credential **references** (`env:`/`keyring:`), a configurable pricing/estimate table, a hard budget guard, and a deterministic routing engine with five policies. `ArenaBridgeAdapter` is a permanently blocked stub. `AnthropicAdapter` uses the official SDK but is reachable only through an explicitly authorized in-process call; no HTTP route exposes it, and `load_settings()` hard-codes `live_requests_allowed=False`.
+4. **Provider boundary** (`backend/app/providers/`) — provider-agnostic contracts (`ProviderAdapter`, `ProviderHealth`, `CostEstimate`, `ProviderRequest`, `Authorization`), credential **references** (`env:`/`keyring:`), a configurable pricing/estimate table, a hard budget guard, and a deterministic routing engine with five policies. `ArenaBridgeAdapter` is a permanently blocked stub. `AnthropicAdapter` uses the official SDK but is reachable only through an explicitly authorized in-process call; no HTTP route exposes it, and `load_settings()` hard-codes `live_requests_allowed=False`.
+
+5. **Orchestrator** (`backend/app/orchestrator.py`) — lease-based durable dispatch with bounded concurrency, exponential backoff, retry ceiling, and crash recovery. Execution itself is injected: the default executor refuses to run, and the HTTP surface exposes only status and recovery.
 
 6. **Workflow service** (`backend/app/workflow.py`) — an explicit state machine with dependency gating (`completed`/`approved` satisfy dependencies), evidence requirements for failure/approval/rework, retry counting, and replay-safe idempotency keys backed by an append-only `task_transitions` table.
 7. **Progress tooling** — atomic status/log/state writer, secret-pattern redaction, and heartbeat/idle detection in `backend/app/progress.py` and `scripts/progress_reporter.py`.
@@ -28,7 +30,7 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 
 ## Planned components
 
-- **Application services** — a durable orchestrator (scheduler, bounded concurrency, retries, crash recovery), approval policy, and project workflows isolated from HTTP handlers.
+- **Application services** — real agent execution behind the executor boundary, approval policy, and project workflows isolated from HTTP handlers. The scheduler, concurrency bounds, retries and crash recovery now exist and are tested with fake executors.
 - **Provider adapters** — the contract exists; Arena remains blocked until a compliant supported route is verified; Anthropic live execution stays gated behind explicit authorization, consent and budgets.
 - **Browser manager** — Playwright persistent contexts, per-agent data directories, exclusive profile locks, and observable health.
 - **Workspace/Git services** — isolated worktrees; protected merge/deploy boundaries.
@@ -39,7 +41,7 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 The API persists projects, agent registrations, task metadata, validated task state transitions, provider configuration/health/budgets, and observable audit events.
 
 Explicit non-claims:
-- Creating, assigning, or moving a task **does not execute it**; the ready queue is a query, not a scheduler.
+- Creating, assigning, or moving a task **does not execute it**. The orchestrator can dispatch, but its default executor refuses to run, and no HTTP route can start a run.
 - The default Manager is an unconfigured identity, not an active model.
 - Provider health and routing are dry runs; no live model request is possible over HTTP.
 - Approvals, Git workflows, browser sessions, memory, and recovery remain future work.

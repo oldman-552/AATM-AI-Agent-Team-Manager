@@ -5,10 +5,12 @@
 - Scope: Repository and runtime availability.
 - Result: Clean README-only starting branch; Python 3.11.2, Node.js 22.22.3, npm 10.9.2 available. Docker unavailable; Windows host unavailable.
 
-## 2026-11-13 12:50 UTC — Backend tests (current)
+## 2026-11-13 12:57 UTC — Backend tests (current)
 
 - Latest command: `cd backend && ../.venv/bin/python -m pytest`.
-- Result: **29 passed, 1 warning** (20 new tests).
+- Result: **44 passed, 1 warning** (35 new tests across this session).
+- `tests/test_orchestrator.py` (15 tests): default `DisabledExecutor` refuses to run and records a failure; fake executor completes a task with evidence and writes exactly the `assigned→running` / `running→completed` transitions; results without evidence are rejected; executor exceptions record only the exception type (so no secret can leak into the task record); `max_concurrency` caps dispatch; dependencies block dispatch until complete; expired leases are recovered then retried successfully; an active lease is never stolen; retry backoff and the retry ceiling behave; retries are not dispatched before backoff elapses; audit events are written; recovery works after an application restart; the orchestrator API is inspection/recovery only and `POST /orchestrator/run` does not exist; claims reject unassigned tasks and replay claims.
+- Migration `0003_task_leases` verified: upgrade → columns present → downgrade to `0002_provider_boundary` → columns removed → re-upgrade → columns restored (file-backed SQLite).
 - New coverage this slice:
   - `tests/test_provider_boundary.py` (10 tests): credential-reference validation and secret redaction; configurable pricing marked as estimate-only; budget consent/no-limit/limit-exceeded/idempotent-commit behaviour; monthly and per-scope limits; Arena hard block; Claude execution gating (disabled without explicit authorization, produces no call without consent, records usage once on replay, blocks when the global switch is off); credential redaction in provider errors; routing that never selects a paid provider without consent and never records usage; deterministic policies; and a socket-blocking test proving health/routing open no sockets.
   - `tests/test_provider_api.py` (6 tests): catalog contains no secret values; raw credentials and unknown fields are rejected; references are accepted and clearable; Arena cannot be enabled (409); budgets plus dry-run routing with zero usage records; settings validation and absence of any execute route; untrusted Host and hostile Origin rejection.
@@ -17,11 +19,11 @@
 - Coverage: health/database query and default manager seed; project/agent/task creation and dashboard counts; invalid project/dependency and assignment clearing; role catalog count; 20-worker cap; file-backed database persistence across app restarts and idempotent migrations; untrusted Host rejection; progress event history/atomic status update, secret-pattern redaction, and idle-heartbeat behavior.
 - Warning: Installed Starlette emits `StarletteDeprecationWarning` because its `TestClient` still uses `httpx`; test assertions passed. This is a dependency ecosystem warning, not suppressed.
 
-## 2026-11-13 12:50 UTC — Frontend tests and build (current)
+## 2026-11-13 12:57 UTC — Frontend tests and build (current)
 
 - `cd web && npm test` (Vitest 2.1.9) → **5 passed**.
-  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (216 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
-- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1644 modules, `dist/assets/index-Cy8LTcBX.css` 26.65 kB, `dist/assets/index-BQ1zZENS.js` 318.84 kB.
+  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (228 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
+- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1644 modules, `dist/assets/index-BYgT1X0Z.css` 27.75 kB, `dist/assets/index-BIzOC8eD.js` 324.52 kB.
 - First TypeScript run failed twice: a missing `Send` icon import in `ProvidersView.tsx` and an invalid Vitest assertion overload in `i18n.test.ts`. Both were fixed before the passing run.
 
 ## 2026-11-13 — Frontend build (historical)
@@ -56,6 +58,7 @@
 - Preview-host check: request with `Host: 5173-<sandbox>.e2b.app` returned HTTP 200 and proxied API JSON, so the hosted preview path works through Vite.
 - Cleanup: `.aatm-home` (git-ignored smoke database) only; no credentials, no provider traffic.
 - Notable: binding uvicorn to `0.0.0.0` makes the API reject the preview Host with 400 (by design). Only Vite is exposed for previews; the API stays loopback-bound.
+- Orchestrator endpoints were re-verified on a restarted server: startup applied migration `0003_task_leases`, `/api/v1/orchestrator/status` reported `executor.configured: false` with the refusal reason, and the same payload was served through the Vite proxy.
 
 ## 2026-11-13 — Provider research
 

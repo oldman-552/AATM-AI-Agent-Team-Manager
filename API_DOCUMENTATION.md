@@ -140,6 +140,25 @@ Enforcement rules (server-side, not advisory):
 
 Aggregated usage plus the most recent records. Costs carry `billing_status: "estimated"`; confirmed billing is only present if a reconciliation process imported it (`confirmed_cost_usd`), which does not exist yet. No provider billing API is called.
 
+## Orchestrator (inspection and recovery only)
+
+The durable orchestrator (`backend/app/orchestrator.py`) dispatches work through an injectable `TaskExecutor`. The HTTP surface deliberately **cannot** start a run: the configured executor is `DisabledExecutor`, which refuses to execute and never simulates work.
+
+### `GET /orchestrator/status`
+
+Returns the configured executor (and its refusal reason), counts (`running`, `waiting_for_retry`, `expired_leases`, `assigned`, `failed`), active leases with owner/expiry, and the retry queue.
+
+### `POST /orchestrator/recover`
+
+Returns tasks whose lease expired to `assigned`, records the interrupted attempt as a failure (so retry counting and claim keys stay distinct), releases the lease, and writes a `task.lease_recovered` audit event. Idempotent: a second call returns `count: 0`.
+
+Concurrency and retry semantics (server-side):
+- `max_concurrency` bounds how many tasks a single run may claim.
+- A claim requires `assigned` state, an agent, satisfied dependencies (`completed`/`approved`), and an elapsed backoff window.
+- Claims write a lease; an active lease is never stolen, and an expired lease is always recoverable.
+- Executor exceptions are recorded as `Executor error: <Type>` only — executor messages are never propagated, so they cannot leak secrets into task records.
+- A completion requires non-empty evidence; otherwise the task fails and is retried.
+
 ## Audit events added in this slice
 
-`task.state_changed`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.
+`task.state_changed`, `task.lease_recovered`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.

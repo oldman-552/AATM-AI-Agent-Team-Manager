@@ -17,6 +17,9 @@
 - Task workflow service and API: validated transitions, dependency gating, ready queue, evidence requirements, retry counting, replay-safe idempotency keys, and append-only transition history.
 - Alembic revision `0002_provider_boundary` (provider configs, budget limits, usage records, app settings, task transitions).
 - Providers view in the UI plus per-task workflow actions; 216 translated keys in English, Arabic, and Persian.
-- Backend tests 9 → 29; Vitest resource tests added (5).
+- Durable orchestrator: lease-based claims, bounded concurrency, dependency-aware dispatch, exponential backoff with a retry ceiling, crash recovery for expired leases, and inspection/recovery endpoints. Execution is injected; the default executor refuses to run, so nothing is simulated.
+- Alembic revision `0003_task_leases` (lease owner/expiry and next-attempt timestamp on tasks).
+- Orchestrator panel in the Tasks view with lease/retry counts and an idempotent recovery action.
+- Backend tests 9 → 44; Vitest resource tests added (5).
 
-- Provider integrations beyond the gated Anthropic plumbing, actual agent execution, visual RTL verification, browser profiles, approval workflows, backup/restore, and Windows verification remain incomplete.
+- Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, approval workflows, backup/restore, and Windows verification remain incomplete.

@@ -10,6 +10,7 @@ import {
   CircleDot,
   Clock3,
   Command,
+  Cpu,
   FolderKanban,
   Languages,
   ListTodo,
@@ -550,6 +551,7 @@ function TasksView() {
         </form>
       </FormPanel>}
       <div className="notice-panel"><ListTodo size={17} /><p>{t('workflowNote')}</p><span className="notice-count">{t('readyQueue')}: {ready.data?.tasks.length ?? 0}</span></div>
+      <OrchestratorPanel />
       {tasks.isLoading ? <StatePanel icon={<LoaderCircle className="spin" size={22} />} title={t('loading')} /> : tasks.isError ? <StatePanel icon={<CircleAlert size={22} />} title={t('loadError')} /> : (
         <div className="panel task-table-panel">
           <div className="panel-heading"><div><span className="panel-kicker">{t('liveData')}</span><h3>{t('workflowTitle')}</h3></div><span className="panel-icon"><ListTodo size={17} /></span></div>
@@ -559,6 +561,58 @@ function TasksView() {
         </div>
       )}
     </>
+  )
+}
+
+function OrchestratorPanel() {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const status = useQuery({ queryKey: ['orchestrator'], queryFn: api.orchestratorStatus })
+  const recovery = useMutation({
+    mutationFn: api.recoverLeases,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['orchestrator'] }),
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+        queryClient.invalidateQueries({ queryKey: ['readyTasks'] }),
+      ])
+    },
+  })
+
+  return (
+    <section className="panel orchestrator-panel">
+      <div className="panel-heading">
+        <div><span className="panel-kicker">{t('providerLiveCallsOff')}</span><h3>{t('orchestratorTitle')}</h3></div>
+        <span className="panel-icon"><Cpu size={17} /></span>
+      </div>
+      <p className="panel-note">{t('orchestratorNote')}</p>
+      {status.isLoading ? <p className="form-note">{t('loading')}</p> : status.isError || !status.data ? <p className="form-error">{t('loadError')}</p> : (
+        <>
+          <div className="orchestrator-counts">
+            <div className="orchestrator-count"><span>{t('orchestratorRunning')}</span><strong>{status.data.counts.running}</strong></div>
+            <div className="orchestrator-count"><span>{t('orchestratorWaiting')}</span><strong>{status.data.counts.waiting_for_retry}</strong></div>
+            <div className={`orchestrator-count ${status.data.counts.expired_leases ? 'attention' : ''}`}><span>{t('orchestratorExpired')}</span><strong>{status.data.counts.expired_leases}</strong></div>
+            <div className="orchestrator-count"><span>{t('orchestratorAssigned')}</span><strong>{status.data.counts.assigned}</strong></div>
+          </div>
+          <ul className="orchestrator-leases">
+            {status.data.leases.map((lease) => (
+              <li key={lease.task_id}>
+                <span>{lease.title}</span>
+                <span>{lease.lease_owner ?? t('orchestratorNoOwner')}</span>
+                <span className={lease.lease_expired ? 'lease-expired' : ''}>{lease.lease_expired ? t('orchestratorLeaseExpired') : t('orchestratorLeaseActive')}</span>
+              </li>
+            ))}
+            {!status.data.leases.length && <li className="form-note">{t('orchestratorNoLeases')}</li>}
+          </ul>
+          <div className="form-actions">
+            <button className="button button-secondary" type="button" disabled={recovery.isPending || !status.data.counts.expired_leases} onClick={() => recovery.mutate()}>{t('orchestratorRecover')}</button>
+          </div>
+          {recovery.isSuccess && <p className="form-success"><Check size={13} />{t('orchestratorRecovered')}: {recovery.data.count}</p>}
+          {recovery.isError && <p className="form-error">{t('requestFailed')}: {recovery.error.message}</p>}
+          <p className="form-note">{status.data.executor.reason}</p>
+        </>
+      )}
+    </section>
   )
 }
 

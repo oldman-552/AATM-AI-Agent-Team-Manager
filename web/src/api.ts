@@ -187,6 +187,21 @@ export type TaskStateChangeResult = {
   allowed_next_states: string[]
 }
 
+export type OrchestratorStatus = {
+  executor: { configured: boolean; name: string; reason: string }
+  counts: {
+    running: number
+    waiting_for_retry: number
+    expired_leases: number
+    assigned: number
+    failed: number
+  }
+  leases: Array<{ task_id: string; title: string; lease_owner: string | null; lease_expires_at: string | null; lease_expired: boolean }>
+  retry_queue: Array<{ task_id: string; title: string; next_attempt_at: string | null }>
+  checked_at: string
+  note: string
+}
+
 export type WorkflowDefinition = {
   transitions: Record<string, string[]>
   dependency_satisfied_states: string[]
@@ -243,6 +258,8 @@ export const api = {
   taskTransitions: (taskId: string) =>
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),
+  orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
+  recoverLeases: () => request<{ recovered: string[]; count: number; note: string }>('/api/v1/orchestrator/recover', { method: 'POST' }),
   providers: () => request<ProviderCatalog>('/api/v1/providers'),
   providerHealth: (providerId: string) => request<ProviderHealth>(`/api/v1/providers/${providerId}/health`),
   updateProviderConfig: (

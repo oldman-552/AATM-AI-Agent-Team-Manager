@@ -110,3 +110,13 @@ Tests executed: Backend pytest 29 passed; frontend vitest 5 passed; tsc --noEmit
 Results: All suite runs passed. Live smoke test: task assigned→running→completed with replay-safe transitions, provider dry-run routing with no usage record.
 Problems: Initial TypeScript build error (missing icon import, assertion typing) and one budget test threshold error; both fixed.
 Solutions: Fixed imports/assertions; one upstream Starlette/httpx deprecation warning remains.
+
+[2026-11-13 12:55 UTC] Phase 5 — Orchestration — P1 durable orchestrator with leases and crash recovery
+Task: P1 durable orchestrator with leases and crash recovery
+Action performed: Implemented and verified lease-based durable orchestration with bounded concurrency, backoff retries and crash recovery
+Files created: backend/app/orchestrator.py, backend/app/orchestrator_api.py, backend/migrations/versions/0003_task_leases.py, backend/tests/test_orchestrator.py
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, IMPLEMENTATION_STATUS.md, API_DOCUMENTATION.md, ARCHITECTURE.md, TESTING_REPORT.md, CHANGELOG.md, NEXT_ACTIONS.txt
+Tests executed: Backend pytest 44 passed; frontend vitest 5 passed; tsc --noEmit; vite build; migration 0003 up/down/re-up verified
+Results: All suites pass. Verified recovery after simulated crash and after process restart, bounded concurrency, backoff gating, evidence enforcement, and that executor exceptions never leak messages into task records.
+Problems: Initial recovery logic double-counted an attempt, causing an idempotency-key collision; fixed by letting the failure transition own retry_count and testing it.
+Solutions: Corrected recovery accounting; added explicit claim-rejection tests.

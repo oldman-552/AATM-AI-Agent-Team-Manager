@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 12:50 UTC
+2026-11-13 12:55 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 1 — Provider boundary & workflow state machine
+Phase 5 — Orchestration
 
 Current Task:
-P0 safe provider abstraction boundary
+P1 durable orchestrator with leases and crash recovery
 
 Current Activity:
-Last work event at 2026-11-13 12:50 UTC (Added provider contracts, credential references, budget guard, routing engine, adapters, migrations, API endpoints, Providers UI, task transition API and tests); heartbeat records time only and claims no new work.
+Added orchestrator with injectable TaskExecutor, lease columns (migration 0003), recovery/backoff logic, inspection endpoints and an orchestrator UI panel
 
 Recently Completed:
 - Saved AATM_MASTER_DEVELOPMENT_PROMPT.md in the repository.

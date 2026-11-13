@@ -51,8 +51,13 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [x] Explicit task state machine with validated transitions — **TESTED** (`backend/app/workflow.py`; transitions, terminal states, evidence requirements for failure/approval/rework, retry counting, and a server-owned transition map at `GET /api/v1/tasks/workflow`).
 - [x] Dependency gating and ready queue — **TESTED** (`GET /api/v1/tasks/ready` returns assigned tasks with satisfied dependencies only; starting a task with incomplete dependencies is rejected with 409).
 - [x] Transition idempotency and append-only history — **TESTED** (replaying an idempotency key does not duplicate transitions or audit events; conflicting reuse is rejected; history survives an application restart).
-- [ ] Dependency-aware scheduler and bounded concurrency — **NOT STARTED** (the ready queue is state-based; nothing is executed).
-- [ ] Automatic retries, cancellation propagation, crash recovery — **NOT STARTED** (manual retry counting exists; recovery is not implemented).
+- [x] Dependency-aware dispatch with bounded concurrency — **TESTED** (`backend/app/orchestrator.py`; `max_concurrency` caps dispatch, dependency-unsatisfied tasks are never claimed, and an injected fake executor is used in tests).
+- [x] Lease-based ownership with crash recovery — **TESTED** (claims write `lease_owner`/`lease_expires_at`; `recover_expired_leases` returns interrupted tasks to the queue, records the failure, and refuses to steal an active lease; recovery survives a process restart).
+- [x] Retry policy with exponential backoff and a retry ceiling — **TESTED** (failures schedule `next_attempt_at`; a task is not dispatched before its backoff elapses; retries stop at `max_retries`).
+- [x] Orchestrator observability + idempotent recovery API — **TESTED** (`GET /api/v1/orchestrator/status`, `POST /api/v1/orchestrator/recover`; no dispatch endpoint exists).
+- [ ] Real task execution by agents — **NOT STARTED** (the default `DisabledExecutor` refuses to run; nothing is simulated, and no provider/shell/browser work happens).
+- [ ] Cancellation propagation and graceful shutdown — **NOT STARTED**.
+- [ ] Manager planning/assignment/review loop — **NOT STARTED**.
 - [ ] Manager planning/assignment/review loop — **NOT STARTED**.
 
 ## Phase 6 — Projects and Memory

@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.db import build_engine, make_session_factory
 from app.migrate import upgrade_database
 from app.models import Agent, AuditEvent
+from app.orchestrator_api import router as orchestrator_router
 from app.provider_api import ops_router, provider_router
 from app.provider_store import seed_provider_defaults
 from app.workflow_api import router as workflow_router
@@ -90,6 +91,7 @@ def create_app(
     app.include_router(workflow_router)
     app.include_router(provider_router)
     app.include_router(ops_router)
+    app.include_router(orchestrator_router)
 
     @app.get("/", include_in_schema=False)
     def root() -> dict[str, str]:

@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:36 UTC
+2026-11-13 13:41 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 Roughly 45% of the specified product surface is implemented and tested locally (core data model, providers boundary, orchestration, QA/approvals, workspaces, memory, checkpoints, backup, analytics, notifications, settings, planning, agent lifecycle, i18n, auth). Live provider execution, browser automation, Browser Wall and cross-platform verification remain open.
 
 Current Phase:
-Phase 14 — Cross-Platform Delivery
+Phase 4 — Browser Profiles
 
 Current Task:
-Start/stop script correctness
+Isolated browser profiles and Browser Wall
 
 Current Activity:
-Added --strictPort, a readiness poll and an actionable failure message; documented troubleshooting
+Added profile registry/API, Browser Wall view, migration 0011 and 8 tests
 
 Recently Completed (most recent first):
 - Fixed scripts/start.sh printing a UI URL that was not serving (strictPort + readiness check).

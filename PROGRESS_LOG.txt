@@ -290,3 +290,13 @@ Tests executed: Free port: UI 5211 200, API 8127 200, exit 0. Occupied port: cle
 Results: The printed UI URL now always corresponds to a server that answered.
 Problems: Vite silently moved to the next port while the script printed the requested one.
 Solutions: strictPort plus a readiness check before printing; failure exits non-zero with the log path and an AATM_UI_PORT hint.
+
+[2026-11-13 13:41 UTC] Phase 4 — Browser Profiles — Isolated browser profiles and Browser Wall
+Task: Isolated browser profiles and Browser Wall
+Action performed: Implemented and verified real profile isolation, exclusivity and a truthful wall
+Files created: backend/app/browser_profiles.py, backend/app/browser_api.py, backend/migrations/versions/0011_browser_profiles.py, backend/tests/test_browser_profiles.py, web/src/BrowserWallView.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, CONFIGURATION.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 137 passed; vitest 6; tsc; vite build; migration 0011 up/down/re-up; live lock/delete smoke
+Results: Directory created and later removed on disk; second lock and locked deletion both refused; unconfirmed deletion refused with 422.
+Problems: The credential-leak test matched the explanatory note rather than a data field.
+Solutions: Asserted on field names instead of free text, so the honest note can still mention cookies.

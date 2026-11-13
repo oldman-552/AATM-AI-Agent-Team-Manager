@@ -13,10 +13,11 @@ import os
 import re
 from pathlib import Path
 
-from app.workspaces import WorkspaceError, run_git
+from app.workspaces import WorkspaceError, WorkspacePaths, run_git, workspace_status
 
 WORKTREE_ROOT_NAME = ".aatm-task-worktrees"
 _SAFE_ID = re.compile(r"^[A-Za-z0-9-]{1,80}$")
+_COMMIT = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 
 
 def _validate_ids(project_id: str, task_id: str) -> None:
@@ -73,6 +74,8 @@ def existing_task_worktree(
         owner = json.loads(owner_file.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise WorkspaceError("Task worktree ownership record is unreadable.") from exc
+    if not isinstance(owner, dict):
+        raise WorkspaceError("Task worktree ownership record has an invalid format.")
     expected = {
         "project_id": project_id,
         "task_id": task_id,
@@ -132,3 +135,32 @@ def prepare_task_worktree(
         temporary.unlink(missing_ok=True)
         raise WorkspaceError("Could not persist task worktree ownership metadata.") from exc
     return target
+
+
+def inspect_task_worktree(
+    root: str | Path,
+    source: str | Path,
+    project_id: str,
+    task_id: str,
+) -> dict[str, object] | None:
+    """Return read-only status metadata without exposing file contents."""
+    target = existing_task_worktree(root, source, project_id, task_id)
+    if target is None:
+        return None
+    _root, _target, owner_file = _paths(root, source, project_id, task_id)
+    try:
+        owner = json.loads(owner_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise WorkspaceError("Task worktree ownership record is unreadable.") from exc
+    base_commit = owner.get("base_commit") if isinstance(owner, dict) else None
+    if not isinstance(base_commit, str) or not _COMMIT.fullmatch(base_commit):
+        raise WorkspaceError("Task worktree base commit metadata is invalid.")
+    status = workspace_status(WorkspacePaths(root=Path(root).expanduser().resolve(), project_dir=target.resolve()))
+    return {
+        "task_id": task_id,
+        "worktree_path": str(target),
+        "base_commit": base_commit,
+        **status,
+        "content_included": False,
+        "note": "Read-only metadata only; file contents are not exposed and AATM does not merge or delete task worktrees.",
+    }

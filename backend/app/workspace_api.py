@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session
 
 from app.api import get_session
 from app.audit import add_event
-from app.models import Project, ProjectWorkspace
+from app.models import Project, ProjectWorkspace, Task
+from app.task_workspaces import inspect_task_worktree
 from app.workspaces import (
     WorkspaceError,
     create_project_workspace,
@@ -88,6 +89,40 @@ def get_workspace(project_id: str, db: Session = Depends(get_session)) -> dict[s
             "status": row.status,
         },
         "status": status,
+    }
+
+
+@router.get("/tasks/{task_id}")
+def inspect_task_workspace(
+    project_id: str,
+    task_id: str,
+    db: Session = Depends(get_session),
+) -> dict[str, object]:
+    """Inspect a task's owned Git worktree without returning file contents."""
+    if db.get(Project, project_id) is None:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    task = db.get(Task, task_id)
+    if task is None or task.project_id != project_id:
+        # Do not reveal whether another project's task identifier exists.
+        raise HTTPException(status_code=404, detail="Task not found in this project.")
+    row = _workspace_row(db, project_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="No workspace exists for this project.")
+    try:
+        paths = stored_workspace_paths(row.root_path, row.workspace_path)
+        worktree = inspect_task_worktree(paths.root, paths.project_dir, project_id, task_id)
+    except WorkspaceError as exc:
+        raise HTTPException(status_code=409, detail=f"Task workspace cannot be inspected safely: {exc}") from exc
+    return {
+        "task_id": task_id,
+        "task_state": task.state,
+        "available": worktree is not None,
+        "worktree": worktree,
+        "note": (
+            "Task worktree is available for local review; no file contents are included and no changes are merged."
+            if worktree is not None
+            else "No AATM-owned task worktree exists for this task."
+        ),
     }
 
 

@@ -1,6 +1,9 @@
 AATM — PRIORITIZED NEXT ACTIONS
 ===============================
 
+COMPLETED ON ACTIVE BRANCH — Read-only inspection for task worktrees (2026-11-13 17:43 UTC)
+Result: Added a project/task-scoped API that validates task ownership and the persisted AATM worktree record, then reports base/head commit, cleanliness, changed paths and diffstat without exposing file contents or modifying the worktree. Missing worktrees remain explicit; cross-project task IDs are hidden as 404 and invalid metadata is rejected. Verification: full backend suite 262 passed, one PostgreSQL-only test skipped locally; one Starlette/httpx deprecation warning. Changes are on the active Arena branch and are not yet merged to main.
+
 COMPLETED — Same-project task isolation with Git worktrees (2026-11-13 17:18 UTC)
 Result: The opt-in local executor now makes an owned detached Git worktree per task before dispatch; tasks with proven per-task Git workspaces can run concurrently, while non-Git/invalid workspaces remain serialized per project. Worktrees persist for inspection/retry and are not merged into the source workspace. Verification: 262 backend passed, 1 PostgreSQL-only test skipped locally; frontend `npm run verify` passed (20 tests, TypeScript, production build, RTL check); PR #7 merged as `55990a3`, with all backend, frontend, and PostgreSQL migration/lock CI jobs passing on main (run `43471340502`).
 

@@ -202,3 +202,73 @@ class TaskStateChange(BaseModel):
         if not value:
             raise ValueError("Idempotency key cannot be blank")
         return value
+
+
+class ReviewCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    check: str = Field(min_length=1, max_length=200)
+    result: str = Field(default="pass", max_length=200)
+
+
+class ReviewCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reviewer_agent_id: str = Field(min_length=1, max_length=36)
+    verdict: Literal["approved", "rework_required"]
+    summary: str = Field(default="", max_length=500)
+    checks: list[ReviewCheck] = Field(default_factory=list, max_length=50)
+    idempotency_key: str = Field(min_length=1, max_length=160)
+
+    @field_validator("idempotency_key")
+    @classmethod
+    def review_key_not_blank(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Idempotency key cannot be blank")
+        return value
+
+
+class ReviewRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    task_id: str
+    reviewer_agent_id: str | None
+    verdict: str
+    summary: str
+    checks: list[dict[str, object]]
+    created_at: datetime
+
+
+class ApprovalCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["paid_provider_request", "protected_branch_merge", "deployment", "data_deletion"]
+    entity_type: str = Field(default="task", max_length=40)
+    entity_id: str | None = Field(default=None, max_length=36)
+    summary: str = Field(min_length=1, max_length=500)
+
+
+class ApprovalDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["approved", "rejected"]
+    decided_by: str = Field(min_length=1, max_length=120)
+    note: str = Field(default="", max_length=500)
+
+
+class ApprovalRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    kind: str
+    entity_type: str
+    entity_id: str | None
+    summary: str
+    status: str
+    requested_by: str
+    decided_by: str | None
+    decision_note: str
+    requested_at: datetime
+    decided_at: datetime | None

@@ -120,3 +120,13 @@ Tests executed: Backend pytest 44 passed; frontend vitest 5 passed; tsc --noEmit
 Results: All suites pass. Verified recovery after simulated crash and after process restart, bounded concurrency, backoff gating, evidence enforcement, and that executor exceptions never leak messages into task records.
 Problems: Initial recovery logic double-counted an attempt, causing an idempotency-key collision; fixed by letting the failure transition own retry_count and testing it.
 Solutions: Corrected recovery accounting; added explicit claim-rejection tests.
+
+[2026-11-13 12:57 UTC] Phase 8/9 — QA reviews and approvals — P2 independent QA reviews and approval gates
+Task: P2 independent QA reviews and approval gates
+Action performed: Implemented and verified evidence-gated independent reviews plus audited approval gates
+Files created: backend/app/quality.py, backend/app/quality_api.py, backend/migrations/versions/0004_reviews_approvals.py, backend/tests/test_quality.py, web/src/ApprovalsView.tsx
+Files modified: backend/app/models.py, backend/app/schemas.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, NEXT_ACTIONS.txt
+Tests executed: Backend pytest 51 passed; frontend vitest 5 passed; tsc --noEmit; vite build; migration 0004 up/down/re-up; live HTTP review+approval smoke
+Results: All suites pass. Reviewer separation, evidence requirements, replay safety, double-decision rejection and non-execution of gated actions verified in tests and live.
+Problems: None beyond an earlier documentation-script variable typo, corrected before writing.
+Solutions: Re-ran the documentation edits scoped correctly.

@@ -160,3 +160,49 @@ class TaskTransition(Base):
     idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
     note: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
+
+
+class ReviewRecord(Base):
+    """An independent review verdict with explicit evidence.
+
+    Reviewer separation is enforced in the service layer: the reviewer must be
+    a different agent from the assignee, and `approved` cannot be recorded
+    without at least one concrete check.
+    """
+
+    __tablename__ = "review_records"
+    __table_args__ = (
+        UniqueConstraint("task_id", "idempotency_key", name="uq_review_idempotency"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id"), nullable=False, index=True)
+    reviewer_agent_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    verdict: Mapped[str] = mapped_column(String(32), nullable=False)
+    summary: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    checks: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
+
+
+class ApprovalRequest(Base):
+    """A gated operation awaiting explicit human approval.
+
+    Approval-gated actions (paid provider traffic, protected merges, deploys)
+    record intent here; executing them is a separate, authorized step that does
+    not exist yet.
+    """
+
+    __tablename__ = "approval_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    kind: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    entity_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    entity_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    summary: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+    requested_by: Mapped[str] = mapped_column(String(120), nullable=False, default="local-user")
+    decided_by: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    decision_note: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

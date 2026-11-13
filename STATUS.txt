@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 12:55 UTC
+2026-11-13 12:57 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 5 — Orchestration
+Phase 8/9 — QA reviews and approvals
 
 Current Task:
-P1 durable orchestrator with leases and crash recovery
+P2 independent QA reviews and approval gates
 
 Current Activity:
-Added orchestrator with injectable TaskExecutor, lease columns (migration 0003), recovery/backoff logic, inspection endpoints and an orchestrator UI panel
+Added quality service, review/approval API, migration 0004, review form in the task UI, and a dedicated Approvals view
 
 Recently Completed:
 - Saved AATM_MASTER_DEVELOPMENT_PROMPT.md in the repository.

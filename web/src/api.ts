@@ -202,6 +202,32 @@ export type OrchestratorStatus = {
   note: string
 }
 
+export type ReviewCheck = { check: string; result: string }
+
+export type Review = {
+  id: string
+  task_id: string
+  reviewer_agent_id: string | null
+  verdict: 'approved' | 'rework_required'
+  summary: string
+  checks: ReviewCheck[]
+  created_at: string
+}
+
+export type Approval = {
+  id: string
+  kind: string
+  entity_type: string
+  entity_id: string | null
+  summary: string
+  status: 'pending' | 'approved' | 'rejected'
+  requested_by: string
+  decided_by: string | null
+  decision_note: string
+  requested_at: string
+  decided_at: string | null
+}
+
 export type WorkflowDefinition = {
   transitions: Record<string, string[]>
   dependency_satisfied_states: string[]
@@ -260,6 +286,23 @@ export const api = {
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
   recoverLeases: () => request<{ recovered: string[]; count: number; note: string }>('/api/v1/orchestrator/recover', { method: 'POST' }),
+  taskReviews: (taskId: string) => request<{ reviews: Review[]; note: string }>(`/api/v1/tasks/${taskId}/reviews`),
+  createReview: (
+    taskId: string,
+    payload: { reviewer_agent_id: string; verdict: 'approved' | 'rework_required'; summary: string; checks: ReviewCheck[]; idempotency_key: string },
+  ) =>
+    request<{ review: Review; created: boolean; task_state: string }>(`/api/v1/tasks/${taskId}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  approvals: () => request<{ approvals: Approval[]; note: string }>('/api/v1/approvals'),
+  createApproval: (payload: { kind: string; entity_type: string; entity_id: string | null; summary: string }) =>
+    request<{ approval: Approval }>('/api/v1/approvals', { method: 'POST', body: JSON.stringify(payload) }),
+  decideApproval: (approvalId: string, payload: { status: 'approved' | 'rejected'; decided_by: string; note: string }) =>
+    request<{ approval: Approval; note: string }>(`/api/v1/approvals/${approvalId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
   providers: () => request<ProviderCatalog>('/api/v1/providers'),
   providerHealth: (providerId: string) => request<ProviderHealth>(`/api/v1/providers/${providerId}/health`),
   updateProviderConfig: (

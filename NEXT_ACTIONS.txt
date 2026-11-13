@@ -19,10 +19,8 @@ Dependencies: Authentication/authorization decision; project workspace sandbox d
 Expected outcome: One genuinely executed task with recorded output, evidence and audit trail — or an explicit decision to keep execution disabled.
 Do NOT: mark execution as complete without a real run; never fabricate output or evidence.
 
-P2 — Independent QA / review records on top of the workflow
-Description: Persist review verdicts with evidence, link them to the `reviewing → approved | rework_required` transitions instead of relying on free-text notes, and expose review history in the UI.
-Dependencies: Workflow state machine.
-Expected outcome: Reviewer separation with verifiable evidence rather than a note string.
+COMPLETED — P2 independent QA reviews and approval gates (2026-11-13 13:02 UTC)
+Result: `backend/app/quality.py` + API/UI now enforce reviewer separation, require concrete checks and recorded output for approval, require a summary for rework, drive verdicts through the validated state machine, and persist replay-safe audited records (migration 0004). Approval gates record and audit decisions for paid/deploy/merge/delete operations without executing them. 7 new tests (51 backend total) pass.
 
 P3 — Authentication and authorization for the local API
 Description: Single-user local token or OS-user-bound auth, CSRF-safe mutation policy, and per-project authorization checks; loopback binding stays the default. Must precede any paid provider execution path.

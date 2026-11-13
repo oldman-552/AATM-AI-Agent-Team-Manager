@@ -20,6 +20,9 @@
 - Durable orchestrator: lease-based claims, bounded concurrency, dependency-aware dispatch, exponential backoff with a retry ceiling, crash recovery for expired leases, and inspection/recovery endpoints. Execution is injected; the default executor refuses to run, so nothing is simulated.
 - Alembic revision `0003_task_leases` (lease owner/expiry and next-attempt timestamp on tasks).
 - Orchestrator panel in the Tasks view with lease/retry counts and an idempotent recovery action.
-- Backend tests 9 → 44; Vitest resource tests added (5).
+- Independent QA reviews with reviewer separation, concrete-check evidence, replay-safe verdicts, and a review form in the Tasks view.
+- Approval gates for paid provider requests, protected merges, deployments and data deletion, with an Approvals view. Decisions are recorded and audited; the gated actions are never executed.
+- Alembic revision `0004_reviews_approvals` (review records, approval requests).
+- Backend tests 9 → 51; Vitest resource tests added (5).
 
-- Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, approval workflows, backup/restore, and Windows verification remain incomplete.
+- Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, backup/restore, authentication, and Windows verification remain incomplete. Approval gates record decisions but do not perform the gated operations.

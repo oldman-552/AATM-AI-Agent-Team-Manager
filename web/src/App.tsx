@@ -18,21 +18,24 @@ import {
   Moon,
   Plus,
   PlugZap,
+  ShieldCheck,
   Sun,
   UsersRound,
   X,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { api, type Agent, type AuditEvent, type Project, type Task, type WorkflowDefinition } from './api'
+import ApprovalsView from './ApprovalsView'
 import ProvidersView from './ProvidersView'
 
-type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'providers'
+type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'approvals' | 'providers'
 
 const navigation: { id: View; label: string; icon: typeof Activity }[] = [
   { id: 'dashboard', label: 'dashboard', icon: Activity },
   { id: 'projects', label: 'projects', icon: FolderKanban },
   { id: 'agents', label: 'agents', icon: UsersRound },
   { id: 'tasks', label: 'tasks', icon: ListTodo },
+  { id: 'approvals', label: 'approvalSection', icon: ShieldCheck },
   { id: 'providers', label: 'providerSection', icon: PlugZap },
 ]
 
@@ -196,6 +199,7 @@ function App() {
           {view === 'projects' && <ProjectsView />}
           {view === 'agents' && <AgentsView />}
           {view === 'tasks' && <TasksView />}
+          {view === 'approvals' && <ApprovalsView />}
           {view === 'providers' && <ProvidersView />}
         </div>
       </main>
@@ -564,6 +568,102 @@ function TasksView() {
   )
 }
 
+function ReviewForm({ task, agents }: { task: Task; agents: Agent[] }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [reviewer, setReviewer] = useState('')
+  const [verdict, setVerdict] = useState<'approved' | 'rework_required'>('approved')
+  const [summary, setSummary] = useState('')
+  const [checks, setChecks] = useState('')
+  const reviews = useQuery({
+    queryKey: ['reviews', task.id],
+    queryFn: () => api.taskReviews(task.id),
+    enabled: open,
+  })
+  const mutation = useMutation({
+    mutationFn: () => api.createReview(task.id, {
+      reviewer_agent_id: reviewer,
+      verdict,
+      summary,
+      checks: checks.split('\n').map((line) => line.trim()).filter(Boolean)
+        .map((line) => ({ check: line, result: 'pass' })),
+      idempotency_key: crypto.randomUUID(),
+    }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+        queryClient.invalidateQueries({ queryKey: ['reviews', task.id] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['events'] }),
+      ])
+    },
+  })
+
+  const reviewable = task.state === 'reviewing' || task.state === 'completed'
+  if (!reviewable) return null
+  const candidates = agents.filter((agent) => !agent.is_manager && agent.id !== task.assigned_agent_id)
+
+  return (
+    <div className="review-block">
+      <button className="button button-secondary task-action-button" type="button" onClick={() => setOpen((value) => !value)}>
+        <ShieldCheck size={12} />{open ? t('reviewClose') : t('reviewOpen')}
+      </button>
+      {open && (
+        <form
+          className="review-form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (!reviewer) return
+            mutation.mutate()
+          }}
+        >
+          <label className="field">
+            <span>{t('reviewReviewer')}</span>
+            <select value={reviewer} onChange={(event) => setReviewer(event.target.value)} required>
+              <option value="">{t('reviewSelectReviewer')}</option>
+              {candidates.map((agent) => <option key={agent.id} value={agent.id}>{agent.name} · {agent.role}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>{t('reviewVerdict')}</span>
+            <select value={verdict} onChange={(event) => setVerdict(event.target.value as 'approved' | 'rework_required')}>
+              <option value="approved">{t('stateApproved')}</option>
+              <option value="rework_required">{t('stateRework')}</option>
+            </select>
+          </label>
+          <label className="field field-full">
+            <span>{t('reviewChecks')}</span>
+            <textarea rows={3} value={checks} onChange={(event) => setChecks(event.target.value)} placeholder={t('reviewChecksHint')} />
+          </label>
+          <label className="field field-full">
+            <span>{t('reviewSummary')}</span>
+            <input value={summary} maxLength={500} onChange={(event) => setSummary(event.target.value)} />
+          </label>
+          <div className="form-actions field-full">
+            <button className="button button-primary" type="submit" disabled={mutation.isPending || !reviewer}>
+              {mutation.isPending ? t('reviewSubmitting') : t('reviewSubmit')}
+            </button>
+          </div>
+          {mutation.isError && <p className="form-error field-full">{t('requestFailed')}: {mutation.error.message}</p>}
+          {mutation.isSuccess && <p className="form-success field-full"><Check size={13} />{t('reviewRecorded')} · {mutation.data.task_state}</p>}
+        </form>
+      )}
+      {open && reviews.data?.reviews.length ? (
+        <ul className="review-history">
+          {reviews.data.reviews.map((item) => (
+            <li key={item.id}>
+              <span className={`state-badge ${item.verdict}`}>{item.verdict === 'approved' ? t('stateApproved') : t('stateRework')}</span>
+              <span>{item.summary || t('reviewNoSummary')}</span>
+              <span className="review-checks">{item.checks.length} {t('reviewCheckCount')}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}
+
 function OrchestratorPanel() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -651,6 +751,7 @@ function TaskRow({ task, projects, agents, language, workflow }: { task: Task; p
       <div className="task-badges"><span className={`priority-badge ${task.priority}`}>{t(priorityKey[task.priority] ?? 'priorityNormal')}</span><span className={`state-badge ${task.state}`}>{t(stateKey[task.state] ?? 'statePending')}</span></div>
       <div className="task-secondary"><span>{project?.name ?? t('noProject')}</span><span>{agent?.name ?? t('noAssignee')}</span><span>{t('transitionRetryCount')}: {task.retry_count}</span><time>{formatDate(task.created_at, language)}</time></div>
       <div className="task-actions">
+        <ReviewForm task={task} agents={agents} />
         {nextStates.length ? (
           <>
             <label className="task-note-field">

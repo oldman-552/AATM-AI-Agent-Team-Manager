@@ -75,19 +75,19 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 ## Phase 8 — QA and Intelligence
 
-- [ ] Independent QA/review records — **NOT STARTED**.
-- [ ] Automated quality/test workflows — **NOT STARTED**.
+- [ ] Independent QA/review records — **TESTED** (server-side reviewer separation: self-review is rejected; `approved` needs concrete checks plus recorded output; `rework_required` needs a summary; verdicts drive the workflow and are replay-safe, audited, and exposed in the task UI).
+- [ ] Automated quality/test workflows — **IN PROGRESS** (backend suite: 51 tests; frontend Vitest resource tests; no CI pipeline yet).
 - [ ] Evidence-based agent analytics — **NOT STARTED**.
 
 ## Phase 9 — Recovery and Approvals
 
-- [ ] Recovery diagnostics/checkpoints/safe retries — **NOT STARTED**.
-- [ ] Human approval center and complete audit trail — **NOT STARTED** (basic creation/assignment audit events exist).
+- [ ] Recovery diagnostics/checkpoints/safe retries — **TESTED** for lease recovery (expired leases are reconciled after a simulated crash and after a process restart; retry scheduling honours exponential backoff and a retry ceiling; an active lease is never stolen). Checkpoints for partial agent work remain **NOT STARTED**.
+- [ ] Human approval center and complete audit trail — **IN PROGRESS** (approval requests and decisions are persisted, audited and exposed in a dedicated Approvals view; the gated actions themselves are not executed, and the audit trail still lacks authentication attribution).
 - [ ] Observable execution timeline — **NOT STARTED**.
 
 ## Phase 10 — Cost and Resources
 
-- [ ] Server-side budgets and cost/usage tracking — **NOT STARTED**.
+- [ ] Server-side budgets and cost/usage tracking — **TESTED** for enforcement plumbing (consent-gated, positive-limit-required, scoped limits; usage persisted and labelled as estimates; no confirmed billing reconciliation yet).
 - [ ] CPU/RAM/disk/browser monitoring and adaptive concurrency — **NOT STARTED**.
 
 ## Phase 11 — Dashboard and Interface
@@ -105,7 +105,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 ## Phase 13 — Reliability and Security
 
-- [ ] Input validation and local-host/CORS baseline — **IMPLEMENTED** (needs dedicated hostile-origin/host tests and further security review).
+- [ ] Input validation and local-host/CORS baseline — **TESTED** (Trusted Host rejects unknown hosts with 400; hostile origins receive no CORS allow header; provider schemas reject unknown fields and raw credentials; task/review/approval payloads are validated with length bounds).
 - [ ] Authentication/authorization and granular permission enforcement — **NOT STARTED**.
 - [ ] Backup/restore, crash recovery, performance tests — **NOT STARTED**.
 - [ ] Sensitive-data protection, complete auditability, secure credential vault — **NOT STARTED**.

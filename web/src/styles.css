@@ -296,6 +296,25 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .decision-reasons { margin: 0 0 11px; padding-inline-start: 17px; color: var(--text-soft); font-size: 9px; line-height: 1.6; }
 .candidate-list { display: grid; gap: 6px; }
 .candidate-list .panel-kicker { margin-bottom: 2px; }
+.review-block { display: grid; gap: 8px; width: 100%; }
+.review-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; padding: 11px; border: 1px solid var(--border-soft); border-radius: 9px; background: var(--surface-soft); }
+.review-history { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.review-history li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; align-items: center; color: var(--text-soft); font-size: 10px; }
+.review-history li > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-checks { color: var(--muted); font-size: 9px; white-space: nowrap; }
+.state-badge.approved { color: var(--green); border-color: rgba(66, 201, 154, .25); }
+.state-badge.rework_required { color: var(--amber); border-color: rgba(239, 189, 101, .25); }
+.approval-form-panel { margin-bottom: 14px; }
+.approval-list { display: grid; gap: 10px; }
+.approval-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 14px; align-items: start; }
+.approval-row-main h3 { margin: 5px 0 6px; font-size: 13px; font-weight: 600; }
+.approval-row-meta { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 9px; }
+.approval-status-pending { color: var(--amber); border-color: rgba(239, 189, 101, .28); }
+.approval-status-approved { color: var(--green); border-color: rgba(66, 201, 154, .28); }
+.approval-status-rejected { color: var(--red); border-color: rgba(255, 119, 126, .28); }
+.approval-actions { grid-column: 1 / -1; display: flex; gap: 7px; }
+.approval-footnote { margin-top: 12px; }
+
 .orchestrator-panel { margin-bottom: 14px; }
 .orchestrator-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 11px; }
 .orchestrator-count { display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border: 1px solid var(--border-soft); border-radius: 9px; background: var(--surface-soft); }
@@ -378,6 +397,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .notice-panel { flex-wrap: wrap; }
   .orchestrator-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .orchestrator-leases li { grid-template-columns: minmax(0, 1fr); }
+  .review-form { grid-template-columns: 1fr; }
+  .review-history li { grid-template-columns: auto minmax(0, 1fr); }
+  .review-checks { grid-column: 2; }
   .field-full { grid-column: auto; }
   .task-row, .task-row-extended { grid-template-columns: minmax(0, 1fr); gap: 9px; }
   .task-badges { padding-inline-start: 39px; }

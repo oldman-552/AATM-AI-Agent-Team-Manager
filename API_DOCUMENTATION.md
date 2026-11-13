@@ -159,6 +159,52 @@ Concurrency and retry semantics (server-side):
 - Executor exceptions are recorded as `Executor error: <Type>` only — executor messages are never propagated, so they cannot leak secrets into task records.
 - A completion requires non-empty evidence; otherwise the task fails and is retried.
 
+## Independent QA reviews
+
+Reviewer separation and evidence are enforced by the server (`backend/app/quality.py`).
+
+### `GET /tasks/{task_id}/reviews`
+
+Review history for one task. `GET /reviews?limit=100` lists recent reviews across tasks.
+
+### `POST /tasks/{task_id}/reviews` → 201
+
+```json
+{
+  "reviewer_agent_id": "<agent-id>",
+  "verdict": "approved",
+  "summary": "Independently verified.",
+  "checks": [{"check": "unit tests", "result": "51 passed"}],
+  "idempotency_key": "review-1"
+}
+```
+
+- The reviewer must be a registered agent and **must differ** from the task's assignee (409 otherwise).
+- `approved` requires at least one concrete non-empty check **and** recorded task output; `rework_required` requires a summary.
+- The verdict drives the existing state machine: `completed → reviewing → approved | rework_required`, so no new state path is invented.
+- Replaying an idempotency key returns `created: false`; reusing it for a different verdict is a 409.
+- Audit events: `task.review_approved` / `task.review_rework_required`.
+
+## Approval gates
+
+### `GET /approvals?status=pending|approved|rejected`
+
+### `POST /approvals` → 201
+
+```json
+{ "kind": "deployment", "entity_type": "task", "entity_id": null, "summary": "Deploy staging build" }
+```
+
+Kinds: `paid_provider_request`, `protected_branch_merge`, `deployment`, `data_deletion`. A referenced task must exist (404 otherwise).
+
+### `PATCH /approvals/{approval_id}`
+
+```json
+{ "status": "approved", "decided_by": "local-user", "note": "Reviewed the diff." }
+```
+
+Records a human decision only. Deciding an already-decided request returns 409. The response states explicitly that the gated action is **not** executed by this build — no endpoint performs deployments, merges, deletions, or paid provider traffic.
+
 ## Audit events added in this slice
 
-`task.state_changed`, `task.lease_recovered`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.
+`task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.

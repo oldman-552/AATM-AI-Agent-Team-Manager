@@ -15,7 +15,7 @@
 - **Honest transport**: the build has no message broker, so the server polls the audit table and the `hello` frame says `delivery: "poll"` with a note. The UI label says "near-real-time" for the same reason.
 - **Fixed while testing**: a cursor on `created_at` alone dropped one of two events sharing a timestamp; keyset pagination on `(created_at, id)` fixes it, with a test inserting three identical timestamps.
 - Live panel in the Operations view resumes from the last id on reconnect and backs off on failure; Eventsource auto-reconnect is bypassed because it ignores our cursor.
-- Backend tests 212 → 219; frontend 16 → 20; 646 translated keys ×3.
+- **Auth parity**: the stream requires the same bearer token as other endpoints and explicitly rejects a `?token=` query fallback. Backend tests 212 → 220; frontend 16 → 20; 646 translated keys ×3.
 
 ### UI render smoke test
 

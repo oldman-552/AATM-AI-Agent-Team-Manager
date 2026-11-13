@@ -479,3 +479,4 @@ Guarantees:
 - **Heartbeat** every `heartbeat_seconds` (5–60), so an idle connection is distinguishable from a stuck one.
 - **Own database session.** The request session is closed when the response begins, so the generator builds its own factory; a generator holding the request session fails mid-stream.
 - **Bounded batches** of 200 events per poll.
+- **Same authentication as every other endpoint.** With `AATM_AUTH_MODE=token` the stream requires the bearer header; a token passed as a query parameter is rejected, because URLs land in logs and shell history. The dev proxy injects the header server-side, which is what lets the browser's `EventSource` (which cannot set headers) authenticate.

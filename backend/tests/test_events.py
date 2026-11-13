@@ -195,3 +195,31 @@ def test_generator_uses_its_own_session(client: TestClient, db_session):
         if len(frames) > 2:
             break
     assert frames and frames[0].startswith("event: hello")
+
+
+def test_stream_requires_the_same_auth_as_everything_else(tmp_path, monkeypatch):
+    """The stream must not be an unauthenticated back door.
+
+    It is also not given a token-in-query escape hatch: URLs end up in logs and
+    shell history. The dev proxy injects the bearer header server-side, which is
+    what makes the browser's EventSource work without exposing a secret.
+    """
+    monkeypatch.setenv("AATM_AUTH_MODE", "token")
+    monkeypatch.setenv("AATM_AUTH_TOKEN", "s3cret-token")
+    url = f"sqlite:///{(tmp_path / 'auth.sqlite3').as_posix()}"
+    with TestClient(create_app(url, allowed_hosts=["testserver"])) as guarded:
+        anonymous = guarded.get("/api/v1/events/stream?max_seconds=2")
+        assert anonymous.status_code == 401
+        assert anonymous.headers.get("www-authenticate") == "Bearer"
+
+        # A token supplied as a query parameter must NOT be accepted.
+        smuggled = guarded.get("/api/v1/events/stream?max_seconds=2&token=s3cret-token")
+        assert smuggled.status_code == 401
+
+        with guarded.stream(
+            "GET",
+            "/api/v1/events/stream?max_seconds=2&poll_seconds=0.25",
+            headers={"Authorization": "Bearer s3cret-token"},
+        ) as authorised:
+            assert authorised.status_code == 200
+            assert authorised.headers["content-type"].startswith("text/event-stream")

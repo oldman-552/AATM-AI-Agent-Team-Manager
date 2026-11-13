@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import i18n, { resources, rtlLanguages, supportedLanguages } from './i18n'
 
+// Import every view so a missing key shows up as a real failure rather than a
+// raw key rendered in the browser.
+const sourceModules = import.meta.glob('./**/*.{ts,tsx}', { query: '?raw', import: 'default', eager: true })
+
 type Dictionary = Record<string, string>
 const dictionaries = resources as unknown as Record<'en' | 'ar' | 'fa', { translation: Dictionary }>
 
@@ -31,6 +35,26 @@ describe('internationalization resources', () => {
     )
     expect(differing.length).toBeGreaterThan(100)
     expect(dictionaries.ar.translation.dashboard).not.toBe(dictionaries.fa.translation.dashboard)
+  })
+
+  it('defines every translation key the UI actually uses', () => {
+    const used = new Set<string>()
+    for (const [path, source] of Object.entries(sourceModules)) {
+      if (path.endsWith('i18n.ts') || path.endsWith('i18n.test.ts')) continue
+      for (const match of String(source).matchAll(/\bt\('([A-Za-z0-9_]+)'/g)) used.add(match[1])
+    }
+    // Static keys with dynamic suffixes must exist for every known suffix.
+    for (const suffix of ['Low', 'Medium', 'High']) used.add(`complexity${suffix}`)
+    for (const code of [
+      'running_without_agent', 'assigned_with_blocked_dependencies',
+      'awaiting_review', 'dependency_cycle', 'rework_stuck',
+    ]) used.add(`planFinding_${code}`)
+
+    expect(used.size).toBeGreaterThan(250)
+    for (const language of supportedLanguages) {
+      const missing = [...used].filter((key) => !(key in dictionaries[language].translation))
+      expect({ language, missing }).toEqual({ language, missing: [] })
+    }
   })
 
   it('marks Arabic and Persian as RTL and English as LTR', async () => {

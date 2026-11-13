@@ -41,8 +41,8 @@
 
 ## 2026-11-13 12:57 UTC — Frontend tests and build (current)
 
-- `cd web && npm test` (Vitest 2.1.9) → **5 passed**.
-  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (421 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
+- `cd web && npm test` (Vitest 2.1.9) → **6 passed**.
+  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (422 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
 - `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1662 modules, `dist/assets/index-C4Qz_Y5p.css` 39.99 kB, `dist/assets/index-C_LDMw1b.js` 413.68 kB.
 - First TypeScript run failed twice: a missing `Send` icon import in `ProvidersView.tsx` and an invalid Vitest assertion overload in `i18n.test.ts`. Both were fixed before the passing run.
 

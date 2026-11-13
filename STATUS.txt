@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:28 UTC
+2026-11-13 13:31 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 5 — Orchestration
+Phase 3 — Agent Management
 
 Current Task:
-Deterministic Manager planning
+Agent lifecycle and permission scopes
 
 Current Activity:
-Added planning service/API, dashboard plan panel and 7 tests
+Added agents service/API, AgentControls UI, migration 0010 and 6 tests
 
 Recently Completed (most recent first):
 - Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.

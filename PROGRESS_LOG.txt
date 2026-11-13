@@ -250,3 +250,13 @@ Tests executed: Backend pytest 123 passed; frontend vitest 5; tsc --noEmit; vite
 Results: Two queued tasks were proposed to two distinct agents and both became assigned only after an explicit apply.
 Problems: The planner initially filtered agents by project_id, which does not exist on agents.
 Solutions: Treated agents as the shared worker pool they actually are and documented the scope limitation.
+
+[2026-11-13 13:31 UTC] Phase 3 — Agent Management — Agent lifecycle and permission scopes
+Task: Agent lifecycle and permission scopes
+Action performed: Implemented and verified lifecycle validation, assignment gates and deny-by-default scopes
+Files created: backend/app/agents.py, backend/app/agent_api.py, backend/migrations/versions/0010_agent_permissions.py, backend/tests/test_agent_lifecycle.py, web/src/components/AgentControls.tsx
+Files modified: backend/app/models.py, backend/app/schemas.py, backend/app/api.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 129 passed; frontend vitest 5; tsc --noEmit; vite build; migration 0010 up/down/re-up; live lifecycle smoke
+Results: Illegal transitions 409, paused agent refused work with 409 agent_paused, unknown scope 422 and Manager disabling refused.
+Problems: A new router registered before the core router shadowed PATCH /agents/{id}/state with GET /agents, which silently ignored the body.
+Solutions: Registered the specific router first, added a comment explaining the ordering, and re-verified every transition live.

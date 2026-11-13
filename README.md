@@ -10,7 +10,7 @@ AATM is a local-first AI engineering command center in early development. The co
 - A persisted, deliberately unconfigured Manager identity and 20 default worker-role templates.
 - Project/agent/task record creation and listing; task assignment records; worker registration capped at 20.
 - React + TypeScript + Vite UI for Dashboard, Projects, Agents, Tasks, Memory, Analytics, Approvals, Providers, and Settings, using a relative `/api/v1` path through the Vite proxy.
-- English, Arabic, and Persian resources with 421 keys each, a key-parity/RTL unit test, a persisted selector, and `dir=rtl` for Arabic/Persian.
+- English, Arabic, and Persian resources with 422 keys each, a key-parity/RTL unit test, a persisted selector, and `dir=rtl` for Arabic/Persian.
 - Offline provider boundary: safe credential references, offline health, deterministic routing policies, and hard server-side budget enforcement — with **no** HTTP endpoint that performs a live model request.
 - Task workflow state machine: validated transitions, dependency-gated ready queue, evidence requirements, replay-safe idempotency, and append-only history.
 - Durable orchestrator: lease-based claims, bounded concurrency, backoff retries, crash recovery, and inspection/recovery endpoints — with execution disabled by default.

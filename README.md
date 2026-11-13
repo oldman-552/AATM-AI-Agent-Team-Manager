@@ -10,7 +10,7 @@ AATM is a local-first AI engineering command center in early development. The co
 - A persisted, deliberately unconfigured Manager identity and 20 default worker-role templates.
 - Project/agent/task record creation and listing; task assignment records; worker registration capped at 20.
 - React + TypeScript + Vite UI for Dashboard, Projects, Agents, Tasks, Memory, Analytics, Approvals, Providers, and Settings, using a relative `/api/v1` path through the Vite proxy.
-- English, Arabic, and Persian resources with 390 keys each, a key-parity/RTL unit test, a persisted selector, and `dir=rtl` for Arabic/Persian.
+- English, Arabic, and Persian resources with 406 keys each, a key-parity/RTL unit test, a persisted selector, and `dir=rtl` for Arabic/Persian.
 - Offline provider boundary: safe credential references, offline health, deterministic routing policies, and hard server-side budget enforcement — with **no** HTTP endpoint that performs a live model request.
 - Task workflow state machine: validated transitions, dependency-gated ready queue, evidence requirements, replay-safe idempotency, and append-only history.
 - Durable orchestrator: lease-based claims, bounded concurrency, backoff retries, crash recovery, and inspection/recovery endpoints — with execution disabled by default.
@@ -24,6 +24,7 @@ AATM is a local-first AI engineering command center in early development. The co
 - Delivery analytics computed only from stored rows, with explicit sample sizes and no synthetic scores.
 - In-app notifications derived from real pending work, with server-side read state.
 - A Settings page for validated, non-secret preferences (never API keys).
+- Deterministic Manager planning with reviewable, explicitly applied assignment proposals.
 - Optional local bearer-token authentication plus CSRF-hardened mutations; the token is injected by the Vite proxy and never reaches the browser.
 - Ubuntu shell and Windows PowerShell dependency/start/stop/update/uninstall entry points (Windows execution remains unverified here).
 - Atomic progress event/status writer and a five-minute heartbeat command.
@@ -64,6 +65,7 @@ The API binds to `127.0.0.1:8000` by default. The web development server also bi
 - Memory: `GET|POST /api/v1/memory`, `GET /api/v1/memory/search`, `POST /api/v1/memory/{id}/rollback/{version}`
 - System: `GET /api/v1/system/resources`
 - Checkpoints: `GET|POST|DELETE /api/v1/tasks/{id}/checkpoints`, `GET /api/v1/tasks/{id}/resume-plan`
+- Planning: `GET /api/v1/planning/proposals`, `POST /api/v1/planning/apply`
 - Preferences: `GET|PATCH /api/v1/settings`, `POST /api/v1/settings/reset`, `GET /api/v1/settings/export`
 - Notifications: `GET /api/v1/notifications`, `POST /api/v1/notifications/read`, `POST /api/v1/notifications/read-all`
 - Analytics: `GET /api/v1/analytics` (+ `/throughput`, `/cycle-time`, `/reviews`, `/rework`, `/approvals`, `/activity`)

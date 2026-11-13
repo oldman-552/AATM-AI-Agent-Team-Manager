@@ -129,6 +129,29 @@ export type AppPreferences = {
   updated_at: string | null
 }
 
+export type ManagerPlan = {
+  project_id: string | null
+  task_total: number
+  queued_total: number
+  active_agents: number
+  findings: { code: string; severity: 'error' | 'warning' | 'info'; task_id?: string; task_title?: string; task_ids?: string[]; blocking?: string[] }[]
+  proposals: {
+    task_id: string
+    task_title: string
+    current_state: string
+    current_agent_id: string | null
+    suggested_agent_id: string | null
+    reason_code: string
+    reason_data: Record<string, unknown>
+  }[]
+  order: string[]
+  dependency_cycles: string[]
+  generated_at: string
+  planner: string
+  applies_automatically: false
+  plan_id: string
+}
+
 export type AuditEvent = {
   id: string
   entity_type: string
@@ -449,6 +472,13 @@ export const api = {
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
+  managerPlan: (projectId?: string) =>
+    request<ManagerPlan>(`/api/v1/planning/proposals${projectId ? `?project_id=${projectId}` : ''}`),
+  applyManagerPlan: (plan: Record<string, unknown>, actor = 'manager') =>
+    request<{ applied: { task_id: string; agent_id: string }[]; skipped: { task_id: string; reason: string }[]; plan_id: string }>(
+      '/api/v1/planning/apply',
+      { method: 'POST', body: JSON.stringify({ plan, actor }) },
+    ),
   settings: () => request<{ settings: AppPreferences; defaults: Record<string, unknown>; note: string }>('/api/v1/settings'),
   updateSettings: (payload: Record<string, string | number>) =>
     request<{ settings: AppPreferences }>('/api/v1/settings', { method: 'PATCH', body: JSON.stringify(payload) }),

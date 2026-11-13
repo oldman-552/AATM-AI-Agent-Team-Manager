@@ -230,3 +230,13 @@ Tests executed: Backend pytest 110 passed; frontend vitest 5; tsc --noEmit; vite
 Results: Two derived unread items, mark-one dropped unread to 1, and deciding the approval removed its item.
 Problems: The approvals POST returns a wrapped payload and decisions use PATCH, so the first tests used the wrong shapes.
 Solutions: Corrected the tests to the real API contract; behaviour itself was right.
+
+[2026-11-13 13:26 UTC] Phase 11 — Dashboard and Interface — Settings page for validated local preferences
+Task: Settings page for validated local preferences
+Action performed: Implemented and verified persisted non-secret preferences with strict validation
+Files created: backend/app/app_settings.py, backend/app/settings_api.py, backend/tests/test_settings.py, web/src/SettingsView.tsx
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 116 passed; frontend vitest 5; tsc --noEmit; vite build; live settings smoke
+Results: Values persisted across processes, api_key was rejected with 422 extra_forbidden, and reset restored defaults.
+Problems: The draft state initially included server metadata (updated_at), which broke the TypeScript draft type.
+Solutions: Split an editable Draft type from the server payload so only preference fields are edited.

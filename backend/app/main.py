@@ -23,6 +23,7 @@ from app.github_api import router as github_router
 from app.analytics_api import router as analytics_router
 from app.notification_api import router as notification_router
 from app.settings_api import router as settings_router
+from app.planning_api import router as planning_router
 from app.workspace_api import router as workspace_router
 from app.provider_api import ops_router, provider_router
 from app.provider_store import seed_provider_defaults
@@ -111,6 +112,7 @@ def create_app(
     app.include_router(analytics_router)
     app.include_router(notification_router)
     app.include_router(settings_router)
+    app.include_router(planning_router)
     resolved_origins = allowed_origins or settings.cors_origins
     app.add_middleware(LocalAuthMiddleware, config=AuthConfig.from_settings(resolved_origins))
 

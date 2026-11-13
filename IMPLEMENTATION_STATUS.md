@@ -33,7 +33,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 ## Phase 3 — Agent Management
 
-- [ ] Manager agent execution/planning — **NOT STARTED** (only an unconfigured Manager identity record exists).
+- [ ] Manager agent execution/planning — **TESTED for deterministic planning**: rule-based findings, least-loaded assignment proposals, dependency ordering with cycle detection, and an apply step that re-validates every proposal and records a reason for skipped ones. **No model is called**; LLM-driven planning remains **NOT STARTED** and is gated on the provider consent surface.
 - [ ] Up to 20 independently configured worker agents — **IN PROGRESS** (registration metadata and cap exist; lifecycle/provider execution not implemented).
 - [ ] Default role templates and custom roles — **IMPLEMENTED** (20 templates; full localized role UX/management still pending).
 - [ ] Agent lifecycle and granular permissions — **NOT STARTED**.
@@ -57,7 +57,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 - [x] Orchestrator observability + idempotent recovery API — **TESTED** (`GET /api/v1/orchestrator/status`, `POST /api/v1/orchestrator/recover`; no dispatch endpoint exists).
 - [ ] Real task execution by agents — **NOT STARTED** (the default `DisabledExecutor` refuses to run; nothing is simulated, and no provider/shell/browser work happens).
 - [ ] Cancellation propagation and graceful shutdown — **NOT STARTED**.
-- [ ] Manager planning/assignment/review loop — **NOT STARTED**.
+- [ ] Manager planning/assignment/review loop — **IN PROGRESS / TESTED for planning and assignment**: proposals → explicit apply → independent review via the existing QA loop. Automatic iteration without an operator remains **NOT STARTED**.
 
 ## Phase 6 — Projects and Memory
 

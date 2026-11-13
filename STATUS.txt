@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:24 UTC
+2026-11-13 13:26 UTC
 
 Overall Project Status:
 Developing
@@ -15,10 +15,10 @@ Current Phase:
 Phase 11 — Dashboard and Interface
 
 Current Task:
-Derived notifications with persisted read state
+Settings page for validated local preferences
 
 Current Activity:
-Added notification service/API, migration 0009, topbar bell and 7 tests
+Added settings service/API, Settings view in navigation and 6 tests
 
 Recently Completed (most recent first):
 - Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.

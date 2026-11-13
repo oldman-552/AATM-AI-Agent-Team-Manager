@@ -8,7 +8,8 @@
 ## 2026-11-13 12:57 UTC — Backend tests (current)
 
 - Latest command: `cd backend && ../.venv/bin/python -m pytest`.
-- Result: **116 passed, 1 warning** (107 new tests across this session).
+- Result: **123 passed, 1 warning** (114 new tests across this session).
+- `tests/test_planning.py` (7 tests): least-loaded proposals are balanced across agents and never auto-applied, with an explicit "no model was called" marker; dependency ordering respects blockers and blocked tasks are not proposed; already-assigned tasks are not re-proposed; applying writes assignments and audits both the assignment and the application; a stale plan is skipped (not forced) when someone assigned the task first; a plan without an id is 422 and unknown projects are 404; a plan retargeted at another project is refused.
 - `tests/test_settings.py` (6 tests): defaults before any change; partial updates merge and persist across a restart; credential-named and unknown settings are rejected; value bounds enforced; reset and export work and the export contains no credential keys; changes are audited without storing secret values.
 - `tests/test_notifications.py` (7 tests): an empty database produces no notifications; pending approvals become items and disappear once decided; read state survives an application restart; failed/rework tasks are reported with severity and target view; expired leases notify while live leases do not; malformed ids and retention bounds are rejected; `read-all` is idempotent.
 - `tests/test_analytics.py` (4 tests): an empty database reports zero counts and `null` rates rather than invented numbers (with the seeded Manager identity accounted for); counts, throughput and cycle time follow real transitions; review approval rate and pending approvals are measured independently; rework share is computed and `days` bounds are enforced.
@@ -39,8 +40,8 @@
 ## 2026-11-13 12:57 UTC — Frontend tests and build (current)
 
 - `cd web && npm test` (Vitest 2.1.9) → **5 passed**.
-  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (390 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
-- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1658 modules, `dist/assets/index-CddtCHvJ.css` 38.24 kB, `dist/assets/index-CqokUnxf.js` 400.06 kB.
+  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (406 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
+- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1660 modules, `dist/assets/index-CSd1Z8U6.css` 39.22 kB, `dist/assets/index-DJWYzAQQ.js` 407.31 kB.
 - First TypeScript run failed twice: a missing `Send` icon import in `ProvidersView.tsx` and an invalid Vitest assertion overload in `i18n.test.ts`. Both were fixed before the passing run.
 
 ## 2026-11-13 — Frontend build (historical)
@@ -76,6 +77,7 @@
 - Cleanup: `.aatm-home` (git-ignored smoke database) only; no credentials, no provider traffic.
 - Notable: binding uvicorn to `0.0.0.0` makes the API reject the preview Host with 400 (by design). Only Vite is exposed for previews; the API stays loopback-bound.
 - Orchestrator endpoints were re-verified on a restarted server: startup applied migration `0003_task_leases`, `/api/v1/orchestrator/status` reported `executor.configured: false` with the refusal reason, and the same payload was served through the Vite proxy.
+- Manager planning verified live through the Vite proxy: two unassigned tasks were proposed to two different agents, apply wrote both assignments, and both tasks moved to `assigned`.
 - Preferences verified live through the Vite proxy: defaults returned, `{language: fa, theme: light, page_size: 50}` persisted and read back through a direct API call, `api_key` rejected with 422 `extra_forbidden`, and reset restored `en`/`dark`.
 - Notifications verified live through the Vite proxy: an approval created two unread items, marking one read dropped unread to 1 and the state was visible through a direct API read, and deciding the approval removed its derived item.
 - Analytics verified live through the Vite proxy against the real database: `{projects: 4, agents: 5, tasks: 3, active: 1, terminal: 2, checkpoints: 2}`, throughput 3, 30 audit events, cycle time with `samples: 2` and one explicitly excluded task, and `days=0`/`days=91` rejected with 422.

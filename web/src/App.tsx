@@ -34,6 +34,7 @@ import MemoryView from './MemoryView'
 import AnalyticsView from './AnalyticsView'
 import { NotificationCenter } from './components/NotificationCenter'
 import SettingsView from './SettingsView'
+import { ManagerPlanPanel } from './components/ManagerPlanPanel'
 import { CheckpointPanel } from './components/CheckpointPanel'
 import { PullRequestPlans } from './components/PullRequestPlans'
 import WorkspacePanel from './components/WorkspacePanel'
@@ -266,6 +267,7 @@ function DashboardView({ onNavigate }: { onNavigate: (view: View) => void }) {
       <PageHeading title={t('dashboard')} subtitle={t('welcomeDetail')}>
         <span className="live-pill"><span className="live-pulse" />{t('liveData')}</span>
       </PageHeading>
+      <ManagerPlanPanel />
       <section className="welcome-row">
         <div>
           <div className="welcome-kicker">{t('commandCenter')}</div>

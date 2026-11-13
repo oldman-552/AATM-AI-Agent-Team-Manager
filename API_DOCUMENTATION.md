@@ -254,6 +254,15 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Manager planning (`/planning`)
+
+Deterministic rules over persisted rows — **no model is called**, and nothing is written by `proposals`.
+
+- `GET /planning/proposals?project_id=` — `findings` (running-without-agent, blocked-but-assigned, awaiting review, dependency cycles), `proposals` (task → least-loaded active agent, with `reason_code`/`reason_data`), a dependency-respecting `order`, `dependency_cycles`, an idempotent `plan_id`, and `applies_automatically: false`.
+- `POST /planning/apply` — `{plan, actor}`. Re-validates every proposal against current state and skips stale ones with a reason (`missing_task`, `state_changed`, `already_assigned`, `agent_unavailable`). Applied assignments and the application itself are audited. A plan without `plan_id` is rejected (422), and a plan for an unknown project is a 404.
+
+Agents are a shared worker pool today (agents are not project-scoped), so planning balances across all non-manager, non-offline agents.
+
 ## Preferences (`/settings`)
 
 Non-secret, allow-listed preferences persisted in `app_settings` under `user_preferences`:

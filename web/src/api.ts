@@ -563,6 +563,16 @@ export type WorkspaceResponse = {
   note?: string
 }
 
+export type TaskWorkspaceIntegrationResponse = {
+  task_id: string
+  integrated: boolean
+  already_integrated: boolean
+  branch: string
+  base_commit: string
+  head_commit: string
+  note: string
+}
+
 export type TaskWorkspaceDiffResponse = {
   task_id: string
   available: boolean
@@ -870,6 +880,8 @@ export const api = {
   workspace: (projectId: string) => request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`),
   taskWorkspaceDiff: (projectId: string, taskId: string) =>
     request<TaskWorkspaceDiffResponse>(`/api/v1/projects/${projectId}/workspace/tasks/${taskId}/diff`),
+  integrateTaskWorkspace: (projectId: string, taskId: string) =>
+    request<TaskWorkspaceIntegrationResponse>(`/api/v1/projects/${projectId}/workspace/tasks/${taskId}/integrate`, { method: 'POST' }),
   createWorkspace: (projectId: string, payload: { local_source?: string | null; branch?: string | null }) =>
     request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`, {
       method: 'POST',

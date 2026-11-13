@@ -48,6 +48,10 @@ const responses: Record<string, unknown> = {
   '/api/v1/agent-roles': [{ id: 'developer', name: 'Developer', description: 'Builds things' }],
   '/api/v1/workflow': { transitions: { assigned: ['running', 'cancelled'] }, note: 'validated' },
   '/api/v1/tasks/ready': { tasks: [task], note: 'assigned work whose dependencies are met' },
+  '/api/v1/projects/project-1/workspace/tasks/task-1/integrate': {
+    task_id: 'task-1', integrated: true, already_integrated: false, branch: 'review/task',
+    base_commit: 'a'.repeat(40), head_commit: 'b'.repeat(40), note: 'fast-forwarded',
+  },
   '/api/v1/projects/project-1/workspace/tasks/task-1/diff': {
     task_id: 'task-1', available: true, note: 'capped patch',
     preview: {
@@ -156,6 +160,8 @@ class FakeEventSource {
 }
 
 beforeEach(async () => {
+  responses['/api/v1/tasks'] = [task]
+  responses['/api/v1/tasks/task-1/reviews'] = { reviews: [], note: 'reviews' }
   consoleErrors.length = 0
   windowErrors.length = 0
   FakeEventSource.instances = []
@@ -252,6 +258,46 @@ describe('application render smoke test', () => {
     expect(await screen.findByText(/task patch line/)).toBeTruthy()
     expect(await screen.findByText(/new untracked preview/)).toBeTruthy()
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/workspace/tasks/task-1/diff'))).toBe(true)
+    expectNoCrash()
+  })
+
+  it('offers explicit integration only when the current task commit has an approved review', async () => {
+    const diffPath = '/api/v1/projects/project-1/workspace/tasks/task-1/diff'
+    const diffBody = responses[diffPath] as { preview: Record<string, unknown> }
+    responses[diffPath] = {
+      ...diffBody,
+      preview: { ...diffBody.preview, untracked_files: [], untracked_included: false },
+    }
+    responses['/api/v1/tasks'] = [{ ...task, state: 'approved' }]
+    responses['/api/v1/tasks/task-1/reviews'] = {
+      reviews: [{
+        id: 'review-1', task_id: 'task-1', reviewer_agent_id: 'agent-2', verdict: 'approved',
+        summary: 'Reviewed', checks: [{ check: 'diff', result: 'pass' }],
+        task_worktree_head: 'b'.repeat(40), created_at: '2026-11-13T10:00:00Z',
+      }],
+      note: 'reviews',
+    }
+    const confirmMock = vi.fn((): boolean => false)
+    vi.stubGlobal('confirm', confirmMock)
+    const { container } = await renderApp()
+    await waitFor(() => expect(container.querySelector('nav.primary-nav')).not.toBeNull())
+    const tasksButton = [...container.querySelectorAll('nav.primary-nav button')]
+      .find((button) => button.textContent?.trim() === 'Tasks')
+    fireEvent.click(tasksButton!)
+    fireEvent.click(await screen.findByRole('button', { name: 'Review task diff' }))
+    const integrateButton = await screen.findByRole('button', { name: 'Integrate approved commit' })
+
+    fireEvent.click(integrateButton)
+    expect(confirmMock).toHaveBeenCalledOnce()
+    const fetchMock = vi.mocked(globalThis.fetch)
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/workspace/tasks/task-1/integrate'))).toBe(false)
+
+    confirmMock.mockReturnValue(true)
+    fireEvent.click(integrateButton)
+    await waitFor(() => expect(fetchMock.mock.calls.some(([input, init]) =>
+      String(input).includes('/workspace/tasks/task-1/integrate') && init?.method === 'POST',
+    )).toBe(true))
+    expect(await screen.findByText('Approved commit integrated into branch review/task.')).toBeTruthy()
     expectNoCrash()
   })
 

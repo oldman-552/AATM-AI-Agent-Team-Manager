@@ -841,7 +841,7 @@ function TaskRow({ task, projects, agents, language, workflow }: { task: Task; p
       <div className="task-actions">
         <ReviewForm task={task} agents={agents} />
         <CheckpointPanel task={task} />
-        {task.project_id && <TaskWorkspaceDiff projectId={task.project_id} taskId={task.id} />}
+        {task.project_id && <TaskWorkspaceDiff projectId={task.project_id} taskId={task.id} taskState={task.state} />}
         <CancelControls task={task} />
         <TaskTimelineView taskId={task.id} language={language} />
         {nextStates.length ? (

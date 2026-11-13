@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Activity, Cpu, FileSearch, HardDrive, LoaderCircle, Wallet } from 'lucide-react'
 
 import { api } from './api'
+import EventStreamPanel from './EventStreamPanel'
 import { formatDateTime, formatNumber } from './format'
 
 /**
@@ -32,6 +33,10 @@ export default function OpsView() {
 
   return (
     <>
+      <section className="panel">
+        <EventStreamPanel />
+      </section>
+
       <section className="panel">
         <div className="panel-heading">
           <div><span className="panel-kicker">{t('opsAuditKicker')}</span><h3>{t('opsAuditTitle')}</h3></div>

@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 14:19 UTC
+2026-11-13 14:24 UTC
 
 Overall Project Status:
 Testing
@@ -12,15 +12,16 @@ Overall Completion:
 Roughly 80% of the specified local-first product surface is implemented and tested. Every capability that needs no paid provider call, no display, and no Windows host is built, exercised live and covered by tests. What remains open is either gated by design (live provider execution, real agent execution, GitHub execution) or impossible in this environment (Windows, PostgreSQL, Docker, Playwright). See BLOCKERS.txt for the itemised list; nothing below is claimed as done that is not.
 
 Current Phase:
-Phase 25 — UI render smoke test
+Phase 26 — Live event stream (SSE)
 
 Current Task:
-Prove views render, not just that endpoints respond
+Real-time updates, implemented honestly for a local SQLite build
 
 Current Activity:
-React swallows render errors into console.error and unmounts the subtree, so the test fails on those; skips the already-active nav entry; asserts markup changes and that nearly every section was visited; validated by injecting a throw and observing the failure
+Cursor on (created_at,id) after a timestamp-only cursor dropped tied events; hello frame states delivery=poll; close frame reports why the stream ended; client resumes with last_event_id and backs off
 
 Recently Completed (most recent first):
+- Live event stream (SSE): resumable cursor, bounded lifetime, heartbeat, honest "polled" labelling; live panel in Operations.
 - Operations view: audit log with filtering, usage and costs, and a local resource monitor whose recommendation is explicitly advisory.
 - AI Team Intelligence Center: complexity-weighted, sample-aware agent metrics, with rule-based assessments kept separate from measurements (no ranking by task count).
 - Memory context selection: deterministic budgeted retrieval with an explicit exclusion list, and extractive summaries labelled as such.
@@ -67,7 +68,7 @@ External Dependencies:
 Python/npm dependencies installed (@types/node added for the RTL checker). No provider key exists in this environment and no paid request has ever been made. No Arena session was used.
 
 Tests:
-- Passed: 212 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 13 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint.
+- Passed: 219 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 13 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint.
 - Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
 - Pending: Windows/PowerShell, PostgreSQL, Docker, Playwright E2E, pixel-level RTL rendering.
 
@@ -81,7 +82,7 @@ Last Successful Build:
 2026-11-13 13:56 UTC — TypeScript/Vite production build plus RTL checker.
 
 Last Successful Test:
-2026-11-13 14:19 UTC — 212 backend tests and 16 frontend tests.
+2026-11-13 14:24 UTC — 219 backend tests and 20 frontend tests.
 
 Remaining Work:
 - Gated by design: live provider execution behind consent/accounting, real task execution, GitHub push/PR execution, per-user authorization.

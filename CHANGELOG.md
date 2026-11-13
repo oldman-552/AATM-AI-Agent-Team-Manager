@@ -9,6 +9,14 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Server-sent event stream (Part 21 real-time requirement)
+
+- `GET /api/v1/events/stream` streams audit events as they are recorded, with a **resumable `(created_at, id)` cursor**, bounded lifetime, heartbeat, bounded batches and its own database session.
+- **Honest transport**: the build has no message broker, so the server polls the audit table and the `hello` frame says `delivery: "poll"` with a note. The UI label says "near-real-time" for the same reason.
+- **Fixed while testing**: a cursor on `created_at` alone dropped one of two events sharing a timestamp; keyset pagination on `(created_at, id)` fixes it, with a test inserting three identical timestamps.
+- Live panel in the Operations view resumes from the last id on reconnect and backs off on failure; Eventsource auto-reconnect is bypassed because it ignores our cursor.
+- Backend tests 212 → 219; frontend 16 → 20; 646 translated keys ×3.
+
 ### UI render smoke test
 
 - Added a **jsdom render test** that mounts the real application with mocked API responses, clicks through every navigation section, and asserts the main region keeps real content after each swap.

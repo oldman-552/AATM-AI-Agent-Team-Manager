@@ -328,6 +328,10 @@ export type BrowserProfile = {
   credentials_note: string
 }
 
+/** The SSE endpoint lives under the same proxy prefix as the JSON API. */
+export const eventStreamUrl = (lastEventId?: string | null): string =>
+  `/api/v1/events/stream${lastEventId ? `?last_event_id=${encodeURIComponent(lastEventId)}` : ''}`
+
 export type AuditEvent = {
   id: string
   entity_type: string

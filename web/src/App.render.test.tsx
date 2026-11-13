@@ -110,9 +110,39 @@ const responses: Record<string, unknown> = {
 const consoleErrors: string[] = []
 const windowErrors: unknown[] = []
 
+/**
+ * jsdom has no EventSource. This stub records every connection so tests can see
+ * which cursor the panel resumed with, and can emit frames on demand.
+ */
+class FakeEventSource {
+  static instances: FakeEventSource[] = []
+  url: string
+  closed = false
+  private listeners = new Map<string, ((event: MessageEvent) => void)[]>()
+
+  constructor(url: string) {
+    this.url = url
+    FakeEventSource.instances.push(this)
+  }
+
+  addEventListener(type: string, handler: (event: MessageEvent) => void) {
+    this.listeners.set(type, [...(this.listeners.get(type) ?? []), handler])
+  }
+
+  close() { this.closed = true }
+
+  emit(type: string, data: unknown) {
+    for (const handler of this.listeners.get(type) ?? []) {
+      handler({ data: JSON.stringify(data) } as MessageEvent)
+    }
+  }
+}
+
 beforeEach(async () => {
   consoleErrors.length = 0
   windowErrors.length = 0
+  FakeEventSource.instances = []
+  vi.stubGlobal('EventSource', FakeEventSource)
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
     consoleErrors.push(args.map(String).join(' '))
   })

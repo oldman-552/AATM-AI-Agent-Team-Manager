@@ -463,3 +463,19 @@ Two fairness rules are enforced in the data, not by convention:
 ### Assessed (rule-based, labelled)
 
 `assessments[]` entries carry `kind: "rule_based"`, the `basis` metric and threshold, a `recommendation` and a `caveat`. `method.model_generated` is `false` and `method.ranking` is `"none"`: agents are **not** ranked by task count, and no overall ordering is produced.
+
+## Live event stream (server-sent events)
+
+`GET /events/stream?last_event_id&poll_seconds&heartbeat_seconds&max_seconds` — `text/event-stream`.
+
+The specification asks for real-time updates *where appropriate*. This build is local and SQLite-backed with no message broker, so the stream **polls the audit table** and says so in its `hello` frame (`delivery: "poll"`, plus a note stating events are not pushed by a broker). Nothing here is presented as a push feed.
+
+Frames: `hello` (transport contract), `audit` (one event, with `id` for resumption), `more` (a full batch, poll again), `heartbeat`, and `close` (reason + elapsed).
+
+Guarantees:
+
+- **Resumable without gaps or duplicates.** Send `last_event_id` (or the `Last-Event-ID` header) to receive only what you missed. The cursor keys on `(created_at, id)`, because two events can share a timestamp and a timestamp-only cursor silently drops one at the boundary — covered by a test that inserts three events with an identical timestamp.
+- **Bounded lifetime** (`max_seconds`, default 300, max 300). Streams that outlive their client leak sessions and look healthy while dead. The server ends with an explicit `close` frame rather than vanishing.
+- **Heartbeat** every `heartbeat_seconds` (5–60), so an idle connection is distinguishable from a stuck one.
+- **Own database session.** The request session is closed when the response begins, so the generator builds its own factory; a generator holding the request session fails mid-stream.
+- **Bounded batches** of 200 events per poll.

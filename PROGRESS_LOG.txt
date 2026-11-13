@@ -410,3 +410,13 @@ Tests executed: vitest 16 passed (3 render + 7 RTL + 6 i18n); pytest 212 passed;
 Results: Frontend 13 -> 16 tests; closed a verification gap where a crashing view could ship undetected
 Problems: None
 Solutions: None
+
+[2026-11-13 14:24 UTC] Phase 26 — Live event stream (SSE) — Real-time updates, implemented honestly for a local SQLite build
+Task: Real-time updates, implemented honestly for a local SQLite build
+Action performed: Added an SSE audit stream with keyset cursor, bounded lifetime, heartbeat and own session, plus a resuming client panel and 11 tests
+Files created: backend/app/events.py, backend/tests/test_events.py, web/src/EventStreamPanel.tsx, web/src/EventStreamPanel.test.tsx
+Files modified: backend/app/main.py, web/src/api.ts, web/src/OpsView.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 219 passed (7 new event tests, 10.7 s); vitest 20 passed (4 new stream tests); tsc clean; build OK; live curl showed audit frame for a project created mid-stream then a clean close
+Results: Backend 212 -> 219; frontend 16 -> 20; i18n 638 -> 646 keys x3; timestamp-cursor bug found and fixed
+Problems: None
+Solutions: None

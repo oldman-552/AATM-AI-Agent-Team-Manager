@@ -32,6 +32,7 @@ from app.timeline_api import router as timeline_router
 from app.blueprint_api import router as blueprint_router
 from app.hardening import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.recovery import classify_database_error
+from app.events import router as events_router
 from app.intelligence_api import router as intelligence_router
 from app.recovery_api import router as recovery_router
 from app.workspace_api import router as workspace_router
@@ -115,6 +116,7 @@ def create_app(
     app.include_router(timeline_router)
     app.include_router(blueprint_router)
     app.include_router(intelligence_router)
+    app.include_router(events_router)
     app.include_router(recovery_router)
     app.include_router(router)
     app.include_router(workflow_router)

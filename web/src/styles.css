@@ -296,6 +296,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .decision-reasons { margin: 0 0 11px; padding-inline-start: 17px; color: var(--text-soft); font-size: 9px; line-height: 1.6; }
 .candidate-list { display: grid; gap: 6px; }
 .candidate-list .panel-kicker { margin-bottom: 2px; }
+.notification-center { position: relative; }
+.notification-trigger { position: relative; }
+.notification-badge { position: absolute; top: -4px; inset-inline-end: -4px; min-width: 16px; padding: 1px 4px; border-radius: 999px; background: var(--danger, #e5484d); color: #fff; font-size: 8px; font-weight: 700; line-height: 14px; text-align: center; }
+.notification-panel { position: absolute; inset-inline-end: 0; top: calc(100% + 9px); z-index: 40; width: min(360px, calc(100vw - 32px)); padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-raised, var(--surface)); box-shadow: 0 18px 42px rgba(0, 0, 0, .35); }
+.notification-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; font-size: 11px; }
+.notification-list { display: grid; gap: 4px; margin: 0; padding: 0; max-height: 46vh; overflow-y: auto; list-style: none; }
+.notification-item button { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 7px 9px; width: 100%; padding: 8px 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text); text-align: start; cursor: pointer; font: inherit; }
+.notification-item button:hover { background: var(--surface-soft); }
+.notification-item time { grid-column: 2; color: var(--muted); font-size: 9px; }
+.notification-text { font-size: 10.5px; line-height: 1.5; }
+.notification-dot { width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: var(--accent, #8095ff); }
+.notification-item.error .notification-dot { background: var(--danger, #e5484d); }
+.notification-item.warning .notification-dot { background: var(--warning, #f0b429); }
+.notification-item.read { opacity: .58; }
+.notification-item.read .notification-dot { background: var(--muted); }
+
 .bar-chart { display: flex; align-items: end; gap: 6px; min-height: 150px; padding: 10px 2px 0; overflow-x: auto; }
 .bar-chart-column { display: flex; flex: 1 0 26px; flex-direction: column; align-items: center; justify-content: end; gap: 5px; height: 150px; }
 .bar-chart-value { color: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; }

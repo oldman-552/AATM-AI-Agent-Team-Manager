@@ -93,7 +93,8 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 11 — Dashboard and Interface
 
 - [ ] Basic API-backed dashboard and responsive shell — **TESTED** (real backend counts, loading/error/empty states; production build and API smoke passed).
-- [ ] Complete navigation, manager chat, live control, Browser Wall, analytics, notifications, settings — **NOT STARTED**.
+- [ ] Notifications — **TESTED** for derived in-app notifications: pending approvals, failed/rework tasks and expired leases, with server-persisted read state, mark-all, retention and per-language keys. Email/webhook/push delivery remains **NOT STARTED**.
+- [ ] Complete navigation, manager chat, live control, Browser Wall, analytics, notifications, settings — **IN PROGRESS**: navigation covers Dashboard, Projects, Agents, Tasks, Memory, Analytics, Approvals and Providers with a notification bell; manager chat, Browser Wall and a settings page remain **NOT STARTED**.
 - [ ] Live updates through an appropriate backend event mechanism — **NOT STARTED** (dashboard polls current read APIs; no event stream).
 
 ## Phase 12 — Internationalization

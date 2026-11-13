@@ -162,6 +162,19 @@ class TaskTransition(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
 
 
+class NotificationRead(Base):
+    """Persisted read state for derived notifications.
+
+    Notifications themselves are computed from live rows, so only the ids a user
+    has already seen need storing.
+    """
+
+    __tablename__ = "notification_reads"
+
+    notification_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    read_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
 class GithubPullRequest(Base):
     """A recorded, approval-gated pull-request plan.
 

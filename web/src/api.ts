@@ -98,6 +98,27 @@ export type AnalyticsOverview = {
   notes: string[]
 }
 
+export type NotificationItem = {
+  id: string
+  kind: 'approval_pending' | 'task_needs_attention' | 'lease_expired'
+  entity_type: string
+  entity_id: string | null
+  message_key: string
+  data: Record<string, unknown>
+  action_view: 'approvals' | 'tasks'
+  severity: 'attention' | 'warning' | 'error'
+  created_at: string | null
+  read: boolean
+  read_at: string | null
+}
+
+export type NotificationSummary = {
+  notifications: NotificationItem[]
+  unread: number
+  total: number
+  source: string
+}
+
 export type AuditEvent = {
   id: string
   entity_type: string
@@ -418,6 +439,14 @@ export const api = {
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
+  notifications: () => request<NotificationSummary>('/api/v1/notifications'),
+  markNotificationsRead: (ids: string[]) =>
+    request<NotificationSummary & { marked_read: number }>('/api/v1/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
+  markAllNotificationsRead: () =>
+    request<NotificationSummary & { marked_read: number }>('/api/v1/notifications/read-all', { method: 'POST' }),
   analytics: (days = 14) => request<AnalyticsOverview>(`/api/v1/analytics?days=${days}`),
   resources: (configuredMax = 2) => request<ResourceReport>(`/api/v1/system/resources?configured_max=${configuredMax}`),
   checkpoints: (taskId: string) => request<{ task_id: string; checkpoints: TaskCheckpoint[] }>(`/api/v1/tasks/${taskId}/checkpoints`),

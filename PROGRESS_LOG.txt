@@ -210,3 +210,13 @@ Tests executed: Backend pytest 99 passed; frontend vitest 5; tsc --noEmit; vite 
 Results: Plan recorded with linked pending approval, execute returned 409 with a reason, approval moved the plan to approved_not_executed while executed stayed false.
 Problems: The approvals list is wrapped in an approvals key, so the first test indexed the wrapper.
 Solutions: Unwrapped the payload in the test; behaviour of the endpoint was correct.
+
+[2026-11-13 13:22 UTC] Phase 11 — Dashboard and Interface — Evidence-based delivery analytics
+Task: Evidence-based delivery analytics
+Action performed: Implemented and verified analytics derived only from persisted rows
+Files created: backend/app/analytics.py, backend/app/analytics_api.py, backend/tests/test_analytics.py, web/src/AnalyticsView.tsx
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 103 passed; frontend vitest 5; tsc --noEmit; vite build; live analytics smoke with range guards
+Results: Live counts matched stored rows exactly; absent metrics returned null rather than zero.
+Problems: The first assertions assumed an empty database, but startup seeds one Manager agent and an audit event, and an assigned task counts as active.
+Solutions: Corrected the assertions to the real seeded and assigned semantics instead of weakening the analytics.

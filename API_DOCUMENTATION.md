@@ -254,6 +254,15 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Notifications (derived, with persisted read state)
+
+- `GET /notifications` — `{notifications, unread, total, source}`. Each item has `kind`, `message_key` + `data` (for client-side translation), `action_view`, `severity`, `read` and `read_at`.
+- `POST /notifications/read` — `{ids: ["<kind>:<uuid>", ...]}` persists read state (422 for malformed ids).
+- `POST /notifications/read-all` — marks every currently unread derived notification read (idempotent).
+- `DELETE /notifications/read-state?older_than_days=90` — retention for the read-state table.
+
+Notifications are **derived**, never fabricated: pending approvals, tasks in `failed`/`rework_required`, and tasks with an expired lease. Deciding an approval removes its notification because the underlying row no longer needs attention. Messages are returned as translation keys plus data, so the server never hardcodes a language.
+
 ## Analytics (derived from stored rows)
 
 Read-only, no synthetic scores. `days` is bounded to 1–90 (422 otherwise).

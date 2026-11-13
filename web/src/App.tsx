@@ -31,6 +31,7 @@ import { api, type Agent, type AuditEvent, type Project, type Task, type Workflo
 import ApprovalsView from './ApprovalsView'
 import MemoryView from './MemoryView'
 import AnalyticsView from './AnalyticsView'
+import { NotificationCenter } from './components/NotificationCenter'
 import { CheckpointPanel } from './components/CheckpointPanel'
 import { PullRequestPlans } from './components/PullRequestPlans'
 import WorkspacePanel from './components/WorkspacePanel'
@@ -186,6 +187,7 @@ function App() {
             <span className="context-current">{t(view)}</span>
           </div>
           <div className="topbar-actions">
+            <NotificationCenter onNavigate={(target) => setView(target as View)} />
             <div className="api-pill" title={health.data?.database === 'ok' ? t('databaseOnline') : t('disconnected')}>
               <span className={`status-dot ${health.data ? 'online' : health.isLoading ? 'checking' : 'offline'}`} />
               <span>{health.data ? t('connected') : t('disconnected')}</span>

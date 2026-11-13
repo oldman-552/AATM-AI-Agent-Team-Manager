@@ -119,6 +119,16 @@ export type NotificationSummary = {
   source: string
 }
 
+export type AppPreferences = {
+  language: string
+  theme: 'dark' | 'light'
+  page_size: number
+  notification_poll_seconds: number
+  checkpoint_retention: number
+  backup_retention: number
+  updated_at: string | null
+}
+
 export type AuditEvent = {
   id: string
   entity_type: string
@@ -439,6 +449,10 @@ export const api = {
     request<{ transitions: Array<Record<string, unknown>> }>(`/api/v1/tasks/${taskId}/transitions`),
   events: () => request<AuditEvent[]>('/api/v1/events'),
   orchestratorStatus: () => request<OrchestratorStatus>('/api/v1/orchestrator/status'),
+  settings: () => request<{ settings: AppPreferences; defaults: Record<string, unknown>; note: string }>('/api/v1/settings'),
+  updateSettings: (payload: Record<string, string | number>) =>
+    request<{ settings: AppPreferences }>('/api/v1/settings', { method: 'PATCH', body: JSON.stringify(payload) }),
+  resetSettings: () => request<{ settings: AppPreferences }>('/api/v1/settings/reset', { method: 'POST' }),
   notifications: () => request<NotificationSummary>('/api/v1/notifications'),
   markNotificationsRead: (ids: string[]) =>
     request<NotificationSummary & { marked_read: number }>('/api/v1/notifications/read', {

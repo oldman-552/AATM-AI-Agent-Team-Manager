@@ -36,6 +36,7 @@
 - Approval-gated pull-request plans with inert command previews, unsafe-input validation and an `execute` route that always refuses with a reason instead of fabricating success; migration `0008_github_plans`.
 - Evidence-based analytics (counts, throughput, activity, cycle time with sample sizes, review approval rate, rework, approvals) with `null` for absent data and a naive timeline chart.
 - Derived notifications (pending approvals, failed/rework tasks, expired leases) with persisted read state, mark-all, retention, a topbar bell and translated messages; migration `0009_notification_reads`.
-- Backend tests 9 → 110; Vitest resource tests added (5).
+- A real Settings page backed by validated, non-secret preferences (language, theme, page size, notification polling, retention) with reset, export and audit events.
+- Backend tests 9 → 116; Vitest resource tests added (5).
 
 - Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, backup/restore, authentication, and Windows verification remain incomplete. Approval gates record decisions but do not perform the gated operations.

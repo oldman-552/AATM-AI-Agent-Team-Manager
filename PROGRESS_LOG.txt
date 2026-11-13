@@ -220,3 +220,13 @@ Tests executed: Backend pytest 103 passed; frontend vitest 5; tsc --noEmit; vite
 Results: Live counts matched stored rows exactly; absent metrics returned null rather than zero.
 Problems: The first assertions assumed an empty database, but startup seeds one Manager agent and an audit event, and an assigned task counts as active.
 Solutions: Corrected the assertions to the real seeded and assigned semantics instead of weakening the analytics.
+
+[2026-11-13 13:24 UTC] Phase 11 — Dashboard and Interface — Derived notifications with persisted read state
+Task: Derived notifications with persisted read state
+Action performed: Implemented and verified in-app notifications derived from real pending work
+Files created: backend/app/notifications.py, backend/app/notification_api.py, backend/migrations/versions/0009_notification_reads.py, backend/tests/test_notifications.py, web/src/components/NotificationCenter.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md, README.md
+Tests executed: Backend pytest 110 passed; frontend vitest 5; tsc --noEmit; vite build; migration 0009 up/down/re-up; live notification smoke
+Results: Two derived unread items, mark-one dropped unread to 1, and deciding the approval removed its item.
+Problems: The approvals POST returns a wrapped payload and decisions use PATCH, so the first tests used the wrong shapes.
+Solutions: Corrected the tests to the real API contract; behaviour itself was right.

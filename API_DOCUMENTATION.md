@@ -254,6 +254,16 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Preferences (`/settings`)
+
+Non-secret, allow-listed preferences persisted in `app_settings` under `user_preferences`:
+`language` (`en|ar|fa`), `theme` (`dark|light`), `page_size` (`10|20|50|100`), `notification_poll_seconds` (10–600), `checkpoint_retention` (1–500), `backup_retention` (1–100).
+
+- `GET /settings` — current values merged over defaults, plus `defaults` and a boundary note.
+- `PATCH /settings` — partial update; unknown fields are rejected (`extra="forbid"`), so `api_key`, `token` or `password` can never be stored. Changes are audited without values.
+- `POST /settings/reset` — restore defaults (audited).
+- `GET /settings/export` — non-secret settings for a backup.
+
 ## Notifications (derived, with persisted read state)
 
 - `GET /notifications` — `{notifications, unread, total, source}`. Each item has `kind`, `message_key` + `data` (for client-side translation), `action_view`, `severity`, `read` and `read_at`.

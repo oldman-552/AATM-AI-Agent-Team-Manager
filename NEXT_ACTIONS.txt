@@ -1,6 +1,9 @@
 AATM — PRIORITIZED NEXT ACTIONS
 ===============================
 
+COMPLETED — P6 resource-adaptive dispatch cap (2026-11-13 15:48 UTC)
+Result: `AATM_ADAPTIVE_CONCURRENCY` is off by default. When enabled, resource telemetry can only lower the configured `AATM_MAX_CONCURRENCY` per-run dispatch batch; currently running tasks are deducted, no work is claimed when the available budget is zero, and overlapping run requests are serialized within one API process. Status API and Operations UI report the policy. This does not create parallel task execution or a distributed multi-worker semaphore. Backend 253 tests and frontend 20 tests pass.
+
 COMPLETED — P0 safe provider abstraction boundary (2026-11-13 12:50 UTC)
 Result: Offline provider boundary implemented and tested: contracts, credential references, estimate pricing, hard budget guard, five routing policies, provider API/config persistence (Alembic 0002), Providers UI, and 20 new backend tests. Arena remains hard-blocked at adapter and API level; no live provider request or secret handling occurred. Backend 29 tests and frontend 5 tests pass; production build passes.
 
@@ -11,7 +14,7 @@ Expected outcome: A verified live request path with confirmed billing, or a docu
 Do NOT: enable live execution in the HTTP API before the consent/authorization/accounting tests exist; never accept raw keys over HTTP.
 
 COMPLETED — P1 durable orchestrator and crash recovery (2026-11-13 12:57 UTC)
-Result: `backend/app/orchestrator.py` now implements lease-based claims, bounded concurrency, dependency-aware dispatch, exponential backoff with a retry ceiling, expired-lease recovery that survives a process restart, and inspection/recovery endpoints. 15 orchestrator tests pass with injected fake executors; migration 0003 verified up/down. Execution itself remains deliberately unavailable: `DisabledExecutor` refuses to run and no HTTP route can start a run.
+Result: `backend/app/orchestrator.py` now implements lease-based claims, bounded concurrency, dependency-aware dispatch, exponential backoff with a retry ceiling, expired-lease recovery that survives a process restart, and inspection/recovery endpoints. 15 orchestrator tests passed at that milestone; migration 0003 was verified up/down. At that time the default `DisabledExecutor` refused runs; the later Phase 27 slice added a genuinely running, opt-in local subprocess executor while keeping AI/model execution gated.
 
 COMPLETED — P1 execution timeline and cooperative cancellation (2026-11-13 13:50 UTC)
 Result: `backend/app/timeline.py` projects stored history only (transitions, checkpoints, task audits, reviews, approval requests) with per-entry `source` provenance; `backend/app/cancellation.py` implements the two-step request→honour protocol, refuses to rewrite finished work, and is wired into `Orchestrator.run_once` so cancelled tasks are never claimed. 7 new tests (backend 137 → 144); migration 0012 verified live (0011 → 0012 on the running API). UI: inline timeline panel + cancel controls; 476 keys × en/ar/fa.
@@ -54,7 +57,7 @@ Description: Execute the PowerShell install/start/stop/update/uninstall path on 
 Dependencies: Windows host; PostgreSQL server; approved backup design.
 
 P6 (remaining) — Later product phases
-Description: Manager planning loop, agent lifecycle/permissions, persistent Playwright profiles and Browser Wall, approval-gated GitHub push/PR workflow, evidence-based analytics and execution timeline, notifications, cross-platform release packaging.
-Note: project-isolated memory, Git workspaces, cost/resource telemetry and checkpoints are already implemented and tested.
-Dependencies: Verified orchestrator, auth, providers where required.
-Expected outcome: Phased delivery; no feature marked complete without passing tests.
+Description: Consent/accounting before any live paid model request; model-driven Manager and independent worker execution; true parallel and cross-process task scheduling; browser automation; approval-gated GitHub push/PR operations; per-user authorization; hosted CI and release packaging.
+Note: deterministic planning, agent lifecycle/scopes, profile storage/Browser Wall, evidence-based analytics, timelines, notifications, memory, local Git workspaces, budgets/resources, checkpoints and local-only command execution are already implemented to the boundaries documented in `IMPLEMENTATION_STATUS.md`.
+Dependencies: User consent and provider credentials for paid traffic; compliant policy path for Arena; display/Windows/PostgreSQL/Docker/Playwright environments for their respective tests.
+Expected outcome: Phased delivery; no feature marked complete without passing tests and real evidence.

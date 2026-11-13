@@ -10,9 +10,9 @@ The complete product specification is preserved in [`AATM_MASTER_DEVELOPMENT_PRO
 
 | | |
 |---|---|
-| Backend | FastAPI + SQLAlchemy 2 + Alembic — **244 tests** |
+| Backend | FastAPI + SQLAlchemy 2 + Alembic — **253 tests** |
 | Frontend | React 18 + TypeScript + Vite — **20 tests** |
-| Languages | English, Arabic, Persian — **646 keys each**, parity enforced by test |
+| Languages | English, Arabic, Persian — **652 keys each**, parity enforced by test |
 | Database | SQLite by default (WAL enabled); any SQLAlchemy URL via config |
 | Migrations | 13, upgrade/downgrade round-tripped |
 | Layout | RTL verified by a CSS invariant checker (0 physical `left`/`right`) |
@@ -41,7 +41,7 @@ Verify it yourself:
 **Records and workflow**
 - Projects, agents, tasks with a validated state machine, dependency gating, replay-safe idempotency and append-only history.
 - Agent lifecycle states and ten deny-by-default permission scopes, enforced server-side.
-- Durable orchestrator: lease-based claims, bounded concurrency, exponential backoff with a retry ceiling, crash recovery for expired leases.
+- Durable orchestrator: lease-based claims, bounded per-run dispatch batches, exponential backoff with a retry ceiling, crash recovery for expired leases. Task execution is sequential today; true parallel worker scheduling remains open.
 - Cooperative cancellation as a two-step protocol that never rewrites finished work.
 
 **Execution (opt-in, local only)**
@@ -59,6 +59,7 @@ Verify it yourself:
 - AI Team Intelligence Center: complexity-weighted agent metrics where thin samples are flagged, empty metrics are `null` never `0`, and rule-based assessments are kept in separate fields from measurements. No ranking by task count.
 - Live audit stream over SSE with a resumable cursor and its transport labelled honestly as *polled*.
 - Self-healing surface: classified database errors, queue health, and a capability table where only the two genuinely automatic recoveries are marked automatic.
+- Local CPU/memory/disk-based dispatch cap: off by default; when `AATM_ADAPTIVE_CONCURRENCY=1`, it can only reduce the per-run dispatch batch below `AATM_MAX_CONCURRENCY`, subtracts already-running tasks, and reports the applied cap. Tasks in a run remain sequential; this is not a distributed multi-worker semaphore.
 
 **Safety and operations**
 - Approval-gated pull-request plans showing exact commands, never calling the network.
@@ -97,7 +98,7 @@ Interactive docs at `http://127.0.0.1:8000/docs`. Full route reference and reque
 ```
 backend/
   app/            FastAPI routers, domain modules, execution, events
-  tests/          29 test modules, 244 tests
+  tests/          30 test modules, 253 tests
   migrations/     13 Alembic revisions
 web/
   src/            React views, typed API client, i18n resources
@@ -123,7 +124,7 @@ To record progress atomically:
 
 ```bash
 .venv/bin/python scripts/progress_reporter.py event \
-  --phase 'Phase 28 — ...' --task '...' --action '...' \
+  --phase 'Phase 29 — ...' --task '...' --action '...' \
   --activity '...' --tests 'Not run' --results 'Event recorded; no verification claimed'
 ```
 

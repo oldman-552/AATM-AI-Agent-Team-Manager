@@ -1,6 +1,7 @@
 """FastAPI entry point with loopback-oriented security defaults."""
 
 import logging
+import threading
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -52,7 +53,7 @@ def initialize_default_manager(session_factory) -> None:
                 id="manager",
                 name="Manager",
                 role="Manager Agent",
-                description="Central coordinator identity. Provider is unconfigured; task execution is not enabled yet.",
+                description="Central coordinator identity. No AI provider is configured; local command execution requires explicit operator opt-in.",
                 system_instructions="",
                 provider="unconfigured",
                 model=None,
@@ -101,11 +102,14 @@ def create_app(
     app = FastAPI(
         title=settings.app_name,
         version=__version__,
-        description="AATM local-first project and agent management API. Agent execution is not enabled in this foundation build.",
+        description="AATM local-first project and agent management API. Local command execution is opt-in; no model-backed agent execution is exposed.",
         lifespan=lifespan,
     )
     app.state.engine = engine
     app.state.session_factory = session_factory
+    # Serialize orchestrator passes within this API process so their adaptive
+    # in-flight calculation cannot race another local run request.
+    app.state.orchestrator_run_lock = threading.Lock()
 
     app.add_middleware(
         TrustedHostMiddleware,

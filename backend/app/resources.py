@@ -4,10 +4,10 @@ Only standard-library, local measurements are used: CPU load averages, memory
 via ``/proc/meminfo`` (Linux) or ``os.sysconf`` fallbacks, and free disk space
 for the AATM data directory. Nothing is uploaded and no provider is contacted.
 
-Adaptive concurrency is a *recommendation* surfaced to the operator, and it is
-bounded by explicit floors/ceilings. It is not silently applied to running
-orchestrator work: the orchestrator's configured ``max_concurrency`` stays the
-authority until an operator changes it.
+The system resources endpoint exposes a bounded recommendation and never
+changes a run. Separately, the orchestrator can apply a resource-based reduction
+to its dispatch batch when ``AATM_ADAPTIVE_CONCURRENCY`` is explicitly enabled;
+that reduction never exceeds the operator's configured cap.
 """
 
 import os
@@ -152,5 +152,5 @@ def recommend_concurrency(
         "in_flight": in_flight,
         "reasons": reasons,
         "applied_automatically": False,
-        "note": "A recommendation only; the orchestrator keeps its configured max_concurrency until an operator changes it.",
+        "note": "This endpoint is advisory and never changes a run. The orchestrator has a separate explicit opt-in adaptive cap.",
     }

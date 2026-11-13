@@ -3,6 +3,7 @@
 from pathlib import Path
 import os
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +27,8 @@ class Settings(BaseSettings):
     database_url: str = default_database_url()
     host: str = "127.0.0.1"
     port: int = 8000
+    adaptive_concurrency: str = Field(default="0", validation_alias="AATM_ADAPTIVE_CONCURRENCY")
+    max_concurrency: str = Field(default="1", validation_alias="AATM_MAX_CONCURRENCY")
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",

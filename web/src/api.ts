@@ -490,6 +490,21 @@ export type OrchestratorStatus = {
   }
   leases: Array<{ task_id: string; title: string; lease_owner: string | null; lease_expires_at: string | null; lease_expired: boolean }>
   retry_queue: Array<{ task_id: string; title: string; next_attempt_at: string | null }>
+  concurrency: {
+    adaptive_enabled: boolean
+    configured_max: number
+    recommended_max: number | null
+    in_flight: number
+    effective_dispatch_budget: number
+    applied_automatically: boolean
+    reasons: string[]
+    note?: string
+    snapshot?: {
+      cpu_percent: number | null
+      memory_used_ratio: number | null
+      disk_used_ratio: number | null
+    }
+  }
   checked_at: string
   note: string
 }

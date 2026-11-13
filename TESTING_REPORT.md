@@ -1,5 +1,15 @@
 # Testing Report
 
+## 2026-11-13 15:56 UTC — Resource-adaptive dispatch verification
+
+- Backend (15:55 UTC): `cd backend && ../.venv/bin/python -m pytest -o addopts='' -q -p no:cacheprovider` → **253 passed**, one upstream Starlette/httpx deprecation warning.
+- Focused adaptive/resource/orchestrator/executor tests → **51 passed**.
+- Frontend (15:47 UTC): `cd web && npm run verify` → TypeScript clean, **20 Vitest tests passed**, production build passed, RTL source/bundle checker passed (zero physical left/right CSS declarations).
+- Added tests for default-off behavior, `.env` configuration loading, malformed max cap failing closed to 1, pressured-resource reduction, running-slot subtraction to zero, zero-budget no-claim, run endpoint applying the opt-in cap, overlapping run rejection, and status reporting.
+- The cap only reduces a per-run dispatch batch; tasks remain sequential and locking is per API process. True parallel workers and cross-process coordination are still open, not claimed as complete.
+
+Historical verification entries below remain chronological; their old counts and runtime descriptions are not current-state claims.
+
 ## 2026-11-13 15:35 UTC — Current full-stack verification
 
 - Backend (15:35 UTC): `cd backend && ../.venv/bin/python -m pytest -o addopts='' -q -p no:cacheprovider` → **244 passed**, one upstream Starlette/httpx deprecation warning.

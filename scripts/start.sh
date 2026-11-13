@@ -34,6 +34,9 @@ start_service() {
 start_service backend .venv/bin/python -m uvicorn app.main:app --app-dir backend --host "$HOST" --port "$PORT"
 (
   cd "$ROOT_DIR/web"
-  AATM_API_TARGET="http://127.0.0.1:${PORT}" start_service frontend ./node_modules/.bin/vite --host "$UI_HOST" --port "$UI_PORT"
+  # The auth token (if enabled) is read by the Vite process and injected into
+  # proxied /api requests; it never reaches the browser bundle.
+  AATM_API_TARGET="http://127.0.0.1:${PORT}" AATM_AUTH_TOKEN="${AATM_AUTH_TOKEN:-}" \
+    start_service frontend ./node_modules/.bin/vite --host "$UI_HOST" --port "$UI_PORT"
 )
 printf '\nAATM UI:  http://%s:%s\nAATM API: http://%s:%s/api/v1/health\nStop with: scripts/stop.sh\n' "$UI_HOST" "$UI_PORT" "$HOST" "$PORT"

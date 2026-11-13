@@ -19,6 +19,9 @@ Copy `.env.example` to `.env` only if you need to override defaults. `.env` is i
 
 For PostgreSQL, install the included psycopg driver and use a SQLAlchemy URL such as `postgresql+psycopg://user:password@host/database`; keep secret values in a protected local environment and do not log them. PostgreSQL has not been integration-tested yet.
 
+| `AATM_AUTH_MODE` | `off` | `off` or `token`. In `token` mode every `/api/v1` request needs a bearer token. |
+| `AATM_AUTH_TOKEN` | unset | The local bearer token. Required when `AATM_AUTH_MODE=token`; the server refuses to start otherwise. Never commit it. |
+| `AATM_WORKSPACES_ROOT` | `$AATM_HOME/workspaces` | Root directory for per-project Git workspaces. Paths are validated to stay inside it. |
 | `AATM_MODEL_PRICING` | built-in conservative default | JSON object of local cost estimates, for example `{"<model>": {"input_per_million_usd": 3.0, "output_per_million_usd": 15.0}}`. These are **estimates** used for budget enforcement, not official or confirmed prices. |
 
 ## Provider settings
@@ -33,6 +36,16 @@ Provider configuration, routing, budgets, and usage are managed through the API/
 ### Live execution is intentionally not exposed
 
 `GET /api/v1/providers*` and `POST /api/v1/providers/route` never contact a provider. The Anthropic adapter can execute only from in-process code that passes an explicit authorization flag; `load_settings()` forces `live_requests_allowed=False` for the HTTP application. Enabling real provider traffic is a deliberate future change that must add authorization, consent UX, and verified budget tests first.
+
+### Enabling local authentication
+
+```bash
+export AATM_AUTH_MODE=token
+export AATM_AUTH_TOKEN="$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')"
+scripts/start.sh   # start.sh passes the token to Vite so the proxy can inject it
+```
+
+Direct API calls then need `-H "Authorization: Bearer $AATM_AUTH_TOKEN"`. The UI keeps working because the token never leaves the Node proxy process. A local reverse proxy or port-forward that exposes the API should always run in token mode.
 
 ### Billing reality
 

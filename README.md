@@ -16,6 +16,7 @@ AATM is a local-first AI engineering command center in early development. The co
 - Durable orchestrator: lease-based claims, bounded concurrency, backoff retries, crash recovery, and inspection/recovery endpoints — with execution disabled by default.
 - Independent QA reviews (reviewer separation + concrete checks) and audited approval gates for paid/deploy/merge/delete operations (decisions recorded, actions not executed).
 - Isolated local Git workspaces per project with branch creation and read-only status (no merge/push/fetch).
+- Optional local bearer-token authentication plus CSRF-hardened mutations; the token is injected by the Vite proxy and never reaches the browser.
 - Ubuntu shell and Windows PowerShell dependency/start/stop/update/uninstall entry points (Windows execution remains unverified here).
 - Atomic progress event/status writer and a five-minute heartbeat command.
 

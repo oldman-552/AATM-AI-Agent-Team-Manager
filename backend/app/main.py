@@ -9,6 +9,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app import __version__
 from app.api import router
+from app.auth import AuthConfig, LocalAuthMiddleware
 from app.core.config import settings
 from app.db import build_engine, make_session_factory
 from app.migrate import upgrade_database
@@ -96,6 +97,8 @@ def create_app(
     app.include_router(orchestrator_router)
     app.include_router(quality_router)
     app.include_router(workspace_router)
+    resolved_origins = allowed_origins or settings.cors_origins
+    app.add_middleware(LocalAuthMiddleware, config=AuthConfig.from_settings(resolved_origins))
 
     @app.get("/", include_in_schema=False)
     def root() -> dict[str, str]:

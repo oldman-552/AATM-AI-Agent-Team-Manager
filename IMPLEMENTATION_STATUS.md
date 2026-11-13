@@ -107,7 +107,7 @@ This checklist reports repository evidence, not the intended product vision. Fea
 ## Phase 13 — Reliability and Security
 
 - [ ] Input validation and local-host/CORS baseline — **TESTED** (Trusted Host rejects unknown hosts with 400; hostile origins receive no CORS allow header; provider schemas reject unknown fields and raw credentials; task/review/approval payloads are validated with length bounds).
-- [ ] Authentication/authorization and granular permission enforcement — **NOT STARTED**.
+- [ ] Authentication/authorization and granular permission enforcement — **IN PROGRESS / TESTED for the local baseline**: opt-in single-user bearer-token auth (constant-time comparison, fail-closed configuration, token never in the browser bundle), cross-origin mutation rejection, and dedicated tests. User accounts, roles, per-project permissions and audit attribution to a principal remain **NOT STARTED**.
 - [ ] Backup/restore, crash recovery, performance tests — **NOT STARTED**.
 - [ ] Sensitive-data protection, complete auditability, secure credential vault — **NOT STARTED**.
 

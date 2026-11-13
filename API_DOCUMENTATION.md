@@ -6,6 +6,12 @@ This API implements the Phase 1 data foundation plus an **offline** provider bou
 
 OpenAPI schema and interactive docs are available at `/openapi.json` and `/docs` when the backend is running.
 
+## Authentication
+
+Default mode is `off`: requests from local tooling work without credentials, but any mutating request carrying a foreign `Origin` is rejected with 403 (CSRF hardening).
+
+With `AATM_AUTH_MODE=token`, every `/api/v1` request except `GET /api/v1/health` requires `Authorization: Bearer <AATM_AUTH_TOKEN>`; missing or wrong tokens return 401 with `WWW-Authenticate: Bearer`. Tokens are compared in constant time and never appear in responses. The Vite dev proxy injects the header server-side when `AATM_AUTH_TOKEN` is present in its environment, so the browser bundle carries no secret.
+
 ## Conventions
 
 - Base path: `/api/v1`.

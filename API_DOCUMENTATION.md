@@ -158,9 +158,9 @@ Returns the configured executor (and its refusal reason), counts (`running`, `wa
 
 ### `POST /orchestrator/run`
 
-Runs one orchestrator pass. Returns **409** unless `AATM_EXECUTION_ENABLED` is `1`, `true`, `yes`, or `on`. When enabled, only a command named by a task's `run:<name>` acceptance criterion can run; its argument vector must be present in the human-committed `<workspace>/.aatm/exec.json`. Commands run without a shell, under the program allow-list, inside the workspace, with a minimal environment, timeout, output cap, and process-group teardown. `AATM_EXECUTION_PROGRAMS` may narrow the built-in allow-list but cannot widen it.
+Runs one orchestrator pass. Returns **409** unless `AATM_EXECUTION_ENABLED` is `1`, `true`, `yes`, or `on`, or when another API process holds the database-wide run lock. When enabled, only a command named by a task's `run:<name>` acceptance criterion can run; its argument vector must be present in the human-committed `<workspace>/.aatm/exec.json`. Commands run without a shell, under the program allow-list, inside the workspace, with a minimal environment, timeout, output cap, and process-group teardown. `AATM_EXECUTION_PROGRAMS` may narrow the built-in allow-list but cannot widen it.
 
-`AATM_MAX_CONCURRENCY` sets the per-run dispatch ceiling (integer 1–20, default 1; invalid values fall back to 1). `AATM_ADAPTIVE_CONCURRENCY` is a separate opt-in (default off). When enabled, local CPU/memory/disk sampling can lower the dispatch batch, never raise the configured cap; recommendations have a four-task ceiling and subtract already-running tasks. One API process serializes run requests. This is a per-process guard, not a distributed multi-worker semaphore; tasks within a single run currently execute sequentially.
+`AATM_MAX_CONCURRENCY` sets the per-run dispatch ceiling (integer 1–20, default 1; invalid values fall back to 1). `AATM_ADAPTIVE_CONCURRENCY` is a separate opt-in (default off). When enabled, local CPU/memory/disk sampling can lower the dispatch batch, never raise the configured cap; recommendations have a four-task ceiling and subtract already-running tasks. A process-local mutex provides a fast guard, and an expiring database lock serializes run requests across API processes sharing that database. With a dispatch cap greater than one, executor calls for tasks in different projects run in a bounded thread pool; tasks in the same project share a workspace and are excluded from one batch. Database writes and periodic lease renewals stay on the orchestrator thread. Renewals prevent long-running active tasks from being recovered as abandoned. This is database-wide run serialization, not distributed task-level scheduling; independent worker processes and per-worktree isolation remain open.
 
 ### `POST /orchestrator/recover`
 
@@ -188,7 +188,7 @@ Review history for one task. `GET /reviews?limit=100` lists recent reviews acros
   "reviewer_agent_id": "<agent-id>",
   "verdict": "approved",
   "summary": "Independently verified.",
-  "checks": [{"check": "unit tests", "result": "51 passed"}],
+  "checks": [{"check": "unit tests", "result": "passed"}],
   "idempotency_key": "review-1"
 }
 ```

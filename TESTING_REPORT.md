@@ -1,12 +1,59 @@
 # Testing Report
 
+## 2026-11-13 17:03 UTC — Current branch and full-prompt review
+
+- PR #7 remains open; latest hosted CI run `43468376686` passed backend, frontend and PostgreSQL migration/run-lock jobs.
+- Local current suite: 261 backend passed plus 1 PostgreSQL-only skipped test; 20 frontend tests and typecheck/build/RTL checks passed.
+- Full master prompt is preserved at `AATM_MASTER_DEVELOPMENT_PROMPT.md` (1,505 lines, 27 parts; product roadmap lists 14 phases). The implementation checklist has 75 rows: 45 clearly complete, 28 mixed/partial, 2 unclear; half-credit for partial rows gives 78.67%, rounded to about 80%. This is not a test pass rate.
+- The next unblocked development focus is distributed worker/worktree scheduling. Paid model traffic, compliant Arena access, and unprovided Windows/visual environments remain gated or unavailable.
+
+## 2026-11-13 16:59 UTC — Refreshed GitHub Actions
+
+- CI run `43468002519` passed on PR revision `e3f8751`: backend tests, frontend verification, and PostgreSQL 16 migration/run-lock smoke.
+- The workflow uses the current Node 24-compatible major versions of checkout, setup-python, and setup-node actions.
+- Only the `ubuntu-latest` runner-image migration notice remains; no action-runtime deprecation warning appeared in this run.
+
+## 2026-11-13 16:57 UTC — Hosted PostgreSQL verification
+
+- PR CI run `43467593617` completed successfully: backend suite, frontend verification, and the PostgreSQL 16 migration/run-lock smoke all passed.
+- PostgreSQL job applied all Alembic migrations and verified cross-session lock acquire/contention/release. This is a PostgreSQL smoke, not full application/backup integration.
+- Updated Actions to Node 24-compatible major versions after GitHub warned the previous Action majors were running under forced Node 24. The refreshed workflow has not run yet.
+
+## 2026-11-13 16:55 UTC — PostgreSQL integration CI job
+
+- Added a conditional PostgreSQL smoke test that applies all migrations and exercises shared database-lock acquisition/contention/release. Extended GitHub Actions with a PostgreSQL 16 service job.
+- Local backend suite: **261 passed, 1 skipped** (the skip requires the PostgreSQL service); focused orchestration/run-lock/executor/cancellation suite: **54 passed, 1 skipped**. Existing upstream Starlette/httpx warning remains.
+- PostgreSQL was not available locally, so the integration is not claimed as verified. The earlier backend/frontend CI jobs passed on `c04cea9`; the newly added PostgreSQL job will run after this update is pushed.
+
+## 2026-11-13 16:44 UTC — Database-wide run serialization
+
+- Added migration `0014_orchestrator_run_lock` and a conditional-update singleton lease shared by API processes using the same database. Runs are rejected with 409 while another process owns the lock; active long runs renew both task leases and the database run lock from the orchestrator thread. Owner checks, expiry takeover, cross-session exclusion, API rejection, and successful-release behavior are covered by tests. Alembic `0014` upgrade, downgrade to `0013`, and re-upgrade were also exercised on a temporary SQLite database.
+- Backend full suite: **261 passed**; focused run-lock/orchestrator/executor/cancellation suite: **54 passed**. One upstream Starlette/httpx deprecation warning.
+- Frontend verify remains green from 16:34 UTC: **20 tests**, typecheck, production build, RTL checker.
+- GitHub Actions workflow is locally parsed and has backend/frontend jobs; the first hosted run remains pending.
+
+## 2026-11-13 16:33 UTC — Lease renewal and CI foundation
+
+- Backend: full suite → **258 passed**, one upstream Starlette/httpx deprecation warning; focused orchestrator/executor/cancellation suite → **51 passed**.
+- Frontend (16:32 UTC, repeated at 16:34 after the locale-copy correction): `npm ci && npm run verify` → TypeScript clean, **20 Vitest tests passed**, production build and RTL checks passed.
+- Added timed lease renewals while executors run. The orchestrator session performs heartbeats on the control thread; a file-backed SQLite regression test lets a one-second lease cross its original deadline and verifies recovery does not steal the live task.
+- Added `.github/workflows/ci.yml` with separate backend and frontend jobs on push, pull request and manual dispatch. Locally parsed the workflow YAML and verified its job structure; no hosted run has occurred yet.
+
+## 2026-11-13 16:21 UTC — Bounded parallel execution
+
+- Backend: `cd backend && ../.venv/bin/python -m pytest -o addopts='' -q -p no:cacheprovider` → **257 passed**, one upstream Starlette/httpx deprecation warning.
+- Focused orchestrator/executor/cancellation run → **50 passed**.
+- Frontend (16:16 UTC): `cd web && npm run verify` → TypeScript clean, **20 Vitest tests passed**, production build passed, RTL source/bundle checks passed.
+- Regression tests prove real overlap, worker-session isolation, single-slot bounded worker execution, same-project workspace exclusion, and failure isolation between sibling tasks.
+- This code is on the current Arena branch; it has not been merged into `main`.
+
 ## 2026-11-13 15:56 UTC — Resource-adaptive dispatch verification
 
 - Backend (15:55 UTC): `cd backend && ../.venv/bin/python -m pytest -o addopts='' -q -p no:cacheprovider` → **253 passed**, one upstream Starlette/httpx deprecation warning.
 - Focused adaptive/resource/orchestrator/executor tests → **51 passed**.
 - Frontend (15:47 UTC): `cd web && npm run verify` → TypeScript clean, **20 Vitest tests passed**, production build passed, RTL source/bundle checker passed (zero physical left/right CSS declarations).
 - Added tests for default-off behavior, `.env` configuration loading, malformed max cap failing closed to 1, pressured-resource reduction, running-slot subtraction to zero, zero-budget no-claim, run endpoint applying the opt-in cap, overlapping run rejection, and status reporting.
-- The cap only reduces a per-run dispatch batch; tasks remain sequential and locking is per API process. True parallel workers and cross-process coordination are still open, not claimed as complete.
+- The cap reduces a per-run dispatch batch. When greater than one, tasks from different projects execute concurrently using isolated worker ORM sessions; same-project tasks are skipped from one batch to protect their shared workspace. Workflow writes and periodic lease heartbeats remain on the orchestrator thread. Long-running task lease renewal is tested. Run locking is per API process; cross-process coordination remains open.
 
 Historical verification entries below remain chronological; their old counts and runtime descriptions are not current-state claims.
 

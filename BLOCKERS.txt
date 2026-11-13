@@ -38,15 +38,15 @@ AATM BLOCKERS AND ENVIRONMENT LIMITATIONS
    Current status: GATED — by design, not a defect.
 
 Additional verification limits:
-- PostgreSQL is configurable and the psycopg driver is included, but there is no PostgreSQL server available here and its integration is untested.
+- PostgreSQL is configurable and the psycopg driver is included. A PostgreSQL 16 CI smoke has verified the migrations and database run-lock contention, but full application integration, performance testing, and PostgreSQL backup/restore remain unverified; no local PostgreSQL server is available.
 - The full UI has not had browser-based visual/E2E testing; only production build, Vitest resource tests, and HTTP/Vite-proxy smoke checks were run. Playwright is not installed in this environment.
 - Visual RTL layout (Arabic/Persian alignment, spacing, mixed technical content, dates and numbers) is unverified; only translation completeness, parity and direction are unit-tested.
 
-5. Real task execution is intentionally not wired to a provider yet.
-   Date detected: 2026-11-13
-   Affected feature: End-to-end task execution producing genuine agent output.
-   Technical cause: `DisabledExecutor` is the default and the HTTP app exposes no run route, so no task can execute. Wiring a provider requires the consent/authorization/accounting surface from blocker 4.
-   Attempts to resolve it: Orchestrator mechanics (leases, retries, recovery) and durable checkpoints are implemented and tested with injected fake executors; execution itself is deliberately absent.
-   Required intervention: Explicit user authorization for paid provider usage plus a key supplied via `env:`/keyring, then build the consent surface first.
-   Workaround: All local-first platform features (memory, workspaces, QA, checkpoints, backup) work without execution.
-   Current status: GATED — by design, not a defect.
+5. Model-backed agent execution is intentionally gated; local command execution is implemented.
+   Date updated: 2026-11-13
+   Affected feature: Tasks that use a language model to plan, reason, or produce agent output.
+   Technical cause: `LocalProcessExecutor` can run a named, allow-listed local command when `AATM_EXECUTION_ENABLED=1`, but the HTTP application's provider path remains hard-disabled. There is no per-request consent/accounting flow, provider-tokenizer accounting, or confirmed-billing reconciliation.
+   Attempts to resolve it: Implemented and tested the opt-in local subprocess executor, cancellation, durable leases, periodic heartbeats, bounded parallel dispatch, and database-wide API run serialization. No live provider call was made.
+   Required intervention: Explicit authorization for paid provider use, an authentication/consent design, and a key supplied only via `env:` or the OS keyring; then verify estimate display, token accounting and billing reconciliation before enabling any live request.
+   Workaround: Use local allow-listed commands for genuine non-model task execution; continue offline with deterministic planning and approvals.
+   Current status: GATED — model execution remains disabled by design.

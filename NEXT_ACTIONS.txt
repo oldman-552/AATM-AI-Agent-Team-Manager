@@ -1,8 +1,20 @@
 AATM — PRIORITIZED NEXT ACTIONS
 ===============================
 
+COMPLETED — PostgreSQL migration/run-lock CI smoke (2026-11-13 16:57 UTC)
+Result: PostgreSQL 16 CI service applied all migrations and passed shared database-lock acquisition/contention/release. The test is skipped locally when `AATM_TEST_POSTGRES_URL` is absent, so full PostgreSQL application integration and backup/restore remain unverified. Upgraded GitHub Actions to Node 24-compatible major versions; backend, frontend, and PostgreSQL jobs passed on revision `f52ed89`.
+
+COMPLETED — P6 database-wide orchestrator run lock (2026-11-13 16:43 UTC)
+Result: Migration 0014 adds a singleton expiring lock. API run requests sharing a database now serialize across processes; owner-conditional renewal/release, expiry takeover, and migration 0014 upgrade/downgrade/re-upgrade are tested. The orchestrator renews the run lock alongside task leases from its primary thread. This is a global API-run guard, not a distributed task worker pool. Verification: 261 backend tests; 54 focused orchestration/execution/cancellation/lock tests; frontend verify remains green (20 tests, typecheck, build and RTL).
+
+COMPLETED — P6 lease heartbeats and CI scaffold (2026-11-13 16:33 UTC)
+Result: The orchestrator renews still-owned leases periodically while execution futures are active, using its primary database session; a regression test proves a one-second lease is not recovered during a live run. Added a GitHub Actions workflow with separate backend and frontend jobs on push/PR/manual dispatch. Workflow YAML/job structure parsed locally; hosted CI has not run yet. Verification: 258 backend tests, 20 frontend tests, typecheck/build/RTL checks passed.
+
+COMPLETED — P6 bounded parallel task execution (2026-11-13 16:21 UTC)
+Result: When the effective cap exceeds one, independent tasks from different projects execute in a bounded thread pool. Each worker loads its own ORM session; task/workflow DB changes stay on the orchestrator thread. Same-project tasks are excluded from the same batch to protect shared workspaces. The opt-in adaptive cap can only reduce `AATM_MAX_CONCURRENCY`; run-request serialization remains per API process, not distributed. Verification after lease heartbeat addition: 258 backend tests and frontend verify (20 tests, typecheck, production build, RTL checker) passed.
+
 COMPLETED — P6 resource-adaptive dispatch cap (2026-11-13 15:48 UTC)
-Result: `AATM_ADAPTIVE_CONCURRENCY` is off by default. When enabled, resource telemetry can only lower the configured `AATM_MAX_CONCURRENCY` per-run dispatch batch; currently running tasks are deducted, no work is claimed when the available budget is zero, and overlapping run requests are serialized within one API process. Status API and Operations UI report the policy. This does not create parallel task execution or a distributed multi-worker semaphore. Backend 253 tests and frontend 20 tests pass.
+Result: `AATM_ADAPTIVE_CONCURRENCY` is off by default. When enabled, resource telemetry can only lower the configured `AATM_MAX_CONCURRENCY` per-run dispatch batch; currently running tasks are deducted, no work is claimed when the available budget is zero, and overlapping run requests are serialized within one API process. Status API and Operations UI report the policy. Parallel execution was not part of that earlier verification milestone; see the later bounded parallel execution item above.
 
 COMPLETED — P0 safe provider abstraction boundary (2026-11-13 12:50 UTC)
 Result: Offline provider boundary implemented and tested: contracts, credential references, estimate pricing, hard budget guard, five routing policies, provider API/config persistence (Alembic 0002), Providers UI, and 20 new backend tests. Arena remains hard-blocked at adapter and API level; no live provider request or secret handling occurred. Backend 29 tests and frontend 5 tests pass; production build passes.
@@ -57,7 +69,7 @@ Description: Execute the PowerShell install/start/stop/update/uninstall path on 
 Dependencies: Windows host; PostgreSQL server; approved backup design.
 
 P6 (remaining) — Later product phases
-Description: Consent/accounting before any live paid model request; model-driven Manager and independent worker execution; true parallel and cross-process task scheduling; browser automation; approval-gated GitHub push/PR operations; per-user authorization; hosted CI and release packaging.
+Description: Consent/accounting before any live paid model request; model-driven Manager and independent worker execution; distributed worker scheduling and worktree isolation for same-project tasks; browser automation; approval-gated GitHub push/PR operations; per-user authorization; distributed CI coverage for Windows and release packaging.
 Note: deterministic planning, agent lifecycle/scopes, profile storage/Browser Wall, evidence-based analytics, timelines, notifications, memory, local Git workspaces, budgets/resources, checkpoints and local-only command execution are already implemented to the boundaries documented in `IMPLEMENTATION_STATUS.md`.
 Dependencies: User consent and provider credentials for paid traffic; compliant policy path for Arena; display/Windows/PostgreSQL/Docker/Playwright environments for their respective tests.
 Expected outcome: Phased delivery; no feature marked complete without passing tests and real evidence.

@@ -3,13 +3,16 @@
 Design guarantees (all verified by tests):
 
 * **No provider coupling.** Execution happens through an injectable
-  ``TaskExecutor`` protocol. The default executor refuses to run, and tests use
-  a fake executor. Nothing here contacts a model, browser or shell.
+  ``TaskExecutor`` protocol. The default executor refuses to run; the opt-in
+  local executor is supplied by the HTTP adapter, not constructed here.
 * **Leases, not lock-in-process.** A claim writes ``lease_owner`` and
   ``lease_expires_at`` so a crashed process cannot permanently own a task.
-* **Bounded dispatch.** ``max_concurrency`` caps claims in one run; task execution
-  is sequential today. The HTTP adapter serializes run requests within one app
-  process. This is not a distributed semaphore or parallel worker pool.
+* **Bounded parallel dispatch.** ``max_concurrency`` caps claims in one run.
+  Executor calls use a bounded thread pool (one worker at a cap of one); only a
+  cap above one allows parallel task execution. Workflow/database writes and
+  periodic lease renewals stay on the orchestrator thread. The HTTP adapter
+  serializes run requests within one app process; this is not a distributed
+  multi-process semaphore.
 * **Crash recovery.** ``recover_expired_leases`` reconciles tasks whose lease
   expired: the task returns to ``assigned`` and the attempt is recorded, so a
   kill -9 mid-run cannot leave work stuck in ``running`` forever.
@@ -20,12 +23,13 @@ Design guarantees (all verified by tests):
   stays ``failed`` for human review.
 """
 
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Protocol
+from typing import Callable, Protocol
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import select, update
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.audit import add_event
 from app.cancellation import honour_all as honour_cancellations
@@ -101,6 +105,7 @@ class OrchestratorConfig:
     max_retries: int = MAX_RETRIES
     backoff_base_seconds: int = BACKOFF_BASE_SECONDS
     now: datetime | None = None
+    heartbeat_callback: Callable[[], None] | None = None
 
 
 @dataclass
@@ -301,7 +306,27 @@ class Orchestrator:
         # Zero is meaningful for the opt-in adaptive policy: inspect/recover but
         # dispatch nothing when all recommended slots are occupied.
         budget = max(0, self.config.max_concurrency)
-        for task in self._ready_candidates(db, now)[:budget]:
+        dispatch: list[Task] = []
+        claimed_projects: set[str] = set()
+        for task in self._ready_candidates(db, now):
+            if len(dispatch) >= budget:
+                break
+            # Tasks may share a project dispatch slot only when their executor
+            # can prove that each gets a separate working directory. Otherwise
+            # project-level serialization is the safe default.
+            dispatch_group = getattr(self.executor, "dispatch_group", None)
+            try:
+                workspace_key = dispatch_group(task) if callable(dispatch_group) else (task.project_id or f"task:{task.id}")
+            except Exception:
+                workspace_key = task.project_id or f"task:{task.id}"
+            if workspace_key in claimed_projects:
+                report.skipped.append({"task_id": task.id, "reason": "another task from this project is in the same dispatch batch"})
+                continue
+            claimed_projects.add(workspace_key)
+            dispatch.append(task)
+
+        claimed: list[tuple[Task, int]] = []
+        for task in dispatch:
             if not claim_task(
                 db,
                 task,
@@ -312,36 +337,117 @@ class Orchestrator:
                 report.skipped.append({"task_id": task.id, "reason": "not claimable"})
                 continue
             report.started.append(task.id)
-            attempt = int(task.retry_count or 0) + 1
-            # Commit the claim before running the executor. A long subprocess run
-            # must not hold an open write transaction: on SQLite that blocks every
-            # other writer, including the operator's cancel request, which then
-            # fails with "database is locked" and the task cannot be stopped.
-            db.commit()
+            claimed.append((task, int(task.retry_count or 0) + 1))
+
+        if not claimed:
+            db.flush()
+            return report
+
+        # Commit all leases before starting any executor. No database write lock
+        # is held during subprocess work, so cancellation and other local requests
+        # can proceed. The main Session remains confined to this thread.
+        db.commit()
+        # Worker threads each load their own ORM instance/session. The main
+        # session is never shared across threads; workflow/database writes,
+        # including lease heartbeats, stay on the orchestrator thread.
+        worker_factory = sessionmaker(bind=db.get_bind(), autoflush=False, expire_on_commit=False)
+
+        def execute_in_worker(task_id: str) -> ExecutionResult:
+            with worker_factory() as worker_db:
+                worker_task = worker_db.get(Task, task_id)
+                if worker_task is None:
+                    raise LookupError("Claimed task vanished before execution.")
+                return self.executor(worker_task)
+
+        outcomes_by_id: dict[str, ExecutionResult | Exception] = {}
+        runnable: list[tuple[Task, int]] = []
+        prepare_task = getattr(self.executor, "prepare_task", None)
+        for task, attempt in claimed:
             try:
-                result = self.executor(task)
-            except ExecutionCancelled:
+                if callable(prepare_task):
+                    prepare_task(task)
+                runnable.append((task, attempt))
+            except Exception as exc:
+                outcomes_by_id[task.id] = exc
+
+        if runnable:
+            # Filesystem/Git preparation above is serial on the control thread.
+            # Renew just-prepared leases before starting their worker threads.
+            expires = utc_now() + timedelta(seconds=max(1, self.config.lease_seconds))
+            for task, _attempt in runnable:
+                db.execute(
+                    update(Task)
+                    .where(
+                        Task.id == task.id,
+                        Task.state == "running",
+                        Task.lease_owner == self.config.owner,
+                    )
+                    .values(lease_expires_at=expires)
+                )
+            db.commit()
+            if self.config.heartbeat_callback is not None:
+                self.config.heartbeat_callback()
+
+            with ThreadPoolExecutor(max_workers=min(budget, len(runnable)), thread_name_prefix="aatm-task") as pool:
+                pending = {
+                    pool.submit(execute_in_worker, task.id): task.id
+                    for task, _attempt in runnable
+                }
+                heartbeat_interval = max(0.1, max(1, self.config.lease_seconds) / 3)
+                while pending:
+                    completed, _ = wait(pending, timeout=heartbeat_interval, return_when=FIRST_COMPLETED)
+                    for future in completed:
+                        task_id = pending.pop(future)
+                        try:
+                            outcomes_by_id[task_id] = future.result()
+                        except Exception as exc:
+                            outcomes_by_id[task_id] = exc
+
+                    if pending:
+                        # Long-running work must not be mistaken for a crashed
+                        # worker. Renew only leases still owned and running; never
+                        # overwrite a lease another process has recovered/reclaimed.
+                        expires = utc_now() + timedelta(seconds=max(1, self.config.lease_seconds))
+                        for task_id in pending.values():
+                            db.execute(
+                                update(Task)
+                                .where(
+                                    Task.id == task_id,
+                                    Task.state == "running",
+                                    Task.lease_owner == self.config.owner,
+                                )
+                                .values(lease_expires_at=expires)
+                            )
+                        db.commit()
+                        if self.config.heartbeat_callback is not None:
+                            self.config.heartbeat_callback()
+
+        # Preserve claim-order reporting, independent of completion order.
+        outcomes = [outcomes_by_id[task.id] for task, _attempt in claimed]
+
+        for (task, attempt), outcome in zip(claimed, outcomes, strict=True):
+            if isinstance(outcome, ExecutionCancelled):
                 # Honour the request through the validated workflow rather than
                 # marking a failure; a cancelled task is not a broken one.
                 report.cancelled.extend(_honour_single_cancel(db, task))
                 continue
-            except ExecutionOutcomeError as exc:
-                self._record_failure(db, task, config=self.config, message=str(exc), attempt=attempt, now=now)
+            if isinstance(outcome, ExecutionOutcomeError):
+                self._record_failure(db, task, config=self.config, message=str(outcome), attempt=attempt, now=now)
                 report.failed.append(task.id)
                 continue
-            except Exception as exc:  # executor bugs must not corrupt workflow state
+            if isinstance(outcome, Exception):  # executor bugs must not corrupt workflow state
                 self._record_failure(
                     db,
                     task,
                     config=self.config,
-                    message=f"Executor error: {type(exc).__name__}",
+                    message=f"Executor error: {type(outcome).__name__}",
                     attempt=attempt,
                     now=now,
                 )
                 report.failed.append(task.id)
                 continue
 
-            if not (result.evidence or "").strip():
+            if not (outcome.evidence or "").strip():
                 self._record_failure(
                     db,
                     task,
@@ -358,8 +464,8 @@ class Orchestrator:
                 task,
                 target_state="completed",
                 idempotency_key=f"complete-{task.id}-attempt-{attempt}",
-                note=result.evidence,
-                output=result.output,
+                note=outcome.evidence,
+                output=outcome.output,
             )
             release_lease(task)
             task.next_attempt_at = None

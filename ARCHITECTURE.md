@@ -16,7 +16,7 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 
 ## Current modules
 
-1. **Web UI** — React + TypeScript + Vite, TanStack Query, i18next, relative typed API client. Current functional views: Dashboard, Projects, Agents, Control center, Tasks (with workflow actions, review forms, resume points, execution timeline and cancellation), Memory, Analytics, Browsers, Approvals, Settings, Providers (offline configuration, routing dry run, budgets), and a per-project workspace panel. English/Arabic/Persian resources with 511 keys each and a Vitest parity test; language selection persists; Arabic/Persian set `dir=rtl`.
+1. **Web UI** — React + TypeScript + Vite, TanStack Query, i18next, relative typed API client. Current functional views: Dashboard, Projects, Project builder, Agents, Control center, Tasks (with workflow actions, review forms, resume points, execution timeline and cancellation), Memory, Analytics, Browsers, Approvals, Settings, Providers (offline configuration, routing dry run, budgets), and a per-project workspace panel. English/Arabic/Persian resources with 557 keys each and a Vitest parity test; language selection persists; Arabic/Persian set `dir=rtl`.
 2. **HTTP API** — FastAPI/Pydantic; versioned `/api/v1`; local default bind; configured Trusted Host and CORS middleware.
 3. **Persistence** — SQLAlchemy 2.x and Alembic (revisions `0001_initial`, `0002_provider_boundary`, `0003_task_leases`, `0004_reviews_approvals`, `0005_project_workspaces`, `0006_memory`, `0007_task_checkpoints`, `0008_github_plans`, `0009_notification_reads`, `0010_agent_permissions`, `0011_browser_profiles`, `0012_task_cancellation`, `0013_agent_instructions`). Current records: projects, agent registrations, tasks, task transitions, audit events, provider configurations (references only), provider budget limits, usage records, and app settings, plus task lease/backoff columns. SQLite is the zero-setup default; a PostgreSQL URL can be configured with psycopg (not yet integration-tested).
 
@@ -43,6 +43,7 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 22. **Execution timeline** (`backend/app/timeline.py`) — a read-only projection of transitions, checkpoints, task audits, reviews and approval requests; every entry names its `source` table, and nothing is inferred.
 23. **Cooperative cancellation** (`backend/app/cancellation.py`) — intent is recorded first, honouring happens at a safe boundary, finished work is never rewritten, and the orchestrator applies pending cancellations before claiming.
 24. **Agent control center** (`backend/app/agent_center.py`) — per-agent live state assembled from tasks, audit rows, usage records, leases and browser profiles, with an explicit `honesty` block; absent data is `null`.
+25. **Project builder** (`backend/app/blueprints.py`) — a deterministic rule engine that turns a described idea into an eleven-section plan with provenance for every requirement; applying is explicit, re-validated and inert.
 
 ## Planned components
 

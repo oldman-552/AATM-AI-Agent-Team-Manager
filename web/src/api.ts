@@ -47,6 +47,26 @@ export type AgentCenterEntry = {
   honesty: Record<string, string | boolean>
 }
 
+export type BlueprintPlan = {
+  idea: string
+  options: { scale: 'prototype' | 'mvp' | 'production'; stack: 'python-react' | 'node-react' | 'python-only'; data_layer: 'sqlite' | 'postgres'; team_size: number }
+  requirements: { id: string; text: string; source: string }[]
+  architecture: { shape: string; layers: string[]; constraints: string[]; data_layer_choice: string }
+  technology_stack: Record<string, string>
+  database_design: { table: string; columns: string[]; why: string; refine?: string }[]
+  development_phases: { name: string; tasks: string[]; exit_criteria: string }[]
+  task_breakdown: { key: string; order: number; title: string; role: string; phase: string; depends_on: string[]; acceptance_criteria: string[]; description: string }[]
+  assignment_plan: { task_key: string; role: string; agent_id: string | null; agent_name: string | null; reason: string }[]
+  dependencies: { from: string; to: string; type: string }[]
+  testing_strategy: string[]
+  acceptance_criteria: string[]
+  delivery_plan: { milestone: string; exit_criteria: string; task_count: number; gate: string }[]
+  detection_evidence: Record<string, string[]>
+  generation: { generated_by: string; model_called: boolean; note: string; requires_review: boolean; auto_execution: boolean }
+  fingerprint: string
+  summary: { requirements: number; tasks: number; phases: number; capability_packs: string[]; staffed_tasks: number; unstaffed_tasks: number; project_name: string }
+}
+
 export type AgentInstruction = {
   id: string
   task_id: string | null
@@ -532,6 +552,13 @@ export const api = {
   createProject: (payload: Pick<Project, 'name' | 'description'>) =>
     request<Project>('/api/v1/projects', { method: 'POST', body: JSON.stringify(payload) }),
   agents: () => request<Agent[]>('/api/v1/agents'),
+  buildBlueprint: (payload: { idea: string; scale: string; stack: string; data_layer: string; team_size: number; project_name?: string }) =>
+    request<BlueprintPlan>('/api/v1/blueprints', { method: 'POST', body: JSON.stringify(payload) }),
+  applyBlueprint: (plan: BlueprintPlan, projectName?: string) =>
+    request<{ project_id: string | null; project_name: string | null; tasks_created: number; first_task_id: string | null; note: string }>(
+      '/api/v1/blueprints/apply',
+      { method: 'POST', body: JSON.stringify({ plan, confirmed: true, project_name: projectName ?? null }) },
+    ),
   agentCenter: () => request<{ agents: AgentCenterEntry[]; total: number; note: string }>('/api/v1/agents/center'),
   agentCenterEntry: (id: string) => request<AgentCenterEntry>(`/api/v1/agents/${id}/center`),
   agentInstructions: (id: string) =>

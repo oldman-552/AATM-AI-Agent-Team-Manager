@@ -320,3 +320,13 @@ Tests executed: pytest 153 passed, 1 warning; vitest 6 passed; tsc clean; build 
 Results: Backend 144 -> 153 tests; i18n 476 -> 511 keys x3; migration 0013 applied live on the running API
 Problems: None
 Solutions: None
+
+[2026-11-13 13:53 UTC] Phase 17 — AI Project Builder — Deterministic blueprint generation with review-gated apply
+Task: Deterministic blueprint generation with review-gated apply
+Action performed: Added blueprint engine, apply endpoint, builder UI, tests and docs
+Files created: backend/app/blueprints.py, backend/app/blueprint_api.py, backend/tests/test_blueprints.py, web/src/ProjectBuilderView.tsx
+Files modified: backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 166 passed, 1 warning; vitest 6 passed; tsc clean; build OK (JS 468.14 kB, CSS 45.85 kB); live smoke: propose 200 with packs [accounts, uploads, analytics] and 14 tasks, apply unconfirmed 409, apply confirmed created 14 dependency-linked tasks
+Results: Backend 153 -> 166 tests; i18n 511 -> 557 keys x3
+Problems: None
+Solutions: None

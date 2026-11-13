@@ -395,3 +395,12 @@ Every field is read from a stored row at request time, or is `null`. There is no
 The Control Center view in the UI renders these values with the same rules: missing data shows as "no recorded data", estimated cost is labelled unconfirmed, and "open browser" is shown as unavailable rather than as a dead button.
 
 Audit events added: `agent.instruction_issued`, `task.reassigned`.
+
+## AI Project Builder
+
+- `POST /blueprints` — body: `idea` (20–4000 chars), `scale` (`prototype|mvp|production`), `stack` (`python-react|node-react|python-only`), `data_layer` (`sqlite|postgres`), `team_size` (1–20). Returns all eleven plan sections: requirements, architecture, technology stack, database design, development phases, task breakdown, assignment plan, dependencies, testing strategy, acceptance criteria and delivery plan.
+- Generation is **deterministic rules, not a model**: `generation.model_called` is `false`, and `detection_evidence` lists the keywords that selected each capability pack, so a reader can see exactly why a requirement exists.
+- Proposing writes nothing. Every request is a fresh proposal with a `fingerprint`.
+- `POST /blueprints/apply` — body: `plan`, `confirmed`. Without `confirmed: true` it returns `409` and creates nothing. It re-validates task keys, duplicate keys and dependency references (`422`), then creates the project plus dependency-linked tasks in `pending`/`assigned`. Nothing is executed: the orchestrator remains the only path to running work. Audit events: `project.created`, `blueprint.applied`.
+
+Assignments only ever name registered workers whose role matches; unmatched tasks say so in `reason` rather than being silently assigned.

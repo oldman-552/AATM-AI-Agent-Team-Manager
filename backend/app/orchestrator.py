@@ -311,9 +311,14 @@ class Orchestrator:
         for task in self._ready_candidates(db, now):
             if len(dispatch) >= budget:
                 break
-            # Two commands in the same project can mutate the same workspace.
-            # Until per-worktree isolation exists, never run them concurrently.
-            workspace_key = task.project_id or f"task:{task.id}"
+            # Tasks may share a project dispatch slot only when their executor
+            # can prove that each gets a separate working directory. Otherwise
+            # project-level serialization is the safe default.
+            dispatch_group = getattr(self.executor, "dispatch_group", None)
+            try:
+                workspace_key = dispatch_group(task) if callable(dispatch_group) else (task.project_id or f"task:{task.id}")
+            except Exception:
+                workspace_key = task.project_id or f"task:{task.id}"
             if workspace_key in claimed_projects:
                 report.skipped.append({"task_id": task.id, "reason": "another task from this project is in the same dispatch batch"})
                 continue
@@ -355,39 +360,67 @@ class Orchestrator:
                 return self.executor(worker_task)
 
         outcomes_by_id: dict[str, ExecutionResult | Exception] = {}
-        with ThreadPoolExecutor(max_workers=min(budget, len(claimed)), thread_name_prefix="aatm-task") as pool:
-            pending = {
-                pool.submit(execute_in_worker, task.id): task.id
-                for task, _attempt in claimed
-            }
-            heartbeat_interval = max(0.1, max(1, self.config.lease_seconds) / 3)
-            while pending:
-                completed, _ = wait(pending, timeout=heartbeat_interval, return_when=FIRST_COMPLETED)
-                for future in completed:
-                    task_id = pending.pop(future)
-                    try:
-                        outcomes_by_id[task_id] = future.result()
-                    except Exception as exc:
-                        outcomes_by_id[task_id] = exc
+        runnable: list[tuple[Task, int]] = []
+        prepare_task = getattr(self.executor, "prepare_task", None)
+        for task, attempt in claimed:
+            try:
+                if callable(prepare_task):
+                    prepare_task(task)
+                runnable.append((task, attempt))
+            except Exception as exc:
+                outcomes_by_id[task.id] = exc
 
-                if pending:
-                    # Long-running work must not be mistaken for a crashed
-                    # worker. Renew only leases still owned and running; never
-                    # overwrite a lease another process has recovered/reclaimed.
-                    expires = utc_now() + timedelta(seconds=max(1, self.config.lease_seconds))
-                    for task_id in pending.values():
-                        db.execute(
-                            update(Task)
-                            .where(
-                                Task.id == task_id,
-                                Task.state == "running",
-                                Task.lease_owner == self.config.owner,
+        if runnable:
+            # Filesystem/Git preparation above is serial on the control thread.
+            # Renew just-prepared leases before starting their worker threads.
+            expires = utc_now() + timedelta(seconds=max(1, self.config.lease_seconds))
+            for task, _attempt in runnable:
+                db.execute(
+                    update(Task)
+                    .where(
+                        Task.id == task.id,
+                        Task.state == "running",
+                        Task.lease_owner == self.config.owner,
+                    )
+                    .values(lease_expires_at=expires)
+                )
+            db.commit()
+            if self.config.heartbeat_callback is not None:
+                self.config.heartbeat_callback()
+
+            with ThreadPoolExecutor(max_workers=min(budget, len(runnable)), thread_name_prefix="aatm-task") as pool:
+                pending = {
+                    pool.submit(execute_in_worker, task.id): task.id
+                    for task, _attempt in runnable
+                }
+                heartbeat_interval = max(0.1, max(1, self.config.lease_seconds) / 3)
+                while pending:
+                    completed, _ = wait(pending, timeout=heartbeat_interval, return_when=FIRST_COMPLETED)
+                    for future in completed:
+                        task_id = pending.pop(future)
+                        try:
+                            outcomes_by_id[task_id] = future.result()
+                        except Exception as exc:
+                            outcomes_by_id[task_id] = exc
+
+                    if pending:
+                        # Long-running work must not be mistaken for a crashed
+                        # worker. Renew only leases still owned and running; never
+                        # overwrite a lease another process has recovered/reclaimed.
+                        expires = utc_now() + timedelta(seconds=max(1, self.config.lease_seconds))
+                        for task_id in pending.values():
+                            db.execute(
+                                update(Task)
+                                .where(
+                                    Task.id == task_id,
+                                    Task.state == "running",
+                                    Task.lease_owner == self.config.owner,
+                                )
+                                .values(lease_expires_at=expires)
                             )
-                            .values(lease_expires_at=expires)
-                        )
-                    db.commit()
-                    if self.config.heartbeat_callback is not None:
-                        self.config.heartbeat_callback()
+                        db.commit()
+                        if self.config.heartbeat_callback is not None:
+                            self.config.heartbeat_callback()
 
         # Preserve claim-order reporting, independent of completion order.
         outcomes = [outcomes_by_id[task.id] for task, _attempt in claimed]

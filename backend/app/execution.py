@@ -53,6 +53,8 @@ from sqlalchemy import select
 
 from app.models import ProjectWorkspace, Task
 from app.orchestrator import ExecutionCancelled, ExecutionOutcomeError, ExecutionResult
+from app.task_workspaces import existing_task_worktree, is_git_workspace, prepare_task_worktree
+from app.workspaces import WorkspaceError
 
 COMMANDS_DIR = ".aatm"
 COMMANDS_FILE = "exec.json"
@@ -219,6 +221,42 @@ class LocalProcessExecutor:
         self.max_output_bytes = max(1024, max_output_bytes)
         self.cancel_poll_seconds = max(0.05, cancel_poll_seconds)
 
+    # -- task isolation -------------------------------------------------
+    def _workspace_context(self, task: Task) -> tuple[str, Path] | None:
+        if not task.project_id:
+            return None
+        with self.session_factory() as session:
+            workspace = session.scalar(
+                select(ProjectWorkspace).where(ProjectWorkspace.project_id == task.project_id)
+            )
+            if workspace is None:
+                return None
+            return workspace.root_path, Path(workspace.workspace_path).expanduser().resolve()
+
+    def dispatch_group(self, task: Task) -> str:
+        """Share a dispatch slot only when tasks lack independent Git worktrees."""
+        context = self._workspace_context(task)
+        if context is None:
+            return f"task:{task.id}"
+        root, project_dir = context
+        try:
+            if is_git_workspace(root, project_dir, task.project_id or "", task.id):
+                return f"task:{task.id}"
+        except WorkspaceError:
+            pass
+        return f"project:{task.project_id}"
+
+    def prepare_task(self, task: Task) -> None:
+        """Prepare isolated Git files on the orchestrator thread before dispatch."""
+        context = self._workspace_context(task)
+        if context is None:
+            return
+        root, project_dir = context
+        try:
+            prepare_task_worktree(root, project_dir, task.project_id or "", task.id)
+        except WorkspaceError as exc:
+            raise ExecutionOutcomeError(f"Could not prepare an isolated task workspace: {exc}") from exc
+
     # -- resolution -----------------------------------------------------
     def resolve(self, task: Task) -> tuple[CommandSpec, Path]:
         name = command_name_for(task)
@@ -233,6 +271,12 @@ class LocalProcessExecutor:
                 )
             project_dir = Path(workspace.workspace_path).expanduser().resolve()
             root = Path(workspace.root_path).expanduser().resolve()
+        try:
+            task_project_dir = existing_task_worktree(root, project_dir, task.project_id or "", task.id)
+        except WorkspaceError as exc:
+            raise ExecutionError(f"The task's isolated workspace is invalid: {exc}") from exc
+        if task_project_dir is not None:
+            project_dir = task_project_dir.resolve()
         if not project_dir.is_dir():
             raise ExecutionError("The project workspace directory no longer exists on disk.")
         if project_dir != root and root not in project_dir.parents:
@@ -403,6 +447,7 @@ class LocalProcessExecutor:
         parts = [
             f"Ran '{record.command}' ({' '.join(record.argv)}).",
             f"Exit status {record.exit_code} after {record.duration_seconds:.2f}s.",
+            f"Execution workspace: {record.cwd}.",
         ]
         if record.output_truncated:
             parts.append(f"Output truncated at {self.max_output_bytes} bytes.")

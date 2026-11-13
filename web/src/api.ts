@@ -480,7 +480,7 @@ export type TaskStateChangeResult = {
 }
 
 export type OrchestratorStatus = {
-  executor: { configured: boolean; name: string; reason: string }
+  executor: { configured: boolean; name: string; reason: string; enabled_by?: string | null; allowed_programs?: string[] }
   counts: {
     running: number
     waiting_for_retry: number

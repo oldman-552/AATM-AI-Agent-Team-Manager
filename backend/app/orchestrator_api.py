@@ -1,20 +1,28 @@
 """Observability and recovery endpoints for the durable orchestrator.
 
-Deliberately absent: any endpoint that dispatches work to an executor. The
-HTTP surface can inspect queue/lease state and recover expired leases, but it
-cannot start a run, because the default executor refuses to execute and real
-executors must be injected by authorized in-process code.
+The HTTP surface can inspect queue/lease state, recover expired leases, and —
+**only when an operator has opted in with ``AATM_EXECUTION_ENABLED``** — start a
+bounded run through the local process executor. With the flag unset the run
+endpoint refuses with 409 and the status endpoint says why, so the default build
+still never executes anything.
 """
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api import get_session
+from app.execution import (
+    EXECUTION_FLAG,
+    ExecutionError,
+    LocalProcessExecutor,
+    configured_programs,
+    execution_enabled,
+)
 from app.models import Task
-from app.orchestrator import DisabledExecutor, recover_expired_leases
+from app.orchestrator import DisabledExecutor, Orchestrator, OrchestratorConfig, recover_expired_leases
 
 router = APIRouter(prefix="/api/v1/orchestrator")
 
@@ -49,11 +57,18 @@ def orchestrator_status(db: Session = Depends(get_session)) -> dict[str, object]
         for task in tasks
         if task.state == "assigned" and _aware(task.next_attempt_at) is not None
     ]
+    enabled = execution_enabled()
     return {
         "executor": {
-            "configured": False,
-            "name": type(DisabledExecutor()).__name__,
-            "reason": DisabledExecutor.reason,
+            "configured": enabled,
+            "name": "LocalProcessExecutor" if enabled else type(DisabledExecutor()).__name__,
+            "reason": (
+                "Local commands run from each project's .aatm/exec.json, allow-listed and without a shell."
+                if enabled
+                else DisabledExecutor.reason
+            ),
+            "enabled_by": EXECUTION_FLAG if enabled else None,
+            "allowed_programs": list(configured_programs()) if enabled else [],
         },
         "counts": {
             "running": len(running),
@@ -65,7 +80,11 @@ def orchestrator_status(db: Session = Depends(get_session)) -> dict[str, object]
         "leases": running,
         "retry_queue": waiting,
         "checked_at": now.isoformat(),
-        "note": "Inspection and recovery only. The HTTP API cannot start a run, and no task is simulated.",
+        "note": (
+            "Execution is enabled by the operator; POST /run starts one bounded batch."
+            if enabled
+            else "Inspection and recovery only. The HTTP API cannot start a run, and no task is simulated."
+        ),
     }
 
 
@@ -79,3 +98,37 @@ def recover(db: Session = Depends(get_session)) -> dict[str, object]:
         "count": len(recovered),
         "note": "Expired leases were released and the interrupted attempts were recorded.",
     }
+
+
+@router.post("/run")
+def run_batch(request: Request, db: Session = Depends(get_session)) -> dict[str, object]:
+    """Start one bounded batch through the local executor.
+
+    Refused unless ``AATM_EXECUTION_ENABLED`` is set: the whole point of the
+    default is that nothing runs by accident, so this cannot be switched on by a
+    request body or a query parameter.
+    """
+    if not execution_enabled():
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Execution is disabled. Set AATM_EXECUTION_ENABLED=1 to allow the local "
+                "process executor to start tasks."
+            ),
+        )
+
+    factory = request.app.state.session_factory
+    executor = LocalProcessExecutor(factory, allowed_programs=configured_programs())
+    orchestrator = Orchestrator(executor=executor, config=OrchestratorConfig())
+    try:
+        report = orchestrator.run_once(db)
+        db.commit()
+    except ExecutionError as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    payload = report.as_dict()
+    payload["note"] = (
+        "Each task ran a named, allow-listed command from its project's .aatm/exec.json. "
+        "Nothing was simulated; 'output' is real command output."
+    )
+    return payload

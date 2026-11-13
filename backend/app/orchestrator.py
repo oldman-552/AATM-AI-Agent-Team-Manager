@@ -49,6 +49,15 @@ class ExecutionOutcomeError(RuntimeError):
     """The executor reported a failure that should be recorded as a task failure."""
 
 
+class ExecutionCancelled(RuntimeError):
+    """An in-flight execution was stopped because the task was cancelled.
+
+    Separate from ``ExecutionOutcomeError`` on purpose: a withdrawal is not
+    evidence about the work, so it must not increment ``retry_count`` or be
+    reported as a failed attempt.
+    """
+
+
 @dataclass(frozen=True)
 class ExecutionResult:
     """What an executor returns. ``evidence`` is required for completion."""
@@ -216,6 +225,30 @@ def recover_expired_leases(
     return recovered
 
 
+def _honour_single_cancel(db: Session, task: Task) -> list[str]:
+    """Move one task to ``cancelled`` after its executor stopped mid-run.
+
+    The session is created with ``expire_on_commit=False``, so the object in hand
+    still carries the pre-cancellation values: the request was written by another
+    connection while the executor ran. Without an explicit refresh, ``honour_cancel``
+    reads ``cancel_requested_at = None`` and reports "no pending request", leaving a
+    stopped task stuck in ``running`` forever.
+    """
+    from app.cancellation import CancelError, honour_cancel
+
+    try:
+        db.refresh(task)
+    except Exception:
+        return []
+    if task.cancel_requested_at is None:
+        return []
+    try:
+        outcome = honour_cancel(db, task)
+    except CancelError:
+        return []
+    return [task.id] if outcome.get("cancelled") else []
+
+
 def _schedule_retry(task: Task, config: OrchestratorConfig, current: datetime) -> None:
     attempt = int(task.retry_count or 0)
     if attempt >= config.max_retries:
@@ -276,8 +309,18 @@ class Orchestrator:
                 continue
             report.started.append(task.id)
             attempt = int(task.retry_count or 0) + 1
+            # Commit the claim before running the executor. A long subprocess run
+            # must not hold an open write transaction: on SQLite that blocks every
+            # other writer, including the operator's cancel request, which then
+            # fails with "database is locked" and the task cannot be stopped.
+            db.commit()
             try:
                 result = self.executor(task)
+            except ExecutionCancelled:
+                # Honour the request through the validated workflow rather than
+                # marking a failure; a cancelled task is not a broken one.
+                report.cancelled.extend(_honour_single_cancel(db, task))
+                continue
             except ExecutionOutcomeError as exc:
                 self._record_failure(db, task, config=self.config, message=str(exc), attempt=attempt, now=now)
                 report.failed.append(task.id)

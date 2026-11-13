@@ -1,5 +1,6 @@
 """FastAPI entry point with loopback-oriented security defaults."""
 
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -33,6 +34,7 @@ from app.blueprint_api import router as blueprint_router
 from app.hardening import BodySizeLimitMiddleware, SecurityHeadersMiddleware
 from app.recovery import classify_database_error
 from app.events import router as events_router
+from app.execution import shutdown_live_processes
 from app.intelligence_api import router as intelligence_router
 from app.recovery_api import router as recovery_router
 from app.workspace_api import router as workspace_router
@@ -87,6 +89,13 @@ def create_app(
         with session_factory() as db:
             seed_provider_defaults(db)
         yield
+        # Terminate anything still running before the database goes away: a
+        # subprocess that outlives the app is an orphan nobody will clean up.
+        stopped = shutdown_live_processes()
+        if stopped:
+            logging.getLogger("aatm.execution").warning(
+                "Stopped %s running task process(es) during shutdown.", stopped
+            )
         engine.dispose()
 
     app = FastAPI(

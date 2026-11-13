@@ -9,6 +9,15 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### Real local task execution, opt-in (Part 12)
+
+- `LocalProcessExecutor` runs one named, allow-listed command per task inside its isolated project workspace. **A task names a command; it never contains one** — the argv comes from `.aatm/exec.json` that a human committed, because reading a command string from the database would make every task title remote code execution.
+- Off by default: `POST /orchestrator/run` returns 409 unless `AATM_EXECUTION_ENABLED` is set. The environment can narrow the program allow-list but never widen it.
+- Safety rules each with a test: no shell, bare allow-listed `argv[0]`, contained cwd, sanitised environment (no `AATM_*`/provider keys), timeout with process-group kill, output cap, cooperative cancellation, shutdown teardown.
+- **Two real bugs found and fixed**: (1) the orchestrator held a write transaction across the subprocess run, so an operator's cancel request failed with `database is locked` — fixed by committing the claim first, plus SQLite WAL; (2) `expire_on_commit=False` left `cancel_requested_at` stale, so a stopped task stayed `running` forever — fixed with an explicit refresh. Both would have shipped invisibly.
+- Cancellation is now a distinct `ExecutionCancelled` path: a withdrawal is not evidence about the work, so it must not increment `retry_count` or be reported as a failure.
+- Verified live over HTTP: task → `completed`, real command output recorded, lease released, audit events written. Backend tests 220 → 241.
+
 ### Server-sent event stream (Part 21 real-time requirement)
 
 - `GET /api/v1/events/stream` streams audit events as they are recorded, with a **resumable `(created_at, id)` cursor**, bounded lifetime, heartbeat, bounded batches and its own database session.

@@ -3,13 +3,13 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 16:59 UTC
+2026-11-13 17:03 UTC
 
 Overall Project Status:
 Testing
 
 Overall Completion:
-Roughly 80% of the specified local-first product surface is implemented and tested. Basis: the implementation checklist has 75 entries; a status-label tally finds 45 clearly complete, 28 mixed/partial, and 2 without a clear status (including the locally tested CI workflow that still awaits its first hosted run). Giving partial entries half credit yields 79%, rounded to 80%. This is a checklist-row estimate, not weighted by effort or criticality. The complete 1,506-line, 27-part master prompt is preserved in the repository; implementation of its requirements is the estimated 80%. Remaining work is gated by design (live provider/AI-agent execution, GitHub execution, distributed worker scheduling) or environment-limited (Windows, PostgreSQL, Docker, Playwright). See `IMPLEMENTATION_STATUS.md` and `BLOCKERS.txt`; no pending item is counted as complete.
+Roughly 80% of the specified local-first product surface is implemented and tested. Basis: the implementation checklist has 75 entries; a status-label tally finds 45 clearly complete, 28 mixed/partial, and 2 without a clear status. Giving partial entries half credit yields 78.67%, rounded to 80%. This is a checklist-row estimate, not weighted by effort or criticality. The complete 1,505-line, 27-part master prompt is preserved in the repository; implementation of its requirements is estimated at 80%. Remaining work is gated by design (live provider/AI-agent execution, GitHub execution, distributed worker scheduling) or environment-limited (Windows, PostgreSQL, Docker, Playwright). See `IMPLEMENTATION_STATUS.md` and `BLOCKERS.txt`; no pending item is counted as complete.
 
 Current Phase:
 Phase 33 — Distributed worker scheduling and workspace isolation
@@ -46,10 +46,10 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Phase 33 distributed worker scheduling remains open. Latest local verification: 261 backend passed, one PostgreSQL-only test skipped locally; 20 frontend tests, TypeScript, production build and RTL checks passed. The hosted backend, frontend, and PostgreSQL jobs all passed on revision e3f8751 using Node 24-compatible action majors.
+- Phase 33 distributed worker scheduling remains open. Latest local verification: 261 backend passed, one PostgreSQL-only test skipped locally; 20 frontend tests, TypeScript, production build and RTL checks passed. The hosted backend, frontend, and PostgreSQL jobs all passed on revision f52ed89 using Node 24-compatible action majors (CI run 43468376686).
 
 Upcoming Tasks:
-- Distributed task-worker scheduling and per-worktree isolation for same-project tasks; verify the refreshed Node 24-compatible CI actions.
+- Distributed task-worker scheduling and per-worktree isolation; expand PostgreSQL coverage beyond migration/lock smoke; Windows CI verification and release packaging.
 - The consent/accounting surface that must precede any paid provider call; wiring an authorized model call into the executor.
 - GitHub push/PR execution behind an approval (recorded plans exist; execution does not).
 - Pixel-level browser visual testing once a display-capable environment exists.

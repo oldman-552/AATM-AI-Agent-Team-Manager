@@ -139,7 +139,7 @@ This is a Phase 1 foundation verification report, not a final product verificati
 
 ## RTL and locale verification (2026-11-13)
 
-`npm run verify` runs `tsc --noEmit`, `vitest run`, `vite build` and the RTL CSS checker. Current result: TypeScript clean, **13 Vitest tests pass**, build succeeds, and the checker reports `0 physical` declarations in both `src/styles.css` (53,567 bytes, 26 logical inline declarations) and the built bundle.
+`npm run verify` runs `tsc --noEmit`, `vitest run`, `vite build` and the RTL CSS checker. Current result: TypeScript clean, **20 Vitest tests pass** (7 RTL, 6 i18n, 3 render smoke, 4 event stream), build succeeds, and the checker reports `0 physical` declarations in both `src/styles.css` (59,790 bytes, 32 logical inline declarations) and the built bundle.
 
 Two real defects were found and fixed by writing these tests rather than assuming the UI was correct:
 

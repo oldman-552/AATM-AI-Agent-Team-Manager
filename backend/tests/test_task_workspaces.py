@@ -73,3 +73,33 @@ def test_same_project_tasks_run_in_distinct_persisted_worktrees(client: TestClie
     project_workspace = Path(workspace_response.json()["workspace"]["workspace_path"])
     assert not (project_workspace / "task-output.txt").exists()
     assert all(".aatm-task-worktrees" in path.parts for path in task_paths)
+
+    for task_id, path in zip(task_ids, task_paths, strict=True):
+        inspection = client.get(f"/api/v1/projects/{project_id}/workspace/tasks/{task_id}")
+        assert inspection.status_code == 200, inspection.text
+        worktree = inspection.json()["worktree"]
+        assert inspection.json()["available"] is True
+        assert worktree["task_id"] == task_id
+        assert worktree["worktree_path"] == str(path)
+        assert worktree["base_commit"] == worktree["head_commit"]
+        assert worktree["clean"] is False
+        assert "task-output.txt" in worktree["changed_files"]
+        assert worktree["content_included"] is False
+
+    other_project_id = client.post("/api/v1/projects", json={"name": "Different project"}).json()["id"]
+    cross_project = client.get(f"/api/v1/projects/{other_project_id}/workspace/tasks/{task_ids[0]}")
+    assert cross_project.status_code == 404
+
+    unexecuted = client.post(
+        "/api/v1/tasks",
+        json={"title": "Not yet executed", "project_id": project_id, "assigned_agent_id": agent_id},
+    ).json()
+    unavailable = client.get(f"/api/v1/projects/{project_id}/workspace/tasks/{unexecuted['id']}")
+    assert unavailable.status_code == 200
+    assert unavailable.json()["available"] is False
+    assert unavailable.json()["worktree"] is None
+
+    owner_file = project_workspace.parent / ".aatm-task-worktrees" / project_id / f"{task_ids[0]}.owner.json"
+    owner_file.write_text("[]", encoding="utf-8")
+    corrupted_owner = client.get(f"/api/v1/projects/{project_id}/workspace/tasks/{task_ids[0]}")
+    assert corrupted_owner.status_code == 409

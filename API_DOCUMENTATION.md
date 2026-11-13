@@ -227,6 +227,10 @@ Workspaces live under `AATM_WORKSPACES_ROOT` (default `$AATM_HOME/workspaces`), 
 
 Returns the stored workspace plus a read-only Git status (`branch`, `head_commit`, `on_protected_branch`, `clean`, `changed_files`, `changed_count`, `diffstat`). Returns `workspace: null` when none exists.
 
+### `GET /projects/{project_id}/workspace/tasks/{task_id}`
+
+Returns read-only metadata for an AATM-owned per-task Git worktree: `available`, task state, worktree path, base/head commits, cleanliness, changed-file names, and diffstat. File contents are never included. A missing worktree returns `available: false`; a task from another project is hidden as 404; invalid worktree ownership/path metadata returns 409. This endpoint does not modify, merge, or delete worktree contents.
+
 ### `POST /projects/{project_id}/workspace` → 201
 
 ```json

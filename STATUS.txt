@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 17:03 UTC
+2026-11-13 17:43 UTC
 
 Overall Project Status:
 Testing
@@ -18,9 +18,10 @@ Current Task:
 Implement safe cross-process worker ownership and a reviewed path for integrating per-task worktree changes
 
 Current Activity:
-API run requests sharing a database are serialized by an expiring row lock, and active task/run leases are heartbeated by the orchestrator. The opt-in local executor now prepares an owned, detached Git worktree per task, enabling same-project concurrency without writes to the shared source workspace; unsupported/non-Git workspaces remain serialized. Distributed worker scheduling and automatic task-worktree integration are not implemented.
+API run requests sharing a database are serialized by an expiring row lock, and active task/run leases are heartbeated by the orchestrator. The opt-in local executor prepares an owned, detached Git worktree per task, enabling same-project concurrency without writes to the shared source workspace; unsupported/non-Git workspaces remain serialized. A new read-only project/task endpoint exposes worktree metadata and changed paths, not file contents. Distributed worker scheduling and automatic task-worktree integration are not implemented.
 
 Recently Completed (most recent first):
+- Read-only task-worktree review metadata: `GET /api/v1/projects/{project_id}/workspace/tasks/{task_id}` checks task/project scope and AATM worktree ownership, then reports base/head commits, changed paths and diffstat without file contents or mutations. Missing worktrees are reported honestly; cross-project IDs are hidden as 404 and malformed ownership metadata is rejected. Full backend verification: 262 passed, 1 PostgreSQL-only test skipped locally.
 - Same-project task worktree isolation: the opt-in local executor creates or safely reuses a detached Git worktree per task on the orchestrator thread, then executes in that worktree. Two real tasks from one project were verified to run in distinct directories without writing to the source workspace. Non-Git workspaces remain serialized by project; worktree changes are preserved for inspection/retry but are not automatically merged back. Backend suite, frontend verify, and hosted PostgreSQL smoke all passed on main after merge.
 - Bounded parallel execution: the orchestrator claims a bounded independent batch, commits leases before work, runs executor calls in a bounded `ThreadPoolExecutor` (one worker at cap one; parallel only above one), renews active leases and applies task state changes on the main session/thread. Each worker uses its own SQLAlchemy session; workspaces without proven per-task Git isolation remain serialized per project. Barrier and heartbeat tests prove overlap, session isolation, failure isolation and renewal during long work.
 - Opt-in adaptive dispatch cap: `AATM_ADAPTIVE_CONCURRENCY` applies the local CPU/memory/disk recommendation to the per-run dispatch budget, never above `AATM_MAX_CONCURRENCY`. Existing running tasks are deducted; zero free slots claims no work. Same-process run requests serialize. Status API and Operations UI expose the mode and cap. Parallel execution and lease heartbeats run within one orchestrator pass; API run requests sharing a database serialize across processes. A distributed multi-worker scheduler remains unimplemented.
@@ -47,7 +48,7 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- Phase 33 distributed worker scheduling and safe task-worktree integration remain open. Latest local verification: 262 backend passed, one PostgreSQL-only test skipped locally; 20 frontend tests, TypeScript, production build and RTL checks passed. On main merge commit `55990a3`, hosted backend, frontend, and PostgreSQL migration/lock jobs all passed (CI run 43471340502).
+- Phase 33 distributed worker scheduling and safe task-worktree integration remain open. Latest local verification for the inspection API: 262 backend passed, one PostgreSQL-only test skipped locally. Frontend was not rerun because no web files changed. This slice is on the active Arena branch and is not yet merged to main.
 
 Upcoming Tasks:
 - Distributed task-worker scheduling, safe review/integration of task-worktree changes, and expanded PostgreSQL coverage beyond migration/lock smoke; Windows CI verification and release packaging.

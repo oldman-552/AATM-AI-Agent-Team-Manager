@@ -260,3 +260,13 @@ Tests executed: Backend pytest 129 passed; frontend vitest 5; tsc --noEmit; vite
 Results: Illegal transitions 409, paused agent refused work with 409 agent_paused, unknown scope 422 and Manager disabling refused.
 Problems: A new router registered before the core router shadowed PATCH /agents/{id}/state with GET /agents, which silently ignored the body.
 Solutions: Registered the specific router first, added a comment explaining the ordering, and re-verified every transition live.
+
+[2026-11-13 13:34 UTC] Phase 12 — Internationalization — Translation coverage for every UI key
+Task: Translation coverage for every UI key
+Action performed: Fixed a missing translation and added a guard that fails when any used key is untranslated
+Files created: web/src/vite-env.d.ts
+Files modified: web/src/i18n.ts, web/src/i18n.test.ts, TESTING_REPORT.md, CHANGELOG.md, README.md, ARCHITECTURE.md
+Tests executed: Vitest 6 passed; tsc --noEmit clean; vite build passed; guard proven to fail when a key is removed
+Results: No statically referenced translation key is missing in English, Arabic or Persian.
+Problems: The agent permission controls used t('save') before the key existed, so the UI would render a raw key.
+Solutions: Added the key and a source-scanning test that catches this class of defect instead of relying on review.

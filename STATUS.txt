@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 13:31 UTC
+2026-11-13 13:34 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 3 — Agent Management
+Phase 12 — Internationalization
 
 Current Task:
-Agent lifecycle and permission scopes
+Translation coverage for every UI key
 
 Current Activity:
-Added agents service/API, AgentControls UI, migration 0010 and 6 tests
+Added the save key in three languages, a source-scanning Vitest guard and Vite client types
 
 Recently Completed (most recent first):
 - Durable task checkpoints + resume plans with credential rejection (migration 0007, 92 backend tests); fixed missing DELETE in CORS.

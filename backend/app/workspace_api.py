@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app.api import get_session
 from app.audit import add_event
 from app.models import Project, ProjectWorkspace, Task
-from app.task_workspaces import inspect_task_worktree
+from app.task_workspaces import inspect_task_worktree, preview_task_worktree_diff
 from app.workspaces import (
     WorkspaceError,
     create_project_workspace,
@@ -121,6 +121,38 @@ def inspect_task_workspace(
         "note": (
             "Task worktree is available for local review; no file contents are included and no changes are merged."
             if worktree is not None
+            else "No AATM-owned task worktree exists for this task."
+        ),
+    }
+
+
+@router.get("/tasks/{task_id}/diff")
+def preview_task_diff(
+    project_id: str,
+    task_id: str,
+    db: Session = Depends(get_session),
+) -> dict[str, object]:
+    """Return a strictly capped, read-only patch preview for one task."""
+    if db.get(Project, project_id) is None:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    task = db.get(Task, task_id)
+    if task is None or task.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Task not found in this project.")
+    row = _workspace_row(db, project_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="No workspace exists for this project.")
+    try:
+        paths = stored_workspace_paths(row.root_path, row.workspace_path)
+        preview = preview_task_worktree_diff(paths.root, paths.project_dir, project_id, task_id)
+    except WorkspaceError as exc:
+        raise HTTPException(status_code=409, detail=f"Task diff cannot be inspected safely: {exc}") from exc
+    return {
+        "task_id": task_id,
+        "available": preview is not None,
+        "preview": preview,
+        "note": (
+            "Capped text patch; untracked files are not included."
+            if preview is not None
             else "No AATM-owned task worktree exists for this task."
         ),
     }

@@ -8,7 +8,7 @@
  * every endpoint and still crash the browser on a null field or a broken hook.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { I18nextProvider } from 'react-i18next'
 
@@ -48,6 +48,14 @@ const responses: Record<string, unknown> = {
   '/api/v1/agent-roles': [{ id: 'developer', name: 'Developer', description: 'Builds things' }],
   '/api/v1/workflow': { transitions: { assigned: ['running', 'cancelled'] }, note: 'validated' },
   '/api/v1/tasks/ready': { tasks: [task], note: 'assigned work whose dependencies are met' },
+  '/api/v1/projects/project-1/workspace/tasks/task-1/diff': {
+    task_id: 'task-1', available: true, note: 'capped patch',
+    preview: {
+      task_id: 'task-1', base_commit: 'a'.repeat(40), head_commit: 'b'.repeat(40),
+      diff: 'diff --git a/README.md b/README.md\\n+task patch line\\n',
+      truncated: false, max_bytes: 262144, untracked_included: false, note: 'read-only',
+    },
+  },
   '/api/v1/orchestrator': {
     counts: { running: 0, waiting_for_retry: 0, expired_leases: 0, assigned: 1 },
     leases: [], note: 'no executor is configured',
@@ -224,6 +232,23 @@ describe('application render smoke test', () => {
     }
     // Guard against a vacuous pass: nearly every section must have been visited.
     expect(changed).toBeGreaterThanOrEqual(buttons.length - 1)
+    expectNoCrash()
+  })
+
+  it('loads and shows a task diff only after the operator opens the preview', async () => {
+    const { container } = await renderApp()
+    await waitFor(() => expect(container.querySelector('nav.primary-nav')).not.toBeNull())
+    const tasksButton = [...container.querySelectorAll('nav.primary-nav button')]
+      .find((button) => button.textContent?.trim() === 'Tasks')
+    expect(tasksButton).toBeDefined()
+    fireEvent.click(tasksButton!)
+
+    const showDiff = await screen.findByRole('button', { name: 'Review task diff' })
+    const fetchMock = vi.mocked(globalThis.fetch)
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/workspace/tasks/task-1/diff'))).toBe(false)
+    fireEvent.click(showDiff)
+    expect(await screen.findByText(/task patch line/)).toBeTruthy()
+    expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/workspace/tasks/task-1/diff'))).toBe(true)
     expectNoCrash()
   })
 

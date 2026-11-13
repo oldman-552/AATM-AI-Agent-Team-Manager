@@ -562,6 +562,22 @@ export type WorkspaceResponse = {
   note?: string
 }
 
+export type TaskWorkspaceDiffResponse = {
+  task_id: string
+  available: boolean
+  preview: {
+    task_id: string
+    base_commit: string
+    head_commit: string
+    diff: string
+    truncated: boolean
+    max_bytes: number
+    untracked_included: false
+    note: string
+  } | null
+  note: string
+}
+
 export type MemoryScope = 'global' | 'project' | 'agent' | 'task' | 'decision'
 
 export type MemoryEntry = {
@@ -842,6 +858,8 @@ export const api = {
       }).toString()}`,
     ),
   workspace: (projectId: string) => request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`),
+  taskWorkspaceDiff: (projectId: string, taskId: string) =>
+    request<TaskWorkspaceDiffResponse>(`/api/v1/projects/${projectId}/workspace/tasks/${taskId}/diff`),
   createWorkspace: (projectId: string, payload: { local_source?: string | null; branch?: string | null }) =>
     request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`, {
       method: 'POST',

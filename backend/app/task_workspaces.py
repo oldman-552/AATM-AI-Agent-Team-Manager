@@ -13,9 +13,10 @@ import os
 import re
 from pathlib import Path
 
-from app.workspaces import WorkspaceError, WorkspacePaths, run_git, workspace_status
+from app.workspaces import WorkspaceError, WorkspacePaths, run_git, run_git_bounded, workspace_status
 
 WORKTREE_ROOT_NAME = ".aatm-task-worktrees"
+TASK_DIFF_PREVIEW_BYTES = 256 * 1024
 _SAFE_ID = re.compile(r"^[A-Za-z0-9-]{1,80}$")
 _COMMIT = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 
@@ -163,4 +164,59 @@ def inspect_task_worktree(
         **status,
         "content_included": False,
         "note": "Read-only metadata only; file contents are not exposed and AATM does not merge or delete task worktrees.",
+    }
+
+
+def preview_task_worktree_diff(
+    root: str | Path,
+    source: str | Path,
+    project_id: str,
+    task_id: str,
+) -> dict[str, object] | None:
+    """Return a capped text diff from the owned worktree's original base commit.
+
+    Untracked files are intentionally omitted from patch text. Their names
+    remain visible through `inspect_task_worktree`; no external diff or
+    textconv command is allowed to run.
+    """
+    target = existing_task_worktree(root, source, project_id, task_id)
+    if target is None:
+        return None
+    _root, _target, owner_file = _paths(root, source, project_id, task_id)
+    try:
+        owner = json.loads(owner_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise WorkspaceError("Task worktree ownership record is unreadable.") from exc
+    base_commit = owner.get("base_commit") if isinstance(owner, dict) else None
+    if not isinstance(base_commit, str) or not _COMMIT.fullmatch(base_commit):
+        raise WorkspaceError("Task worktree base commit metadata is invalid.")
+    head_commit = run_git(["rev-parse", "HEAD"], cwd=target)
+    try:
+        run_git(["merge-base", "--is-ancestor", base_commit, head_commit], cwd=target)
+    except WorkspaceError as exc:
+        raise WorkspaceError("Task worktree base commit is not an ancestor of its current HEAD.") from exc
+    diff, truncated = run_git_bounded(
+        [
+            "-c", "core.fsmonitor=false",
+            "diff", "--no-ext-diff", "--no-textconv", "--no-color", "--no-renames", "--unified=3",
+            base_commit, "--",
+        ],
+        cwd=target,
+        max_output_bytes=TASK_DIFF_PREVIEW_BYTES,
+    )
+    # Ensure UTF-8 replacement decoding cannot expand invalid bytes past the
+    # public response cap.
+    encoded = diff.encode("utf-8")
+    if len(encoded) > TASK_DIFF_PREVIEW_BYTES:
+        diff = encoded[:TASK_DIFF_PREVIEW_BYTES].decode("utf-8", errors="ignore")
+        truncated = True
+    return {
+        "task_id": task_id,
+        "base_commit": base_commit,
+        "head_commit": head_commit,
+        "diff": diff,
+        "truncated": truncated,
+        "max_bytes": TASK_DIFF_PREVIEW_BYTES,
+        "untracked_included": False,
+        "note": "Read-only text preview only. Untracked files are omitted, and no task worktree is modified or merged.",
     }

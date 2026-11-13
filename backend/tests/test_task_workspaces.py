@@ -10,6 +10,7 @@ from app.execution import LocalProcessExecutor
 from app.main import create_app
 from app.models import Task
 from app.orchestrator import Orchestrator, OrchestratorConfig
+from app.task_workspaces import TASK_DIFF_PREVIEW_BYTES
 from app.workspaces import init_local_repository, run_git
 
 
@@ -26,7 +27,7 @@ def test_same_project_tasks_run_in_distinct_persisted_worktrees(client: TestClie
     init_local_repository(source)
     commands_dir = source / ".aatm"
     commands_dir.mkdir()
-    script = "from pathlib import Path; import os; Path('task-output.txt').write_text(os.getcwd()); print(os.getcwd())"
+    script = "from pathlib import Path; import os; Path('task-output.txt').write_text(os.getcwd()); Path('README.md').write_text('task-specific\\n'); print(os.getcwd())"
     (commands_dir / "exec.json").write_text(
         json.dumps({"write": {"argv": ["python3", "-c", script]}}),
         encoding="utf-8",
@@ -86,6 +87,15 @@ def test_same_project_tasks_run_in_distinct_persisted_worktrees(client: TestClie
         assert "task-output.txt" in worktree["changed_files"]
         assert worktree["content_included"] is False
 
+        diff_response = client.get(f"/api/v1/projects/{project_id}/workspace/tasks/{task_id}/diff")
+        assert diff_response.status_code == 200, diff_response.text
+        preview = diff_response.json()["preview"]
+        assert diff_response.json()["available"] is True
+        assert "+task-specific" in preview["diff"]
+        assert str(path) not in preview["diff"]  # untracked command output is not smuggled into the patch
+        assert preview["untracked_included"] is False
+        assert len(preview["diff"].encode("utf-8")) <= preview["max_bytes"]
+
     other_project_id = client.post("/api/v1/projects", json={"name": "Different project"}).json()["id"]
     cross_project = client.get(f"/api/v1/projects/{other_project_id}/workspace/tasks/{task_ids[0]}")
     assert cross_project.status_code == 404
@@ -98,6 +108,18 @@ def test_same_project_tasks_run_in_distinct_persisted_worktrees(client: TestClie
     assert unavailable.status_code == 200
     assert unavailable.json()["available"] is False
     assert unavailable.json()["worktree"] is None
+    unavailable_diff = client.get(f"/api/v1/projects/{project_id}/workspace/tasks/{unexecuted['id']}/diff")
+    assert unavailable_diff.status_code == 200
+    assert unavailable_diff.json()["available"] is False
+    assert unavailable_diff.json()["preview"] is None
+
+    large_change = task_paths[0] / "README.md"
+    large_change.write_text("x" * (TASK_DIFF_PREVIEW_BYTES * 2) + "\\n", encoding="utf-8")
+    capped_diff = client.get(f"/api/v1/projects/{project_id}/workspace/tasks/{task_ids[0]}/diff")
+    assert capped_diff.status_code == 200, capped_diff.text
+    capped_preview = capped_diff.json()["preview"]
+    assert capped_preview["truncated"] is True
+    assert len(capped_preview["diff"].encode("utf-8")) <= TASK_DIFF_PREVIEW_BYTES
 
     owner_file = project_workspace.parent / ".aatm-task-worktrees" / project_id / f"{task_ids[0]}.owner.json"
     owner_file.write_text("[]", encoding="utf-8")

@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -75,6 +76,80 @@ def run_git(args: list[str], cwd: Path, *, timeout: int = 60) -> str:
         message = detail[-1] if detail else "unknown git error"
         raise WorkspaceError(f"Git command failed: {message[:300]}")
     return completed.stdout.strip()
+
+
+def run_git_bounded(
+    args: list[str],
+    cwd: Path,
+    *,
+    max_output_bytes: int = 256 * 1024,
+    timeout: int = 15,
+) -> tuple[str, bool]:
+    """Run read-only Git output with a hard capture limit and timeout.
+
+    The reader kills Git as soon as it observes output beyond the cap, rather
+    than capturing an arbitrarily large diff and truncating it afterward.
+    Returns decoded output and whether it was truncated.
+    """
+    if not shutil.which("git"):
+        raise WorkspaceError("Git is not installed or not on PATH.")
+    if max_output_bytes < 1:
+        raise ValueError("max_output_bytes must be positive")
+    try:
+        process = subprocess.Popen(
+            ["git", *args],
+            cwd=str(cwd),
+            env=_git_env(),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+    except OSError as exc:
+        raise WorkspaceError("Could not start Git.") from exc
+
+    captured = bytearray()
+    truncated = threading.Event()
+
+    def drain() -> None:
+        assert process.stdout is not None
+        while chunk := process.stdout.read(8192):
+            remaining = max_output_bytes + 1 - len(captured)
+            if remaining > 0:
+                captured.extend(chunk[:remaining])
+            if len(captured) > max_output_bytes:
+                truncated.set()
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+                return
+
+    reader = threading.Thread(target=drain, name="aatm-git-output", daemon=True)
+    reader.start()
+    try:
+        process.wait(timeout=max(1, timeout))
+    except subprocess.TimeoutExpired as exc:
+        process.kill()
+        process.wait()
+        reader.join(timeout=2)
+        if process.stdout is not None:
+            process.stdout.close()
+        raise WorkspaceError("Git command timed out.") from exc
+    reader.join(timeout=2)
+    if reader.is_alive():
+        process.kill()
+        process.wait()
+        raise WorkspaceError("Git output reader did not stop cleanly.")
+    if process.stdout is not None:
+        process.stdout.close()
+
+    output = bytes(captured[:max_output_bytes])
+    was_truncated = truncated.is_set() or len(captured) > max_output_bytes
+    if process.returncode != 0 and not was_truncated:
+        detail = output.decode("utf-8", errors="replace").strip().splitlines()
+        message = detail[-1] if detail else "unknown git error"
+        raise WorkspaceError(f"Git command failed: {message[:300]}")
+    return output.decode("utf-8", errors="replace"), was_truncated
 
 
 def validate_branch_name(branch: str) -> str:

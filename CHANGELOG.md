@@ -2,6 +2,13 @@
 
 ## Unreleased — 2026-11-13
 
+### Reviewable task-worktree diffs (read-only)
+
+- Added `GET /api/v1/projects/{project_id}/workspace/tasks/{task_id}/diff`, a project-scoped patch preview from the worktree's recorded base commit. Git output is capped at 256 KiB and the diff process at 15 seconds; external diff/textconv helpers are disabled. Untracked file contents are intentionally omitted.
+- Added a lazy-loaded preview to each project task in the Tasks UI, with clear base/head commits, unavailable/error/truncation states, and English/Arabic/Persian labels. Opening the preview is the only time the UI requests patch text.
+- The endpoint is read-only: it never changes, commits, merges or deletes task worktrees. Tests cover real tracked diffs, output truncation, missing worktrees, cross-project isolation and invalid ownership metadata.
+- Local verification: 262 backend tests passed, one PostgreSQL-only test skipped; 21 frontend tests, TypeScript, production build and RTL checks passed. Hosted CI is pending for this unreleased slice.
+
 ### Bounded adaptive and parallel task dispatch
 
 - Added `AATM_MAX_CONCURRENCY` (bounded 1–20, default 1) and `AATM_ADAPTIVE_CONCURRENCY` (off by default). When enabled, local CPU/memory/disk telemetry can only reduce the per-run dispatch batch; existing running tasks are subtracted and a zero budget claims no task.

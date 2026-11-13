@@ -48,6 +48,7 @@ import { ManagerPlanPanel } from './components/ManagerPlanPanel'
 import { AgentControls } from './components/AgentControls'
 import { CheckpointPanel } from './components/CheckpointPanel'
 import { PullRequestPlans } from './components/PullRequestPlans'
+import TaskWorkspaceDiff from './components/TaskWorkspaceDiff'
 import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
@@ -840,6 +841,7 @@ function TaskRow({ task, projects, agents, language, workflow }: { task: Task; p
       <div className="task-actions">
         <ReviewForm task={task} agents={agents} />
         <CheckpointPanel task={task} />
+        {task.project_id && <TaskWorkspaceDiff projectId={task.project_id} taskId={task.id} />}
         <CancelControls task={task} />
         <TaskTimelineView taskId={task.id} language={language} />
         {nextStates.length ? (

@@ -244,7 +244,7 @@ class ReviewRead(BaseModel):
 class ApprovalCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["paid_provider_request", "protected_branch_merge", "deployment", "data_deletion"]
+    kind: Literal["paid_provider_request", "protected_branch_merge", "deployment", "data_deletion", "pull_request"]
     entity_type: str = Field(default="task", max_length=40)
     entity_id: str | None = Field(default=None, max_length=36)
     summary: str = Field(min_length=1, max_length=500)

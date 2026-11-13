@@ -296,6 +296,25 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .decision-reasons { margin: 0 0 11px; padding-inline-start: 17px; color: var(--text-soft); font-size: 9px; line-height: 1.6; }
 .candidate-list { display: grid; gap: 6px; }
 .candidate-list .panel-kicker { margin-bottom: 2px; }
+.pr-plans { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.pr-plans-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.pr-plans-header .panel-kicker { display: inline-flex; align-items: center; gap: 6px; }
+.pr-plan-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 9px; margin: 10px 0 14px; padding: 12px; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--surface-soft); }
+.pr-plan-form label { display: grid; gap: 4px; color: var(--text-soft); font-size: 10px; }
+.pr-plan-form input, .pr-plan-form textarea { padding: 7px 9px; color: var(--text); border: 1px solid var(--border); border-radius: 7px; background: var(--surface); font: inherit; font-size: 11px; }
+.pr-plan-wide { grid-column: 1 / -1; }
+.pr-plan-actions { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; }
+.pr-plan-actions label { display: grid; gap: 4px; color: var(--text-soft); font-size: 10px; }
+.pr-plan-actions input { padding: 6px 8px; color: var(--text); border: 1px solid var(--border); border-radius: 7px; background: var(--surface); font-size: 10px; }
+.pr-plan-list { display: grid; gap: 10px; margin-top: 10px; }
+.pr-plan-card { display: grid; gap: 7px; padding: 13px; border: 1px solid var(--border-soft); border-radius: 10px; background: var(--surface-soft); }
+.pr-plan-top { display: flex; align-items: center; justify-content: space-between; gap: 9px; flex-wrap: wrap; font-size: 11px; }
+.pr-plan-branch { margin: 0; color: var(--muted); font-family: var(--mono, ui-monospace, monospace); font-size: 10px; }
+.pr-plan-card h4 { margin: 0; font-size: 12px; font-weight: 600; }
+.pr-plan-body { margin: 0; color: var(--text-soft); font-size: 11px; line-height: 1.6; white-space: pre-wrap; }
+.pr-plan-commands summary { color: var(--text-soft); font-size: 10px; cursor: pointer; }
+.pr-plan-commands pre { overflow-x: auto; margin: 6px 0 0; padding: 9px 10px; border: 1px solid var(--border-soft); border-radius: 8px; background: var(--bg-deep, rgba(0, 0, 0, .25)); color: var(--text-soft); font-size: 10px; line-height: 1.6; }
+
 .checkpoint-panel { display: grid; gap: 8px; width: 100%; }
 .checkpoint-body { display: grid; gap: 9px; padding: 11px 12px; border: 1px solid var(--border-soft); border-radius: 9px; background: var(--surface-soft); }
 .checkpoint-plan { margin: 0; padding-inline-start: 17px; color: var(--text-soft); font-size: 10px; line-height: 1.6; }

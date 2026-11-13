@@ -69,9 +69,9 @@ This checklist reports repository evidence, not the intended product vision. Fea
 
 ## Phase 7 — GitHub and Workspaces
 
-- [ ] GitHub integration — **NOT STARTED** (no remote, token or PR code exists).
+- [ ] GitHub integration — **IN PROGRESS / TESTED for planning and gating**: per-project pull-request plans, unsafe-input validation, duplicate detection, approval linkage and audit events. Live execution is deliberately **NOT IMPLEMENTED**: `POST .../execute` always returns 409 with a reason, no token is read and no network request is made. A real remote/token flow remains **NOT STARTED**.
 - [x] Isolated branches/worktrees and project workspaces — **TESTED** (local-only Git workspaces; see Phase 6).
-- [ ] Approval-gated pull request/merge workflow — **NOT STARTED**.
+- [ ] Approval-gated pull request/merge workflow — **TESTED for pull-request plans**: the plan cannot advance to an "executed" state, and approval decisions are recorded and audit-logged without executing. Merge/branch-protection workflows remain **NOT STARTED**.
 
 ## Phase 8 — QA and Intelligence
 

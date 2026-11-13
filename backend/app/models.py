@@ -162,6 +162,29 @@ class TaskTransition(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
 
 
+class GithubPullRequest(Base):
+    """A recorded, approval-gated pull-request plan.
+
+    `executed` stays false in this build: the record documents intent and the
+    gate, and no token, network call or push is involved.
+    """
+
+    __tablename__ = "github_pull_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), nullable=False, index=True)
+    owner: Mapped[str] = mapped_column(String(39), nullable=False)
+    repo: Mapped[str] = mapped_column(String(100), nullable=False)
+    base_branch: Mapped[str] = mapped_column(String(121), nullable=False)
+    head_branch: Mapped[str] = mapped_column(String(121), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="awaiting_approval", index=True)
+    approval_id: Mapped[str | None] = mapped_column(ForeignKey("approval_requests.id"), nullable=True)
+    executed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
+
+
 class TaskCheckpoint(Base):
     """A durable resume point for interrupted work.
 

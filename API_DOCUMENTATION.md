@@ -254,6 +254,17 @@ Scopes: `global`, `project`, `agent`, `task`, `decision`. Any non-global entry i
 
 Validation: project-bound scopes require `project_id`; `agent` requires `agent_id`; `task` requires `task_id`; titles/content are bounded (200 / 20,000 chars).
 
+## Pull-request plans (no network)
+
+Planning and gating only. No token is read, no HTTP request to GitHub is made, and nothing is pushed.
+
+- `GET /projects/{project_id}/pull-requests` — plans with status, `executed: false`, `execution_available: false`, and the inert command list a future executor would run.
+- `POST /projects/{project_id}/pull-requests` → 201 — `{owner, repo, base_branch, head_branch, title, body}`. Creates the plan plus a linked `pull_request` approval request. Duplicate open plans for the same repo + head branch are rejected (422).
+- `POST /projects/{project_id}/pull-requests/{plan_id}/decision` — `{status: approved|rejected, decided_by}` drives the linked approval; the plan moves to `approved_not_executed` or `rejected`. A repeat decision returns 409.
+- `POST /projects/{project_id}/pull-requests/{plan_id}/execute` — **always 409** with `executed: false` and a reason. This is intentional: an endpoint that pretends to open a PR would be a fabricated success.
+
+Validation: owner (`^[A-Za-z0-9][A-Za-z0-9-]{0,38}$`, no trailing dash), repository charset, safe base/head branch names, head ≠ base, title 1–200 characters, body ≤ 20,000.
+
 ## Task checkpoints and resume plans
 
 - `POST /tasks/{task_id}/checkpoints` → 201 — `{label, state, note}`. Sequences are monotonic per task and history is append-only. Values that look like credentials (a key named like a token/password, or a value matching a known key shape) are rejected with 422 so secrets never reach the database or its backups.
@@ -282,4 +293,4 @@ Recommendation rules: bounded by `1..min(configured_max, 4, cpu_count)`; memory 
 
 ## Audit events added in this slice
 
-`task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `project.workspace_created`, `project.workspace_branch_created`, `project.workspace_removed`, `memory.created`, `memory.versioned`, `memory.rolled_back`, `memory.deleted`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.
+`task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `project.workspace_created`, `project.workspace_branch_created`, `project.workspace_removed`, `memory.created`, `memory.versioned`, `memory.rolled_back`, `memory.deleted`, `task.checkpointed`, `github.plan_created`, `github.plan_approved`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.

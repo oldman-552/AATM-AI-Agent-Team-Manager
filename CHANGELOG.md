@@ -33,6 +33,7 @@
 - Local resource telemetry (CPU/memory/disk) with a bounded, explicitly advisory concurrency recommendation and a summary in the Tasks view.
 - Local backup/restore CLI using SQLite's online backup API, with SHA-256 manifests, integrity verification, guarded restore that preserves the previous database, and retention pruning.
 - Durable task checkpoints with monotonic sequences, a plain-language resume plan that never claims automatic resumption, credential rejection, and retention pruning; migration `0007_task_checkpoints`; `DELETE` added to CORS.
-- Backend tests 9 → 92; Vitest resource tests added (5).
+- Approval-gated pull-request plans with inert command previews, unsafe-input validation and an `execute` route that always refuses with a reason instead of fabricating success; migration `0008_github_plans`.
+- Backend tests 9 → 99; Vitest resource tests added (5).
 
 - Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, backup/restore, authentication, and Windows verification remain incomplete. Approval gates record decisions but do not perform the gated operations.

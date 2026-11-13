@@ -30,6 +30,7 @@ import { api, type Agent, type AuditEvent, type Project, type Task, type Workflo
 import ApprovalsView from './ApprovalsView'
 import MemoryView from './MemoryView'
 import { CheckpointPanel } from './components/CheckpointPanel'
+import { PullRequestPlans } from './components/PullRequestPlans'
 import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
@@ -437,10 +438,13 @@ function ProjectsView() {
         </div>
       )}
       {selectedProject ? (
-        <WorkspacePanel
-          projectId={selectedProject}
-          projectName={projects.data?.find((item) => item.id === selectedProject)?.name ?? ''}
-        />
+        <>
+          <WorkspacePanel
+            projectId={selectedProject}
+            projectName={projects.data?.find((item) => item.id === selectedProject)?.name ?? ''}
+          />
+          <PullRequestPlans projectId={selectedProject} />
+        </>
       ) : projects.data?.length ? (
         <p className="form-note">{t('workspaceSelect')}</p>
       ) : null}

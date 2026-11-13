@@ -24,7 +24,7 @@ from app.models import Agent, ApprovalRequest, ReviewRecord, Task
 from app.workflow import transition_task
 
 VERDICTS = ("approved", "rework_required")
-APPROVAL_KINDS = ("paid_provider_request", "protected_branch_merge", "deployment", "data_deletion")
+APPROVAL_KINDS = ("paid_provider_request", "protected_branch_merge", "deployment", "data_deletion", "pull_request")
 FINAL_APPROVAL_STATES = ("approved", "rejected")
 
 

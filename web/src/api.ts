@@ -61,6 +61,25 @@ export type ResumePlan = {
   resumed_automatically: false
 }
 
+export type PullRequestPlan = {
+  id: string
+  project_id: string
+  owner: string
+  repo: string
+  repository: string
+  base_branch: string
+  head_branch: string
+  title: string
+  body: string
+  status: 'awaiting_approval' | 'approved_not_executed' | 'rejected'
+  approval_id: string | null
+  executed: boolean
+  execution_available: boolean
+  execution_reason: string
+  commands: string[]
+  created_at: string
+}
+
 export type AuditEvent = {
   id: string
   entity_type: string
@@ -389,6 +408,21 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   resumePlan: (taskId: string) => request<ResumePlan>(`/api/v1/tasks/${taskId}/resume-plan`),
+  pullRequestPlans: (projectId: string) =>
+    request<{ plans: PullRequestPlan[]; execution_available: boolean; execution_reason: string }>(
+      `/api/v1/projects/${projectId}/pull-requests`,
+    ),
+  createPullRequestPlan: (projectId: string, payload: {
+    owner: string; repo: string; base_branch: string; head_branch: string; title: string; body?: string
+  }) => request<{ plan: PullRequestPlan; approval: { id: string; status: string } }>(
+    `/api/v1/projects/${projectId}/pull-requests`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  ),
+  decidePullRequestPlan: (projectId: string, planId: string, payload: { status: 'approved' | 'rejected'; decided_by: string }) =>
+    request<{ plan: PullRequestPlan }>(`/api/v1/projects/${projectId}/pull-requests/${planId}/decision`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   recoverLeases: () => request<{ recovered: string[]; count: number; note: string }>('/api/v1/orchestrator/recover', { method: 'POST' }),
   taskReviews: (taskId: string) => request<{ reviews: Review[]; note: string }>(`/api/v1/tasks/${taskId}/reviews`),
   createReview: (

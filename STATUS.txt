@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 14:11 UTC
+2026-11-13 14:13 UTC
 
 Overall Project Status:
 Testing
@@ -12,15 +12,16 @@ Overall Completion:
 Roughly 80% of the specified local-first product surface is implemented and tested. Every capability that needs no paid provider call, no display, and no Windows host is built, exercised live and covered by tests. What remains open is either gated by design (live provider execution, real agent execution, GitHub execution) or impossible in this environment (Windows, PostgreSQL, Docker, Playwright). See BLOCKERS.txt for the itemised list; nothing below is claimed as done that is not.
 
 Current Phase:
-Phase 22 — Memory context and summarization
+Phase 23 — AI Team Intelligence Center
 
 Current Task:
-Budgeted context selection with extractive summaries
+Fair, measured agent performance with labelled rule-based assessments
 
 Current Activity:
-Deterministic ranking (relevance, scope priority, recency, title), explicit exclusion reasons, extractive summaries with method labels, honest word-count unit; 14 new keys x3
+Complexity weighting, success denominator including failures and excluding cancellations, sample-sufficiency flags, null-not-zero metrics, separate assessed fields with thresholds and caveats; 24 new keys x3
 
 Recently Completed (most recent first):
+- AI Team Intelligence Center: complexity-weighted, sample-aware agent metrics, with rule-based assessments kept separate from measurements (no ranking by task count).
 - Memory context selection: deterministic budgeted retrieval with an explicit exclusion list, and extractive summaries labelled as such.
 - Self-healing surface: classified database errors with rollback-before-close, queue health, and a capability table where only the two genuine automatic recoveries are marked automatic.
 - Fixed an oversized body returning 500 behind a proxy (now drained, bounded, and a real 413).
@@ -65,7 +66,7 @@ External Dependencies:
 Python/npm dependencies installed (@types/node added for the RTL checker). No provider key exists in this environment and no paid request has ever been made. No Arena session was used.
 
 Tests:
-- Passed: 201 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 13 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint.
+- Passed: 212 backend tests (pytest, 1 upstream Starlette/httpx deprecation warning); 13 frontend Vitest tests; TypeScript clean; production build; RTL CSS checker on source and bundle; migration upgrade/downgrade round trips; live HTTP smokes through the Vite proxy for timeline, cancellation, control center and blueprint.
 - Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
 - Pending: Windows/PowerShell, PostgreSQL, Docker, Playwright E2E, pixel-level RTL rendering.
 
@@ -79,7 +80,7 @@ Last Successful Build:
 2026-11-13 13:56 UTC — TypeScript/Vite production build plus RTL checker.
 
 Last Successful Test:
-2026-11-13 14:14 UTC — 201 backend tests and 13 frontend tests.
+2026-11-13 14:22 UTC — 212 backend tests and 13 frontend tests.
 
 Remaining Work:
 - Gated by design: live provider execution behind consent/accounting, real task execution, GitHub push/PR execution, per-user authorization.

@@ -380,3 +380,13 @@ Tests executed: pytest 201 passed, 1 warning; pyflakes clean; vitest 13 passed; 
 Results: Backend 195 -> 201 tests; i18n 583 -> 597 keys x3
 Problems: None
 Solutions: None
+
+[2026-11-13 14:13 UTC] Phase 23 — AI Team Intelligence Center — Fair, measured agent performance with labelled rule-based assessments
+Task: Fair, measured agent performance with labelled rule-based assessments
+Action performed: Added intelligence module and endpoint, Analytics panel, fairness guarantees and 11 tests
+Files created: backend/app/intelligence.py, backend/app/intelligence_api.py, backend/tests/test_intelligence.py, web/src/IntelligencePanel.tsx
+Files modified: backend/app/main.py, web/src/api.ts, web/src/AnalyticsView.tsx, web/src/i18n.ts, web/src/styles.css
+Tests executed: pytest 212 passed, 1 warning; pyflakes clean; vitest 13 passed; tsc clean; build OK (JS 492.39 kB); RTL 0 physical; live: rates 1.0 vs 0.333, equal complexity points, 3 rule-based assessments
+Results: Backend 201 -> 212 tests; i18n 597 -> 621 keys x3; found and fixed a success-rate denominator bug
+Problems: None
+Solutions: None

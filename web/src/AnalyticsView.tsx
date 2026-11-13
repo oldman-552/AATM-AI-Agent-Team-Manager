@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Activity, BarChart3, ClipboardCheck, GitPullRequest, RotateCcw } from 'lucide-react'
 
 import { api } from './api'
+import IntelligencePanel from './IntelligencePanel'
 
 function formatDuration(seconds: number | null, t: (key: string) => string): string {
   if (seconds === null) return '—'
@@ -99,6 +100,8 @@ export default function AnalyticsView() {
         <div className="panel-header"><div><span className="panel-kicker">{t('analyticsNotes')}</span></div></div>
         <ul className="analytics-notes">{data.notes.map((note: string) => <li key={note}>{note}</li>)}</ul>
       </section>
+
+      <IntelligencePanel />
     </>
   )
 }

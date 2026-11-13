@@ -445,3 +445,21 @@ Sessions now roll back before closing, so a failed transaction cannot poison the
 - `GET /memory/summarize/{entry_id}?max_words=&q=` — an **extractive** summary. Sentences are copied verbatim and `method` is `extractive` (or `title_only` when the entry has no body). AATM has no model to paraphrase with, so it never invents one.
 
 When an entry would exceed the remaining budget, it is reduced to a verbatim extract before being dropped: losing a relevant decision entirely is more expensive than including it in part.
+
+## AI Team Intelligence Center
+
+`GET /intelligence?days=90` — measured agent performance plus rule-based assessments, in **separate fields**.
+
+### Measured (counted from rows)
+
+Per agent: `tasks` (total/terminal/open/success/failed/cancelled), `success_rate`, `complexity_points`, `complexity_points_per_task`, `by_complexity`, `rework`, `reviews` (received, not given), `completion_time` (median/fastest/slowest) and `usage`.
+
+Two fairness rules are enforced in the data, not by convention:
+
+- **Complexity is weighted** (`low` 1, `normal` 2, `high` 4, `urgent` 6), so four small tasks do not outrank one urgent task by default.
+- **`success_rate` counts successes and failures in the denominator** and excludes cancellations: a withdrawal outside the agent's control is not evidence about the agent, and counting it as a failure would be unfair. The rule is published in `success_rate_denominator`.
+- `sample_sufficient` is `false` below `min_sample` (3) terminal tasks; an empty metric is `null`, never `0`.
+
+### Assessed (rule-based, labelled)
+
+`assessments[]` entries carry `kind: "rule_based"`, the `basis` metric and threshold, a `recommendation` and a `caveat`. `method.model_generated` is `false` and `method.ranking` is `"none"`: agents are **not** ranked by task count, and no overall ordering is produced.

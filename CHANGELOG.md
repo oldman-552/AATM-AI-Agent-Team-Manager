@@ -9,6 +9,15 @@
 - Added Ubuntu shell and Windows PowerShell starter setup/process/update/uninstall scripts.
 - Added atomic progress events/status heartbeat tooling and initial architecture/security/API documentation.
 
+### AI Team Intelligence Center (Part 13)
+
+- `GET /api/v1/intelligence?days=90`: per-agent measured metrics — tasks, success rate, **complexity-weighted** points, rework, reviews received, median completion time and estimated cost.
+- **Fairness enforced in data, not convention**: complexity weights (low 1 / normal 2 / high 4 / urgent 6); `success_rate` counts failures in the denominator and excludes cancellations, with the rule published in `success_rate_denominator`; `sample_sufficient` flags thin samples; empty metrics are `null`, never `0`; `method.ranking` is `"none"`.
+- Rule-based `assessments[]` carry their `basis` threshold and a `caveat`, and `model_generated` is `false`.
+- **Fixed while testing**: terminal failures were initially left out of the success denominator, which would have reported a perfect rate for an agent that only ever fails.
+- Intelligence panel in the Analytics view separating measured figures from labelled assessments; 621 keys × en/ar/fa.
+- Backend tests 201 → 212.
+
 ### Memory context selection and summarization (Part 9)
 
 - `GET /api/v1/memory/context`: deterministic, budgeted context selection (relevance → scope priority → recency → title) with an explicit `excluded[]` list so a dropped requirement can never be silent.

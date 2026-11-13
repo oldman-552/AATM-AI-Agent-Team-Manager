@@ -648,3 +648,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .memory-context-excluded ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .memory-context-excluded li { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; opacity: .8; }
 .memory-context-excluded small { color: var(--muted); font-size: 11px; }
+
+/* --- Intelligence panel -------------------------------------------------- */
+.intelligence-panel { display: flex; flex-direction: column; gap: 10px; }
+.intelligence-controls { display: flex; gap: 10px; }
+.intelligence-heading { display: flex; gap: 6px; align-items: center; font-size: 13px; margin: 6px 0 0; }
+.intelligence-table-wrap { overflow-x: auto; }
+.intelligence-table td, .intelligence-table th { font-size: 12px; white-space: nowrap; }
+.intelligence-table small { color: var(--muted); font-size: 10px; }
+.intelligence-thin { opacity: .75; }
+.intelligence-assessments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.intelligence-assessments li { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 3px; }
+.intelligence-assessment-head { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.intelligence-assessment-head small { color: var(--muted); font-size: 11px; margin-inline-start: auto; }
+.intelligence-assessments p { margin: 0; font-size: 12px; }
+.intelligence-recommendation { color: var(--accent); }

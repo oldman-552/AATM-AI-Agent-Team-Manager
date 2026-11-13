@@ -45,7 +45,8 @@ This is the current Phase 1 architecture and a target boundary map, not a declar
 24. **Agent control center** (`backend/app/agent_center.py`) — per-agent live state assembled from tasks, audit rows, usage records, leases and browser profiles, with an explicit `honesty` block; absent data is `null`.
 25. **Self-healing and recovery** (`backend/app/recovery.py`) — classified database errors with rollback-before-close, bounded transient retry restricted to lock contention, queue health, and a capability table that marks only genuine automatic recoveries as automatic.
 26. **Memory context** (`backend/app/memory_context.py`) — deterministic, budgeted context selection with an explicit exclusion list, and extractive summarization that never paraphrases.
-27. **Project builder** (`backend/app/blueprints.py`) — a deterministic rule engine that turns a described idea into an eleven-section plan with provenance for every requirement; applying is explicit, re-validated and inert.
+27. **Team intelligence** (`backend/app/intelligence.py`) — complexity-weighted, sample-aware agent metrics with rule-based assessments kept in separate fields from the measurements.
+28. **Project builder** (`backend/app/blueprints.py`) — a deterministic rule engine that turns a described idea into an eleven-section plan with provenance for every requirement; applying is explicit, re-validated and inert.
 
 ## Planned components
 

@@ -226,6 +226,44 @@ export type ManagerPlan = {
   plan_id: string
 }
 
+export type IntelligenceAgent = {
+  agent_id: string
+  name: string
+  role: string
+  provider: string
+  model: string | null
+  is_manager: boolean
+  tasks: { total: number; terminal: number; open: number; success: number; failed: number; cancelled: number }
+  success_rate: number | null
+  success_rate_denominator: string
+  sample_sufficient: boolean
+  complexity_points: number
+  complexity_points_per_task: number | null
+  by_complexity: Record<string, number>
+  rework: { events: number; rate: number | null }
+  reviews: { received: number; approved: number; pass_rate: number | null }
+  completion_time: { samples: number; median_seconds: number | null; fastest_seconds: number | null; slowest_seconds: number | null }
+  usage: { records: number; estimated_cost_usd: number; confirmed: boolean; note: string }
+}
+
+export type IntelligenceReport = {
+  period: { days: number; since: string; until: string }
+  agents: IntelligenceAgent[]
+  by_role: Record<string, IntelligenceAgent[]>
+  by_complexity: Record<string, number>
+  assessments: {
+    kind: string; topic: string; subject: string; finding: string
+    basis: { metric: string; threshold?: number; sample?: number }
+    recommendation: string; caveat: string
+  }[]
+  method: {
+    measured_fields: string[]; assessed_fields: string[]; assessment_kind: string
+    model_generated: boolean; complexity_weights: Record<string, number>
+    min_sample: number; ranking: string; note: string
+  }
+  note: string
+}
+
 export type MemoryContext = {
   project_id: string | null
   query: string
@@ -696,6 +734,7 @@ export const api = {
   analytics: (days = 14) => request<AnalyticsOverview>(`/api/v1/analytics?days=${days}`),
   resources: (configuredMax = 2) => request<ResourceReport>(`/api/v1/system/resources?configured_max=${configuredMax}`),
   recovery: () => request<RecoveryReport>('/api/v1/recovery'),
+  intelligence: (days = 90) => request<IntelligenceReport>(`/api/v1/intelligence?days=${days}`),
   memoryContext: (params: { projectId?: string; q?: string; wordBudget?: number }) => {
     const search = new URLSearchParams()
     if (params.projectId) search.set('project_id', params.projectId)

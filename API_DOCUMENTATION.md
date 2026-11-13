@@ -205,6 +205,35 @@ Kinds: `paid_provider_request`, `protected_branch_merge`, `deployment`, `data_de
 
 Records a human decision only. Deciding an already-decided request returns 409. The response states explicitly that the gated action is **not** executed by this build — no endpoint performs deployments, merges, deletions, or paid provider traffic.
 
+## Project workspaces (isolated Git)
+
+Workspaces live under `AATM_WORKSPACES_ROOT` (default `$AATM_HOME/workspaces`), never inside the AATM repository.
+
+### `GET /projects/{project_id}/workspace`
+
+Returns the stored workspace plus a read-only Git status (`branch`, `head_commit`, `on_protected_branch`, `clean`, `changed_files`, `changed_count`, `diffstat`). Returns `workspace: null` when none exists.
+
+### `POST /projects/{project_id}/workspace` → 201
+
+```json
+{ "local_source": "/absolute/path/to/local/repo", "branch": "aatm/task-1" }
+```
+
+- `local_source` must be an existing **local** Git repository; network URLs are rejected by contract (only a filesystem path is accepted).
+- With no source, a fresh local repository with an initial commit is created.
+- `branch` must pass validation and must not be `main`/`master`.
+- One workspace per project (409 on duplicates).
+
+### `POST /projects/{project_id}/workspace/branches` → 201
+
+Creates and checks out a new work branch. Protected branch names are rejected with 422.
+
+### `DELETE /projects/{project_id}/workspace`
+
+Removes only the AATM-created workspace directory after re-validating that it is inside the configured root; the record and an audit event are updated. It does not run destructive Git commands and never touches the source repository.
+
+Not implemented (and deliberately not reachable): merge, push, fetch from remotes, force operations, and branch deletion. No Git command runs with credentials, and `GIT_TERMINAL_PROMPT=0` plus a scrubbed environment prevent interactive prompts.
+
 ## Audit events added in this slice
 
-`task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.
+`task.state_changed`, `task.lease_recovered`, `task.review_approved`, `task.review_rework_required`, `approval.requested`, `approval.approved`, `approval.rejected`, `project.workspace_created`, `project.workspace_branch_created`, `project.workspace_removed`, `provider.config_updated`, `providers.settings_updated`, and `budget.limit_updated` join the existing creation/assignment events. Audit summaries deliberately exclude credential values.

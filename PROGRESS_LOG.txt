@@ -130,3 +130,13 @@ Tests executed: Backend pytest 51 passed; frontend vitest 5 passed; tsc --noEmit
 Results: All suites pass. Reviewer separation, evidence requirements, replay safety, double-decision rejection and non-execution of gated actions verified in tests and live.
 Problems: None beyond an earlier documentation-script variable typo, corrected before writing.
 Solutions: Re-ran the documentation edits scoped correctly.
+
+[2026-11-13 13:00 UTC] Phase 6/7 — Project workspaces and Git isolation — Isolated local Git workspaces per project
+Task: Isolated local Git workspaces per project
+Action performed: Implemented and verified isolated local Git workspaces with branch creation, read-only status and audited removal
+Files created: backend/app/workspaces.py, backend/app/workspace_api.py, backend/migrations/versions/0005_project_workspaces.py, backend/tests/test_workspaces.py, web/src/components/WorkspacePanel.tsx
+Files modified: backend/app/models.py, backend/app/main.py, web/src/App.tsx, web/src/api.ts, web/src/i18n.ts, web/src/styles.css, .gitignore, README.md, ARCHITECTURE.md, API_DOCUMENTATION.md, IMPLEMENTATION_STATUS.md, TESTING_REPORT.md, CHANGELOG.md
+Tests executed: Backend pytest 58 passed; frontend vitest 5 passed; tsc --noEmit; vite build; migration 0005 up/down/re-up
+Results: All suites pass. Real repositories cloned into isolated workspaces, source repos left clean, traversal and protected-branch attempts rejected, removal audited.
+Problems: The stored-path lookup re-derived the directory slug from the project title, so a branch operation failed after creation; branch names like 'refs//head' also passed validation.
+Solutions: Persisted workspace_path is now authoritative and re-validated against the root; branch validation rejects '//', trailing '/' and trailing dots.

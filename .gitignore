@@ -8,6 +8,8 @@
 # User data, browser profiles, databases, and runtime logs
 .aatm/
 .aatm-home/
+workspaces/
+
 data/
 browser-profiles/
 *.db

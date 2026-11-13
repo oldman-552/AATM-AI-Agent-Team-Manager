@@ -11,6 +11,7 @@ import {
   Clock3,
   Command,
   Cpu,
+  FolderGit2,
   FolderKanban,
   Languages,
   ListTodo,
@@ -26,6 +27,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { api, type Agent, type AuditEvent, type Project, type Task, type WorkflowDefinition } from './api'
 import ApprovalsView from './ApprovalsView'
+import WorkspacePanel from './components/WorkspacePanel'
 import ProvidersView from './ProvidersView'
 
 type View = 'dashboard' | 'projects' | 'agents' | 'tasks' | 'approvals' | 'providers'
@@ -384,6 +386,7 @@ function ProjectsView() {
   const [formOpen, setFormOpen] = useState(false)
   const queryClient = useQueryClient()
   const projects = useQuery({ queryKey: ['projects'], queryFn: api.projects })
+  const [selectedProject, setSelectedProject] = useState<string>('')
   const mutation = useMutation({
     mutationFn: api.createProject,
     onSuccess: async () => {
@@ -418,21 +421,41 @@ function ProjectsView() {
       </FormPanel>}
       {projects.isLoading ? <StatePanel icon={<LoaderCircle className="spin" size={22} />} title={t('loading')} /> : projects.isError ? <StatePanel icon={<CircleAlert size={22} />} title={t('loadError')} /> : (
         <div className="record-grid">
-          {projects.data?.length ? projects.data.map((project) => <ProjectCard key={project.id} project={project} />) : <EmptyCard title={t('noProjects')} description={t('noProjectsDetail')} icon={<FolderKanban size={22} />} />}
+          {projects.data?.length ? projects.data.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onSelect={() => setSelectedProject((current) => (current === project.id ? '' : project.id))}
+              selected={selectedProject === project.id}
+            />
+          )) : <EmptyCard title={t('noProjects')} description={t('noProjectsDetail')} icon={<FolderKanban size={22} />} />}
         </div>
       )}
+      {selectedProject ? (
+        <WorkspacePanel
+          projectId={selectedProject}
+          projectName={projects.data?.find((item) => item.id === selectedProject)?.name ?? ''}
+        />
+      ) : projects.data?.length ? (
+        <p className="form-note">{t('workspaceSelect')}</p>
+      ) : null}
     </>
   )
 }
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project, onSelect, selected }: { project: Project; onSelect: () => void; selected: boolean }) {
   const { t, i18n } = useTranslation()
   return (
-    <article className="record-card">
+    <article className={`record-card ${selected ? 'record-card-selected' : ''}`}>
       <div className="record-card-top"><span className="record-icon blue"><FolderKanban size={18} /></span><span className="status-chip"><span className="status-dot online" />{project.status === 'active' ? t('statusActive') : project.status}</span></div>
       <h3>{project.name}</h3>
       <p className="record-description">{project.description || t('noDescription')}</p>
       <div className="record-meta"><span>{t('createdAt', { date: formatDate(project.created_at, i18n.language) })}</span></div>
+      <div className="form-actions record-actions">
+        <button className="button button-secondary task-action-button" type="button" onClick={onSelect}>
+          <FolderGit2 size={12} />{t('workspaceSection')}
+        </button>
+      </div>
     </article>
   )
 }

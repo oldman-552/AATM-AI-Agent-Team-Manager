@@ -228,6 +228,33 @@ export type Approval = {
   decided_at: string | null
 }
 
+export type WorkspaceStatus = {
+  branch: string
+  head_commit: string
+  on_protected_branch: boolean
+  clean: boolean
+  changed_files: string[]
+  changed_count: number
+  diffstat: string
+  note: string
+}
+
+export type ProjectWorkspace = {
+  id: string
+  project_id: string
+  workspace_path: string
+  root_path: string
+  branch: string | null
+  status: string
+}
+
+export type WorkspaceResponse = {
+  workspace: ProjectWorkspace | null
+  status?: WorkspaceStatus | null
+  error?: string
+  note?: string
+}
+
 export type WorkflowDefinition = {
   transitions: Record<string, string[]>
   dependency_satisfied_states: string[]
@@ -303,6 +330,19 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+  workspace: (projectId: string) => request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`),
+  createWorkspace: (projectId: string, payload: { local_source?: string | null; branch?: string | null }) =>
+    request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  createWorkspaceBranch: (projectId: string, branch: string) =>
+    request<{ branch: string; status: WorkspaceStatus }>(`/api/v1/projects/${projectId}/workspace/branches`, {
+      method: 'POST',
+      body: JSON.stringify({ branch }),
+    }),
+  removeWorkspace: (projectId: string) =>
+    request<{ removed: boolean; workspace_path: string }>(`/api/v1/projects/${projectId}/workspace`, { method: 'DELETE' }),
   providers: () => request<ProviderCatalog>('/api/v1/providers'),
   providerHealth: (providerId: string) => request<ProviderHealth>(`/api/v1/providers/${providerId}/health`),
   updateProviderConfig: (

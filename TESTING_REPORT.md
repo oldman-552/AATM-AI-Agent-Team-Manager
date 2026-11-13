@@ -8,11 +8,13 @@
 ## 2026-11-13 12:57 UTC — Backend tests (current)
 
 - Latest command: `cd backend && ../.venv/bin/python -m pytest`.
-- Result: **51 passed, 1 warning** (42 new tests across this session).
+- Result: **58 passed, 1 warning** (49 new tests across this session).
+- `tests/test_workspaces.py` (7 tests): branch-name validation (`main`/`master`, traversal, `refs//head`, trailing slash rejected); workspace path cannot escape the root; a real local repository is cloned into an isolated workspace and its source stays clean; API lifecycle (create → duplicate 409 → branch creation → protected branch 422 → status → audited removal); unknown project/missing workspace; non-repository source rejected; cloning a local source preserves history and files.
 - `tests/test_quality.py` (7 tests): self-review rejected; blank checks rejected; approval requires concrete checks and recorded output; replay returns `created: false`; verdict conflicts rejected; rework requires a summary and increments retries; unknown reviewer/task rejected; reviews before completion rejected; approval gates record decisions without executing anything; double decisions rejected; review and approval audit events written.
 - `tests/test_orchestrator.py` (15 tests): default `DisabledExecutor` refuses to run and records a failure; fake executor completes a task with evidence and writes exactly the `assigned→running` / `running→completed` transitions; results without evidence are rejected; executor exceptions record only the exception type (so no secret can leak into the task record); `max_concurrency` caps dispatch; dependencies block dispatch until complete; expired leases are recovered then retried successfully; an active lease is never stolen; retry backoff and the retry ceiling behave; retries are not dispatched before backoff elapses; audit events are written; recovery works after an application restart; the orchestrator API is inspection/recovery only and `POST /orchestrator/run` does not exist; claims reject unassigned tasks and replay claims.
 - Migration `0003_task_leases` verified: upgrade → columns present → downgrade to `0002_provider_boundary` → columns removed → re-upgrade → columns restored (file-backed SQLite).
 - Migration `0004_reviews_approvals` verified the same way (upgrade → `review_records`/`approval_requests` present → downgrade to `0003_task_leases` → removed → re-upgrade → present).
+- Migration `0005_project_workspaces` verified the same way (upgrade → table present → downgrade to `0004_reviews_approvals` → removed → re-upgrade → present).
 - New coverage this slice:
   - `tests/test_provider_boundary.py` (10 tests): credential-reference validation and secret redaction; configurable pricing marked as estimate-only; budget consent/no-limit/limit-exceeded/idempotent-commit behaviour; monthly and per-scope limits; Arena hard block; Claude execution gating (disabled without explicit authorization, produces no call without consent, records usage once on replay, blocks when the global switch is off); credential redaction in provider errors; routing that never selects a paid provider without consent and never records usage; deterministic policies; and a socket-blocking test proving health/routing open no sockets.
   - `tests/test_provider_api.py` (6 tests): catalog contains no secret values; raw credentials and unknown fields are rejected; references are accepted and clearable; Arena cannot be enabled (409); budgets plus dry-run routing with zero usage records; settings validation and absence of any execute route; untrusted Host and hostile Origin rejection.
@@ -24,8 +26,8 @@
 ## 2026-11-13 12:57 UTC — Frontend tests and build (current)
 
 - `cd web && npm test` (Vitest 2.1.9) → **5 passed**.
-  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (260 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
-- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1645 modules, `dist/assets/index-BTIt54SP.css` 29.24 kB, `dist/assets/index-BQgv12FT.js` 336.83 kB.
+  - Asserts English/Arabic/Persian are the only supported languages, that all three key sets are identical (282 keys each), that no translation is empty, that Arabic and Persian are genuinely distinct translations (not copies), and that `ar`/`fa` are RTL while `en` is LTR.
+- `cd web && npm run build` (`tsc --noEmit && vite build`) → **Passed**; 1647 modules, `dist/assets/index-CJNKwuQJ.css` 30.60 kB, `dist/assets/index-B2CbjxMp.js` 347.91 kB.
 - First TypeScript run failed twice: a missing `Send` icon import in `ProvidersView.tsx` and an invalid Vitest assertion overload in `i18n.test.ts`. Both were fixed before the passing run.
 
 ## 2026-11-13 — Frontend build (historical)

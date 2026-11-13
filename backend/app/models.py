@@ -206,3 +206,18 @@ class ApprovalRequest(Base):
     decision_note: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ProjectWorkspace(Base):
+    """Isolated Git workspace bound to a project. One workspace per project."""
+
+    __tablename__ = "project_workspaces"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"), nullable=False, unique=True, index=True)
+    root_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    workspace_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    branch: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)

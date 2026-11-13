@@ -23,6 +23,9 @@
 - Independent QA reviews with reviewer separation, concrete-check evidence, replay-safe verdicts, and a review form in the Tasks view.
 - Approval gates for paid provider requests, protected merges, deployments and data deletion, with an Approvals view. Decisions are recorded and audited; the gated actions are never executed.
 - Alembic revision `0004_reviews_approvals` (review records, approval requests).
-- Backend tests 9 → 51; Vitest resource tests added (5).
+- Isolated, local-only Git project workspaces: create from a local repository or fresh init, new work branches, read-only status/diff, root-escape protection, and audited removal. Merge/push/fetch/delete-branch are deliberately absent.
+- Alembic revision `0005_project_workspaces`.
+- Workspace panel in the Projects view.
+- Backend tests 9 → 58; Vitest resource tests added (5).
 
 - Provider integrations beyond the gated Anthropic plumbing, real agent execution (no executor is configured), visual RTL verification, browser profiles, backup/restore, authentication, and Windows verification remain incomplete. Approval gates record decisions but do not perform the gated operations.

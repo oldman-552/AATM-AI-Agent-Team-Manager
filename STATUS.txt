@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 12:57 UTC
+2026-11-13 13:00 UTC
 
 Overall Project Status:
 Developing
@@ -12,13 +12,13 @@ Overall Completion:
 ~3% estimated; this repository began as a README-only skeleton and only the first foundation slice exists.
 
 Current Phase:
-Phase 8/9 — QA reviews and approvals
+Phase 6/7 — Project workspaces and Git isolation
 
 Current Task:
-P2 independent QA reviews and approval gates
+Isolated local Git workspaces per project
 
 Current Activity:
-Added quality service, review/approval API, migration 0004, review form in the task UI, and a dedicated Approvals view
+Added workspace service, API, migration 0005, workspace panel in the Projects view and real-repository tests
 
 Recently Completed:
 - Saved AATM_MASTER_DEVELOPMENT_PROMPT.md in the repository.

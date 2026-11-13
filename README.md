@@ -10,15 +10,16 @@ AATM is a local-first AI engineering command center in early development. The co
 - A persisted, deliberately unconfigured Manager identity and 20 default worker-role templates.
 - Project/agent/task record creation and listing; task assignment records; worker registration capped at 20.
 - React + TypeScript + Vite UI for Dashboard, Projects, Agents, Tasks, Approvals, and Providers, using a relative `/api/v1` path through the Vite proxy.
-- English, Arabic, and Persian resources with 260 keys each, a key-parity/RTL unit test, a persisted selector, and `dir=rtl` for Arabic/Persian.
+- English, Arabic, and Persian resources with 282 keys each, a key-parity/RTL unit test, a persisted selector, and `dir=rtl` for Arabic/Persian.
 - Offline provider boundary: safe credential references, offline health, deterministic routing policies, and hard server-side budget enforcement — with **no** HTTP endpoint that performs a live model request.
 - Task workflow state machine: validated transitions, dependency-gated ready queue, evidence requirements, replay-safe idempotency, and append-only history.
 - Durable orchestrator: lease-based claims, bounded concurrency, backoff retries, crash recovery, and inspection/recovery endpoints — with execution disabled by default.
 - Independent QA reviews (reviewer separation + concrete checks) and audited approval gates for paid/deploy/merge/delete operations (decisions recorded, actions not executed).
+- Isolated local Git workspaces per project with branch creation and read-only status (no merge/push/fetch).
 - Ubuntu shell and Windows PowerShell dependency/start/stop/update/uninstall entry points (Windows execution remains unverified here).
 - Atomic progress event/status writer and a five-minute heartbeat command.
 
-**Not implemented yet:** live provider traffic, agent execution/orchestration, persistent browser profiles, memory, GitHub workflows, independent QA/recovery/approvals, confirmed billing reconciliation, backup/restore, and production authentication. Creating or moving a task record does not execute it; the Manager record does not make AI calls. Arena integration remains blocked pending a compliant supported route.
+**Not implemented yet:** live provider traffic, real agent execution, orchestration over real executors, persistent browser profiles, memory, GitHub workflows, independent QA/recovery/approvals, confirmed billing reconciliation, backup/restore, and production authentication. Creating or moving a task record does not execute it; the Manager record does not make AI calls. Arena integration remains blocked pending a compliant supported route.
 
 ## Run locally
 
@@ -50,6 +51,7 @@ The API binds to `127.0.0.1:8000` by default. The web development server also bi
 - Providers (offline): `GET /api/v1/providers`, `GET /api/v1/providers/{id}/health`, `POST /api/v1/providers/route`
 - Workflow: `GET /api/v1/tasks/workflow`, `GET /api/v1/tasks/ready`, `PATCH /api/v1/tasks/{id}/state`
 - Quality: `GET|POST /api/v1/tasks/{id}/reviews`, `GET|POST /api/v1/approvals`
+- Workspaces: `GET|POST|DELETE /api/v1/projects/{id}/workspace`, `POST .../workspace/branches`
 - Orchestrator: `GET /api/v1/orchestrator/status`, `POST /api/v1/orchestrator/recover`
 - Dashboard: `GET /api/v1/dashboard`
 - OpenAPI UI: `http://127.0.0.1:8000/docs`

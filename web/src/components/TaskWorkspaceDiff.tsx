@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { FileDiff, LoaderCircle } from 'lucide-react'
+import { FileDiff, GitMerge, LoaderCircle } from 'lucide-react'
 
 import { api } from '../api'
 
@@ -15,8 +15,9 @@ const untrackedStatusTranslation: Record<string, string> = {
   omitted_limit: 'taskDiffOmitted',
 }
 
-export default function TaskWorkspaceDiff({ projectId, taskId }: { projectId: string; taskId: string }) {
+export default function TaskWorkspaceDiff({ projectId, taskId, taskState }: { projectId: string; taskId: string; taskState: string }) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const query = useQuery({
     queryKey: ['taskWorkspaceDiff', projectId, taskId],
@@ -24,6 +25,32 @@ export default function TaskWorkspaceDiff({ projectId, taskId }: { projectId: st
     enabled: open,
   })
   const preview = query.data?.preview
+  const reviews = useQuery({
+    queryKey: ['taskReviews', taskId],
+    queryFn: () => api.taskReviews(taskId),
+    enabled: open && taskState === 'approved',
+  })
+  const integration = useMutation({
+    mutationFn: () => api.integrateTaskWorkspace(projectId, taskId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['taskWorkspaceDiff', projectId, taskId] }),
+        queryClient.invalidateQueries({ queryKey: ['taskWorkspace', projectId, taskId] }),
+        queryClient.invalidateQueries({ queryKey: ['workspace', projectId] }),
+        queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      ])
+    },
+  })
+  const reviewedCurrentCommit = Boolean(
+    preview && reviews.data?.reviews.some(
+      (review) => review.verdict === 'approved' && review.task_worktree_head === preview.head_commit,
+    ),
+  )
+  const canIntegrate = Boolean(
+    taskState === 'approved' && reviewedCurrentCommit && preview &&
+    preview.base_commit !== preview.head_commit && !preview.truncated &&
+    !preview.untracked_truncated && preview.untracked_files.length === 0 && preview.diff,
+  )
 
   return (
     <div className="task-diff-block">
@@ -69,6 +96,23 @@ export default function TaskWorkspaceDiff({ projectId, taskId }: { projectId: st
                       {preview.untracked_truncated && <p className="form-note">{t('taskDiffListTruncated')}</p>}
                     </div>
                   )}
+                  {taskState === 'approved' && preview.base_commit !== preview.head_commit && !reviews.isLoading && !reviewedCurrentCommit && (
+                    <p className="form-note">{t('taskDiffReviewRequired')}</p>
+                  )}
+                  {canIntegrate && !integration.isSuccess && (
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      disabled={integration.isPending}
+                      onClick={() => {
+                        if (window.confirm(t('taskDiffIntegrateConfirm'))) integration.mutate()
+                      }}
+                    >
+                      <GitMerge size={14} />{integration.isPending ? t('taskDiffIntegrating') : t('taskDiffIntegrate')}
+                    </button>
+                  )}
+                  {integration.isError && <p className="form-error">{t('taskDiffIntegrationError')}: {integration.error.message}</p>}
+                  {integration.isSuccess && <p className="form-note">{t('taskDiffIntegrated', { branch: integration.data.branch })}</p>}
                 </>
               )
       )}

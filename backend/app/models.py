@@ -267,6 +267,7 @@ class ReviewRecord(Base):
     verdict: Mapped[str] = mapped_column(String(32), nullable=False)
     summary: Mapped[str] = mapped_column(String(500), nullable=False, default="")
     checks: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    task_worktree_head: Mapped[str | None] = mapped_column(String(64), nullable=True)
     idempotency_key: Mapped[str] = mapped_column(String(160), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utc_now, index=True)
 
@@ -355,6 +356,26 @@ class OrchestratorRunLock(Base):
     id: Mapped[str] = mapped_column(String(40), primary_key=True)
     owner: Mapped[str | None] = mapped_column(String(120), nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class OrchestratorWorkerSlot(Base):
+    """One database-wide execution permit, leased to an orchestrator run."""
+
+    __tablename__ = "orchestrator_worker_slots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+
+class OrchestratorDispatchGroupLease(Base):
+    """Cross-process mutex for tasks sharing one mutable workspace."""
+
+    __tablename__ = "orchestrator_dispatch_group_leases"
+
+    group_key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    owner: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
 
 
 class AgentInstruction(Base):

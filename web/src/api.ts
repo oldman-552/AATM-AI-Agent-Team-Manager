@@ -518,6 +518,7 @@ export type Review = {
   verdict: 'approved' | 'rework_required'
   summary: string
   checks: ReviewCheck[]
+  task_worktree_head?: string | null
   created_at: string
 }
 
@@ -560,6 +561,16 @@ export type WorkspaceResponse = {
   status?: WorkspaceStatus | null
   error?: string
   note?: string
+}
+
+export type TaskWorkspaceIntegrationResponse = {
+  task_id: string
+  integrated: boolean
+  already_integrated: boolean
+  branch: string
+  base_commit: string
+  head_commit: string
+  note: string
 }
 
 export type TaskWorkspaceDiffResponse = {
@@ -869,6 +880,8 @@ export const api = {
   workspace: (projectId: string) => request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`),
   taskWorkspaceDiff: (projectId: string, taskId: string) =>
     request<TaskWorkspaceDiffResponse>(`/api/v1/projects/${projectId}/workspace/tasks/${taskId}/diff`),
+  integrateTaskWorkspace: (projectId: string, taskId: string) =>
+    request<TaskWorkspaceIntegrationResponse>(`/api/v1/projects/${projectId}/workspace/tasks/${taskId}/integrate`, { method: 'POST' }),
   createWorkspace: (projectId: string, payload: { local_source?: string | null; branch?: string | null }) =>
     request<WorkspaceResponse>(`/api/v1/projects/${projectId}/workspace`, {
       method: 'POST',

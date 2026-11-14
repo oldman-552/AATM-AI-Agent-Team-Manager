@@ -60,6 +60,10 @@ def test_successful_run_endpoint_releases_database_lock(client, monkeypatch) -> 
     monkeypatch.setenv("AATM_EXECUTION_ENABLED", "1")
     response = client.post("/api/v1/orchestrator/run")
     assert response.status_code == 200
+    concurrency = response.json()["concurrency"]
+    assert concurrency["global_worker_slots_acquired"] == 1
+    assert concurrency["global_worker_slot_capacity"] == 20
+    assert concurrency["effective_dispatch_budget"] == 1
 
     db = client.app.state.session_factory()
     try:

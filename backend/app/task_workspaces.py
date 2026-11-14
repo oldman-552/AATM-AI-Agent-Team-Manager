@@ -14,7 +14,7 @@ import re
 import stat
 from pathlib import Path
 
-from app.workspaces import WorkspaceError, WorkspacePaths, run_git, run_git_bounded, workspace_status
+from app.workspaces import PROTECTED_BRANCHES, WorkspaceError, WorkspacePaths, run_git, run_git_bounded, workspace_status
 
 WORKTREE_ROOT_NAME = ".aatm-task-worktrees"
 TASK_DIFF_PREVIEW_BYTES = 256 * 1024
@@ -168,7 +168,145 @@ def inspect_task_worktree(
         "base_commit": base_commit,
         **status,
         "content_included": False,
-        "note": "Read-only metadata only; file contents are not exposed and AATM does not merge or delete task worktrees.",
+        "note": "Read-only metadata only; file contents are not exposed and this inspection never mutates or integrates the task worktree.",
+    }
+
+
+def _require_clean_git_worktree(path: Path, label: str) -> None:
+    status, truncated = run_git_bounded(
+        ["-c", "core.fsmonitor=false", "status", "--porcelain", "--untracked-files=all", "-z"],
+        cwd=path,
+        max_output_bytes=64 * 1024,
+        timeout=5,
+    )
+    if truncated:
+        raise WorkspaceError(f"{label} status exceeds the safe integration limit; refusing integration.")
+    if status:
+        raise WorkspaceError(f"{label} must be clean before task integration.")
+
+
+def integrate_approved_task_worktree(
+    root: str | Path,
+    source: str | Path,
+    project_id: str,
+    task_id: str,
+    *,
+    approved_head: str,
+) -> dict[str, object]:
+    """Fast-forward a clean, reviewed task commit into a clean non-protected branch.
+
+    This is deliberately separate from the read-only inspection/preview APIs.
+    It requires a committed descendant of the recorded base and refuses dirty
+    worktrees, source drift, binary/symlink/submodule changes, and truncation.
+    """
+    source_path = Path(source).expanduser().resolve()
+    target = existing_task_worktree(root, source_path, project_id, task_id)
+    if target is None:
+        raise WorkspaceError("No AATM-owned task worktree exists for this task.")
+    _root, _target, owner_file = _paths(root, source_path, project_id, task_id)
+    try:
+        owner = json.loads(owner_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise WorkspaceError("Task worktree ownership record is unreadable.") from exc
+    base_commit = owner.get("base_commit") if isinstance(owner, dict) else None
+    if not isinstance(base_commit, str) or not _COMMIT.fullmatch(base_commit):
+        raise WorkspaceError("Task worktree base commit metadata is invalid.")
+
+    source_root = Path(run_git(["rev-parse", "--show-toplevel"], cwd=source_path)).resolve()
+    target_root = Path(run_git(["rev-parse", "--show-toplevel"], cwd=target)).resolve()
+    if source_root != source_path or target_root != target.resolve():
+        raise WorkspaceError("Project workspace or task worktree does not resolve to its registered Git root.")
+    source_branch = run_git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=source_path)
+    if source_branch == "HEAD" or source_branch in PROTECTED_BRANCHES:
+        raise WorkspaceError("Task worktree changes cannot be integrated into a detached or protected branch.")
+
+    source_head = run_git(["rev-parse", "HEAD"], cwd=source_path)
+    task_head = run_git(["rev-parse", "HEAD"], cwd=target)
+    if not _COMMIT.fullmatch(approved_head) or task_head != approved_head:
+        raise WorkspaceError("Task worktree HEAD changed after the recorded independent review; refusing integration.")
+    _require_clean_git_worktree(source_path, "Project workspace")
+    _require_clean_git_worktree(target, "Task worktree (all reviewed changes must be committed)")
+    if source_head == task_head:
+        return {
+            "integrated": True,
+            "already_integrated": True,
+            "branch": source_branch,
+            "base_commit": base_commit,
+            "head_commit": task_head,
+            "note": "The approved task commit is already the project workspace HEAD.",
+        }
+    if source_head != base_commit:
+        raise WorkspaceError("Project workspace HEAD changed since this task worktree was created; refusing integration.")
+    if task_head == base_commit:
+        raise WorkspaceError("Task worktree has no committed changes to integrate.")
+    try:
+        run_git(["merge-base", "--is-ancestor", base_commit, task_head], cwd=source_path)
+    except WorkspaceError as exc:
+        raise WorkspaceError("Task commit is not a descendant of its recorded base commit.") from exc
+
+    raw_diff, diff_truncated = run_git_bounded(
+        ["diff", "--raw", "-z", base_commit, task_head],
+        cwd=source_path,
+        max_output_bytes=64 * 1024,
+        timeout=5,
+    )
+    if diff_truncated:
+        raise WorkspaceError("Task change metadata exceeds the safe integration review limit.")
+    modes: list[tuple[str, str]] = []
+    for record in raw_diff.split("\0"):
+        if record.startswith(":"):
+            fields = record.split()
+            if len(fields) < 5:
+                raise WorkspaceError("Task change metadata could not be parsed safely.")
+            modes.append((fields[0][1:], fields[1]))
+    if not modes:
+        raise WorkspaceError("Task worktree commit contains no file changes to integrate.")
+    valid_modes = {"000000", "100644", "100755"}
+    if any(
+        old not in valid_modes or new not in valid_modes or {old, new} == {"000000"}
+        for old, new in modes
+    ):
+        raise WorkspaceError("Symlink, submodule, and other non-regular file changes require manual integration.")
+    numstat, numstat_truncated = run_git_bounded(
+        ["diff", "--numstat", "-z", base_commit, task_head],
+        cwd=source_path,
+        max_output_bytes=64 * 1024,
+        timeout=5,
+    )
+    if numstat_truncated or any(line.startswith("-\t-\t") for line in numstat.split("\0")):
+        raise WorkspaceError("Binary or oversized change metadata requires manual integration.")
+
+    _review_diff, review_truncated = run_git_bounded(
+        [
+            "-c", "core.fsmonitor=false",
+            "diff", "--no-ext-diff", "--no-textconv", "--no-color", "--no-renames", "--unified=3",
+            base_commit, "--",
+        ],
+        cwd=target,
+        max_output_bytes=TASK_DIFF_PREVIEW_BYTES,
+        timeout=15,
+    )
+    if review_truncated or len(_review_diff.encode("utf-8")) > TASK_DIFF_PREVIEW_BYTES:
+        raise WorkspaceError("Complete task diff is not available within the review limit; refusing integration.")
+
+    # Disable repository hooks for this narrowly-scoped fast-forward operation.
+    import tempfile
+
+    with tempfile.TemporaryDirectory(prefix=".aatm-integration-hooks-", dir=source_path.parent) as hooks_dir:
+        run_git(
+            ["-c", f"core.hooksPath={hooks_dir}", "merge", "--ff-only", "--no-edit", task_head],
+            cwd=source_path,
+        )
+    integrated_head = run_git(["rev-parse", "HEAD"], cwd=source_path)
+    if integrated_head != task_head:
+        raise WorkspaceError("Git integration completed at an unexpected commit; inspect the project workspace.")
+    return {
+        "integrated": True,
+        "already_integrated": False,
+        "branch": source_branch,
+        "base_commit": base_commit,
+        "head_commit": integrated_head,
+        "note": "Approved task commit was fast-forwarded locally; no remote operation or task-worktree mutation occurred.",
     }
 
 
@@ -275,9 +413,9 @@ def preview_task_worktree_diff(
 ) -> dict[str, object] | None:
     """Return a capped text diff from the owned worktree's original base commit.
 
-    Untracked files are intentionally omitted from patch text. Their names
-    remain visible through `inspect_task_worktree`; no external diff or
-    textconv command is allowed to run.
+    Safe untracked text is returned separately under its own strict limits;
+    binary and unsafe file contents are omitted. No external diff or textconv
+    command is allowed to run, and this function never mutates either worktree.
     """
     target = existing_task_worktree(root, source, project_id, task_id)
     if target is None:

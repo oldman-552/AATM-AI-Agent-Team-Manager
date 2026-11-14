@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api import get_session
-from app.models import ApprovalRequest, ReviewRecord, Task
+from app.models import ApprovalRequest, ProjectWorkspace, ReviewRecord, Task
 from app.quality import (
     ReviewError,
     decide_approval,
@@ -18,6 +18,8 @@ from app.quality import (
     record_review,
     request_approval,
 )
+from app.task_workspaces import inspect_task_worktree
+from app.workspaces import WorkspaceError, stored_workspace_paths
 from app.schemas import (
     ApprovalCreate,
     ApprovalDecision,
@@ -49,6 +51,18 @@ def create_review(
     task = db.get(Task, task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found.")
+    task_worktree_head: str | None = None
+    if task.project_id:
+        workspace = db.scalar(select(ProjectWorkspace).where(ProjectWorkspace.project_id == task.project_id))
+        if workspace is not None:
+            try:
+                paths = stored_workspace_paths(workspace.root_path, workspace.workspace_path)
+                worktree = inspect_task_worktree(paths.root, paths.project_dir, task.project_id, task_id)
+            except WorkspaceError as exc:
+                raise HTTPException(status_code=409, detail=f"Task worktree cannot be safely bound to this review: {exc}") from exc
+            if worktree is not None:
+                head = worktree.get("head_commit")
+                task_worktree_head = head if isinstance(head, str) else None
     try:
         record, created = record_review(
             db,
@@ -58,6 +72,7 @@ def create_review(
             summary=payload.summary,
             checks=[item.model_dump() for item in payload.checks],
             idempotency_key=payload.idempotency_key,
+            task_worktree_head=task_worktree_head,
         )
     except ReviewError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc

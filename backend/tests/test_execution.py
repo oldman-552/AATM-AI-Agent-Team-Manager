@@ -9,7 +9,9 @@ cancellation recorded as a failure.
 from __future__ import annotations
 
 import json
+import threading
 import time
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,7 +26,7 @@ from app.execution import (
     load_commands,
 )
 from app.models import Base, Project, ProjectWorkspace, Task
-from app.orchestrator import ExecutionCancelled, ExecutionOutcomeError, Orchestrator, OrchestratorConfig
+from app.orchestrator import ExecutionCancelled, ExecutionLeaseLost, ExecutionOutcomeError, Orchestrator, OrchestratorConfig
 
 
 @pytest.fixture
@@ -250,6 +252,38 @@ def test_invalid_json_lists_the_file_rather_than_crashing(env):
 
 # -- cancellation ----------------------------------------------------------
 
+def test_lease_loss_terminates_the_running_process(env):
+    project_dir = env.project_dir
+    write_commands(project_dir, {"slow": {"argv": ["python3", "-c", "import time; time.sleep(30)"], "timeout_seconds": 60}})
+    with env() as session:
+        project_id = session.scalars(select(Project.id)).first()
+    task_id = make_task(env, project_id, ["run:slow"])
+    with env() as session:
+        task = session.get(Task, task_id)
+        task.state = "running"
+        task.lease_owner = "original-owner"
+        task.lease_expires_at = datetime.now(timezone.utc) + timedelta(minutes=1)
+        session.commit()
+
+    executor = LocalProcessExecutor(env, cancel_poll_seconds=0.1)
+
+    def replace_lease():
+        time.sleep(0.6)
+        with env() as session:
+            task = session.get(Task, task_id)
+            task.lease_owner = "replacement-owner"
+            task.lease_expires_at = datetime.now(timezone.utc) + timedelta(minutes=1)
+            session.commit()
+
+    worker = threading.Thread(target=replace_lease)
+    worker.start()
+    started = time.monotonic()
+    with pytest.raises(ExecutionLeaseLost, match="lost its lease"):
+        executor(load_task(env, task_id))
+    worker.join()
+    assert time.monotonic() - started < 15
+
+
 def test_cancellation_kills_the_process_and_does_not_count_as_failure(env):
     """A withdrawal is not evidence about the work, so it must not fail the task."""
     project_dir = env.project_dir
@@ -268,8 +302,6 @@ def test_cancellation_kills_the_process_and_does_not_count_as_failure(env):
             )
             task.cancel_reason = "operator changed their mind"
             session.commit()
-
-    import threading
 
     worker = threading.Thread(target=cancel_soon)
     worker.start()

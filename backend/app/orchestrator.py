@@ -28,12 +28,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Protocol
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.audit import add_event
 from app.cancellation import honour_all as honour_cancellations
-from app.models import Task
+from app.models import Task, TaskTransition
 from app.workflow import dependencies_satisfied, transition_task
 
 LEASE_SECONDS = 120
@@ -62,6 +62,10 @@ class ExecutionCancelled(RuntimeError):
     evidence about the work, so it must not increment ``retry_count`` or be
     reported as a failed attempt.
     """
+
+
+class ExecutionLeaseLost(RuntimeError):
+    """An in-flight execution was stopped after its task lease was lost."""
 
 
 @dataclass(frozen=True)
@@ -106,6 +110,8 @@ class OrchestratorConfig:
     backoff_base_seconds: int = BACKOFF_BASE_SECONDS
     now: datetime | None = None
     heartbeat_callback: Callable[[], None] | None = None
+    dispatch_group_acquire: Callable[[str], bool] | None = None
+    dispatch_group_release: Callable[[str], None] | None = None
 
 
 @dataclass
@@ -142,38 +148,65 @@ def claim_task(
     lease_seconds: int,
     now: datetime | None = None,
 ) -> bool:
-    """Atomically-ish claim a task. Returns False when it is not claimable.
+    """Claim a task with a conditional database update.
 
-    SQLite with a single writer makes this safe locally; the conditional
-    updates below also keep it correct if a second process races us between
-    the read and the write.
+    Readiness and dependency checks are advisory; the final UPDATE is a
+    compare-and-set on ``state='assigned'`` so two processes that selected the
+    same candidate cannot both own it. The transition/audit rows are written in
+    the same transaction as the lease. API run requests remain serialized until
+    shared permit scheduling and workspace-mutation exclusion are wired in.
     """
-    if task.state != "assigned":
-        return False
-    if task.assigned_agent_id is None:
+    if task.state != "assigned" or task.assigned_agent_id is None:
         return False
     satisfied, _blocking = dependencies_satisfied(db, task)
     if not satisfied:
         return False
     current = now or utc_now()
-    expires = current + timedelta(seconds=max(1, lease_seconds))
     candidate = next_attempt_at(task)
     if candidate is not None and candidate > current:
         return False
 
+    expires = current + timedelta(seconds=max(1, lease_seconds))
     attempt = int(task.retry_count or 0) + 1
-    task, created = transition_task(
-        db,
-        task,
-        target_state="running",
-        idempotency_key=_attempt_key(task, attempt),
-        note=f"Claimed by {owner} with a {lease_seconds}s lease.",
+    note = f"Claimed by {owner} with a {lease_seconds}s lease."
+    result = db.execute(
+        update(Task)
+        .where(
+            Task.id == task.id,
+            Task.state == "assigned",
+            Task.assigned_agent_id.is_not(None),
+            or_(Task.next_attempt_at.is_(None), Task.next_attempt_at <= current),
+        )
+        .values(
+            state="running",
+            lease_owner=owner,
+            lease_expires_at=expires,
+            next_attempt_at=None,
+            error=None,
+        )
+        .execution_options(synchronize_session=False)
     )
-    if not created:
+    if result.rowcount != 1:
         return False
+
+    # Keep the caller's already-loaded object coherent without sharing it with
+    # worker threads. All durable writes remain in this control-thread session.
+    task.state = "running"
     task.lease_owner = owner
     task.lease_expires_at = expires
     task.next_attempt_at = None
+    task.error = None
+    db.add(
+        TaskTransition(
+            task_id=task.id,
+            from_state="assigned",
+            to_state="running",
+            idempotency_key=_attempt_key(task, attempt),
+            note=note,
+            created_at=utc_now(),
+        )
+    )
+    add_event(db, "task", task.id, "task.state_changed", f"Task assigned → running: {task.title}")
     db.flush()
     return True
 
@@ -265,6 +298,38 @@ def _schedule_retry(task: Task, config: OrchestratorConfig, current: datetime) -
     task.next_attempt_at = current + timedelta(seconds=delay)
 
 
+def _lock_live_task_lease(
+    db: Session,
+    task: Task,
+    *,
+    owner: str,
+    now: datetime,
+) -> bool:
+    """Take a conditional row lock before recording an executor outcome.
+
+    A worker that has expired or lost its lease may finish its local command,
+    but it must not overwrite the newer owner's workflow state. The no-op
+    owner update locks the matching row until the caller commits its transition.
+    """
+    result = db.execute(
+        update(Task)
+        .where(
+            Task.id == task.id,
+            Task.state == "running",
+            Task.lease_owner == owner,
+            Task.lease_expires_at.is_not(None),
+            Task.lease_expires_at > now,
+        )
+        .values(lease_owner=Task.lease_owner)
+        .execution_options(synchronize_session=False)
+    )
+    if result.rowcount != 1:
+        db.expire(task)
+        return False
+    db.refresh(task)
+    return task.state == "running" and task.lease_owner == owner
+
+
 class Orchestrator:
     """Run one bounded batch of ready tasks through the supplied executor."""
 
@@ -307,7 +372,17 @@ class Orchestrator:
         # dispatch nothing when all recommended slots are occupied.
         budget = max(0, self.config.max_concurrency)
         dispatch: list[Task] = []
+        dispatch_groups: dict[str, str] = {}
+        acquired_groups: set[str] = set()
+        failed_claim_groups: set[str] = set()
         claimed_projects: set[str] = set()
+
+        def release_reserved_groups() -> None:
+            if self.config.dispatch_group_release is None:
+                return
+            for group_key in tuple(acquired_groups):
+                self.config.dispatch_group_release(group_key)
+                acquired_groups.discard(group_key)
         for task in self._ready_candidates(db, now):
             if len(dispatch) >= budget:
                 break
@@ -322,6 +397,13 @@ class Orchestrator:
             if workspace_key in claimed_projects:
                 report.skipped.append({"task_id": task.id, "reason": "another task from this project is in the same dispatch batch"})
                 continue
+            if self.config.dispatch_group_acquire is not None:
+                acquired = self.config.dispatch_group_acquire(workspace_key)
+                if not acquired:
+                    report.skipped.append({"task_id": task.id, "reason": "another run owns the mutable workspace dispatch group"})
+                    continue
+                dispatch_groups[task.id] = workspace_key
+                acquired_groups.add(workspace_key)
             claimed_projects.add(workspace_key)
             dispatch.append(task)
 
@@ -334,6 +416,9 @@ class Orchestrator:
                 lease_seconds=self.config.lease_seconds,
                 now=now,
             ):
+                group_key = dispatch_groups.pop(task.id, None)
+                if group_key is not None:
+                    failed_claim_groups.add(group_key)
                 report.skipped.append({"task_id": task.id, "reason": "not claimable"})
                 continue
             report.started.append(task.id)
@@ -341,12 +426,17 @@ class Orchestrator:
 
         if not claimed:
             db.flush()
+            release_reserved_groups()
             return report
 
         # Commit all leases before starting any executor. No database write lock
         # is held during subprocess work, so cancellation and other local requests
         # can proceed. The main Session remains confined to this thread.
         db.commit()
+        if self.config.dispatch_group_release is not None:
+            for group_key in failed_claim_groups:
+                self.config.dispatch_group_release(group_key)
+                acquired_groups.discard(group_key)
         # Worker threads each load their own ORM instance/session. The main
         # session is never shared across threads; workflow/database writes,
         # including lease heartbeats, stay on the orchestrator thread.
@@ -426,6 +516,15 @@ class Orchestrator:
         outcomes = [outcomes_by_id[task.id] for task, _attempt in claimed]
 
         for (task, attempt), outcome in zip(claimed, outcomes, strict=True):
+            if not _lock_live_task_lease(
+                db,
+                task,
+                owner=self.config.owner,
+                now=utc_now(),
+            ):
+                report.skipped.append({"task_id": task.id, "reason": "task lease expired or ownership changed before result recording"})
+                continue
+
             if isinstance(outcome, ExecutionCancelled):
                 # Honour the request through the validated workflow rather than
                 # marking a failure; a cancelled task is not a broken one.
@@ -471,6 +570,7 @@ class Orchestrator:
             task.next_attempt_at = None
             report.completed.append(task.id)
         db.flush()
+        release_reserved_groups()
         return report
 
     def _record_failure(

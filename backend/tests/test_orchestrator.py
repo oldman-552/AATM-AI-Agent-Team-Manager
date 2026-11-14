@@ -98,6 +98,34 @@ def test_fake_executor_completes_task_with_evidence(app_client: TestClient) -> N
     assert executor.calls == [task_id]  # type: ignore[attr-defined]
 
 
+def test_executor_cannot_record_result_after_lease_ownership_changes(app_client: TestClient) -> None:
+    agent = make_agent(app_client)
+    task_id = make_task(app_client, agent)
+
+    def lease_losing_executor(task: Task) -> ExecutionResult:
+        with session_of(app_client) as other:
+            current = other.get(Task, task.id)
+            assert current is not None
+            current.lease_owner = "replacement-owner"
+            current.lease_expires_at = datetime.now(UTC) + timedelta(minutes=2)
+            other.commit()
+        return ExecutionResult(output="stale output", evidence="Stale worker finished after losing ownership.")
+
+    with session_of(app_client) as db:
+        report = Orchestrator(lease_losing_executor, OrchestratorConfig(owner="original-owner")).run_once(db)
+        db.commit()
+        assert report.completed == []
+        assert report.skipped == [{
+            "task_id": task_id,
+            "reason": "task lease expired or ownership changed before result recording",
+        }]
+        task = db.get(Task, task_id)
+        assert task is not None
+        assert task.state == "running"
+        assert task.lease_owner == "replacement-owner"
+        assert task.output is None
+
+
 def test_results_without_evidence_are_rejected(app_client: TestClient) -> None:
     agent = make_agent(app_client)
     task_id = make_task(app_client, agent)
@@ -331,6 +359,40 @@ def test_expired_lease_is_recovered_and_retried(app_client: TestClient) -> None:
         assert db.get(Task, task_id).state == "completed"
 
 
+def test_claim_compare_and_set_refuses_a_stale_candidate(app_client: TestClient) -> None:
+    agent = make_agent(app_client)
+    task_id = make_task(app_client, agent)
+
+    with session_of(app_client) as db:
+        stale_candidate = db.get(Task, task_id)
+        assert stale_candidate is not None
+        db.expunge(stale_candidate)
+
+    with session_of(app_client) as first:
+        current = first.get(Task, task_id)
+        assert current is not None
+        assert claim_task(first, current, owner="process-a", lease_seconds=60)
+        first.commit()
+
+    with session_of(app_client) as second:
+        assert claim_task(second, stale_candidate, owner="process-b", lease_seconds=60) is False
+        second.rollback()
+
+    with session_of(app_client) as verify:
+        current = verify.get(Task, task_id)
+        assert current is not None
+        assert current.state == "running"
+        assert current.lease_owner == "process-a"
+        transitions = verify.scalars(
+            select(TaskTransition).where(
+                TaskTransition.task_id == task_id,
+                TaskTransition.to_state == "running",
+            )
+        ).all()
+        assert len(transitions) == 1
+        assert transitions[0].from_state == "assigned"
+
+
 def test_active_lease_is_not_stolen(app_client: TestClient) -> None:
     agent = make_agent(app_client)
     task_id = make_task(app_client, agent)
@@ -497,3 +559,30 @@ def test_claim_rejects_unassigned_and_replay_claim(app_client: TestClient) -> No
     with session_of(app_client) as db:
         # A second claim on an already-running task is refused (no double dispatch).
         assert claim_task(db, db.get(Task, assigned_id), owner="w2", lease_seconds=60) is False
+
+
+def test_dispatch_reserves_and_releases_database_group_around_task(app_client: TestClient) -> None:
+    project_id = app_client.post("/api/v1/projects", json={"name": "Leased workspace"}).json()["id"]
+    agent = make_agent(app_client)
+    task_id = make_task(app_client, agent, project_id=project_id)
+    executor = fake_executor()
+    executor.dispatch_group = lambda _task: f"project:{project_id}"  # type: ignore[attr-defined]
+    acquired: list[str] = []
+    released: list[str] = []
+
+    def acquire_group(group: str) -> bool:
+        acquired.append(group)
+        return True
+
+    with session_of(app_client) as db:
+        report = Orchestrator(
+            executor,
+            OrchestratorConfig(
+                dispatch_group_acquire=acquire_group,
+                dispatch_group_release=released.append,
+            ),
+        ).run_once(db)
+        db.commit()
+        assert report.completed == [task_id]
+        assert acquired == [f"project:{project_id}"]
+        assert released == [f"project:{project_id}"]

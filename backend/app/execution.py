@@ -52,7 +52,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from app.models import ProjectWorkspace, Task
-from app.orchestrator import ExecutionCancelled, ExecutionOutcomeError, ExecutionResult
+from app.orchestrator import ExecutionCancelled, ExecutionLeaseLost, ExecutionOutcomeError, ExecutionResult
 from app.task_workspaces import existing_task_worktree, is_git_workspace, prepare_task_worktree
 from app.workspaces import WorkspaceError
 
@@ -121,6 +121,7 @@ class ExecutionRecord:
     output_truncated: bool = False
     overflowed: bool = False
     cancelled: bool = False
+    lease_lost: bool = False
     cwd: str = ""
 
     def as_dict(self) -> dict[str, object]:
@@ -132,6 +133,7 @@ class ExecutionRecord:
             "timed_out": self.timed_out,
             "output_truncated": self.output_truncated,
             "cancelled": self.cancelled,
+            "lease_lost": self.lease_lost,
             "cwd": self.cwd,
         }
 
@@ -307,6 +309,8 @@ class LocalProcessExecutor:
     def __call__(self, task: Task) -> ExecutionResult:
         spec, cwd = self.resolve(task)
         record = self._run(task, spec, cwd)
+        if record.lease_lost:
+            raise ExecutionLeaseLost(f"Task '{task.title}' lost its lease while running '{spec.name}'.")
         if record.cancelled:
             raise ExecutionCancelled(f"Task '{task.title}' was cancelled while running '{spec.name}'.")
         evidence = self._evidence(record)
@@ -384,6 +388,7 @@ class LocalProcessExecutor:
         record.output_truncated = truncated_out or truncated_err or record.overflowed
         record.timed_out = killed_by == "timeout"
         record.cancelled = killed_by == "cancelled"
+        record.lease_lost = killed_by == "lease_lost"
         return record
 
     def _supervise(self, task: Task, live: _LiveProcess, timeout_seconds: int) -> str | None:
@@ -402,8 +407,9 @@ class LocalProcessExecutor:
                 killed_by = "timeout"
                 self._terminate(live)
                 break
-            if self._cancel_requested(task):
-                killed_by = "cancelled"
+            stop_reason = self._stop_reason(task)
+            if stop_reason is not None:
+                killed_by = stop_reason
                 self._terminate(live)
                 break
             time.sleep(self.cancel_poll_seconds)
@@ -430,18 +436,41 @@ class LocalProcessExecutor:
             except (ProcessLookupError, PermissionError):
                 pass
 
-    def _cancel_requested(self, task: Task) -> bool:
-        """Read cancellation intent fresh; a stale in-memory task would miss it."""
+    def _stop_reason(self, task: Task) -> str | None:
+        """Read cancellation and lease ownership fresh while a process runs."""
         try:
             with self.session_factory() as session:
-                requested = session.scalar(
-                    select(Task.cancel_requested_at).where(Task.id == task.id)
-                )
+                row = session.execute(
+                    select(
+                        Task.cancel_requested_at,
+                        Task.state,
+                        Task.lease_owner,
+                        Task.lease_expires_at,
+                    ).where(Task.id == task.id)
+                ).one_or_none()
         except Exception:
-            # Never let a database hiccup turn into an unkillable process: the
-            # task's own timeout still bounds it. The next poll retries.
-            return False
-        return requested is not None
+            # For an orchestrated task, an unverifiable lease is unsafe to keep
+            # executing. Direct executor use without a lease remains supported.
+            return "lease_lost" if task.state == "running" else None
+        if row is None:
+            return "lease_lost" if task.state == "running" else None
+        requested, state, owner, expires_at = row
+        if requested is not None:
+            return "cancelled"
+        if task.state == "running":
+            expected_owner = task.lease_owner
+            current_expiry = expires_at if expires_at and expires_at.tzinfo else (
+                expires_at.replace(tzinfo=timezone.utc) if expires_at else None
+            )
+            if (
+                state != "running"
+                or not expected_owner
+                or owner != expected_owner
+                or current_expiry is None
+                or current_expiry <= _utc_now()
+            ):
+                return "lease_lost"
+        return None
 
     def _evidence(self, record: ExecutionRecord) -> str:
         parts = [

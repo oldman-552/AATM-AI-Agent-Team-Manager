@@ -242,6 +242,7 @@ class ReviewRead(BaseModel):
     verdict: str
     summary: str
     checks: list[dict[str, object]]
+    task_worktree_head: str | None = None
     created_at: datetime
 
 

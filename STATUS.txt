@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-13 18:43 UTC
+2026-11-14 05:45 UTC
 
 Overall Project Status:
 Testing
@@ -18,10 +18,12 @@ Current Task:
 Implement safe cross-process worker ownership and a reviewed path for integrating per-task worktree changes
 
 Current Activity:
-API run requests sharing a database are serialized by an expiring row lock, and active task/run leases are heartbeated by the orchestrator. The opt-in local executor prepares an owned, detached Git worktree per task, enabling same-project concurrency without writes to the shared source workspace; unsupported/non-Git workspaces remain serialized. PR #11 added read-only task diff preview and on-demand Tasks UI. The current implementation also previews small contained UTF-8 untracked files with strict file-count/size limits; binary files, symlinks, and unsafe paths remain content-free. No changes are merged. Distributed worker scheduling and automatic task-worktree integration are not implemented.
+API run requests sharing a database remain serialized. Migration `0016` provides 20 database-wide worker permits; each API run now reserves up to its effective dispatch budget, bounds the executor by the acquired count, renews permits on the orchestrator thread, and releases them during cleanup. Migration `0017` adds expiring dispatch-group leases; API dispatch acquires and renews them for mutable workspaces, and the exclusive workspace-mutation gate refuses mutations while a group lease is live. Group reservations, permits, and mutations coordinate through the singleton gate. Task claims use a conditional compare-and-set, results are accepted only while the task lease owner is live, and the local executor terminates a command when task-lease loss is detected. The global cap is database-wide, but serialized API runs mean this is not yet a distributed task scheduler. Next: validate PostgreSQL CI, then assess any separate concurrent-run protocol without weakening ownership, task cancellation, or workspace fencing. Local backend suite: 281 passed, 1 PostgreSQL-only test skipped; hosted CI run `43576678254` passed backend, frontend, and PostgreSQL migration/lock jobs.
 
 Recently Completed (most recent first):
-- Safe untracked task-file previews: only contained regular UTF-8 files no larger than 32 KiB are previewed, with 32-file and 128 KiB aggregate caps; binary files, symlinks, unsafe paths, and oversized/non-regular files have no content exposed. PR #12 (`a0ef398`) is open; all three CI jobs passed on run `43485091743`. Local checks: 262 backend passed, one PostgreSQL-only test skipped, eight focused workspace tests passed; frontend verify passed (21 tests, TypeScript, production build, RTL checks).
+- Database-wide worker permits and cross-process workspace dispatch leases: API runs now reserve/renew/release shared permits up to the effective budget and use the acquired count as the executor cap. Migration `0017` adds group leases; workspace mutations fail closed while a group lease is active. SQLite contention/mutation tests, API permit lifecycle coverage, orchestrator callback coverage, and PostgreSQL contention coverage are in place. Full backend suite: 281 passed, 1 PostgreSQL-only skip; hosted CI run `43576678254` passed backend, frontend, and PostgreSQL migration/lock jobs.
+- Safe untracked task-file previews: only contained regular UTF-8 files no larger than 32 KiB are previewed, with 32-file and 128 KiB aggregate caps; binary files, symlinks, unsafe paths, and oversized/non-regular files have no content exposed. PR #12 merged as `aa7b268a`; CI passed backend, frontend, and PostgreSQL jobs.
+- Review-bound task integration: independent review records capture the exact worktree HEAD SHA; only a clean approved fast-forward is allowed. The Tasks UI now offers a localized, explicit confirmation action only for the currently approved SHA. PR #13 is open with merge state CLEAN. Local verification: 265 backend tests, one PostgreSQL-only skip; 22 frontend tests, TypeScript, production build and RTL checks. Latest CI run `43493928261` passed backend, frontend, and PostgreSQL migration/lock jobs including the UI update.
 - Bounded task-worktree diff preview and on-demand Tasks UI: PR #11 landed in main at `0f7bab9`; main CI run `43482226737` passed backend, frontend and PostgreSQL migration/lock jobs. The preview is capped, read-only, project-scoped, and has explicit missing/truncated states in English/Arabic/Persian. Its initial version omitted untracked file contents.
 - Read-only task-worktree review metadata: `GET /api/v1/projects/{project_id}/workspace/tasks/{task_id}` checks task/project scope and AATM worktree ownership, then reports base/head commits, changed paths and diffstat without file contents or mutations. Missing worktrees are reported honestly; cross-project IDs are hidden as 404 and malformed ownership metadata is rejected. Full backend verification: 262 passed, 1 PostgreSQL-only test skipped locally.
 - Same-project task worktree isolation: the opt-in local executor creates or safely reuses a detached Git worktree per task on the orchestrator thread, then executes in that worktree. Two real tasks from one project were verified to run in distinct directories without writing to the source workspace. Non-Git workspaces remain serialized by project; worktree changes are preserved for inspection/retry but are not automatically merged back. Backend suite, frontend verify, and hosted PostgreSQL smoke all passed on main after merge.
@@ -50,10 +52,10 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- PR #12 adds safe untracked-text previews and is open with all three CI jobs passing (run `43485091743`); no task worktree changes are automatically applied or merged. Phase 33 distributed worker scheduling and a reviewed task-worktree integration path remain open.
+- Commit `5e091e0` adds atomic claims, lease-loss termination, and the permit/mutation gate; backend, frontend, and PostgreSQL CI all passed on run `43562761810`. API dispatch remains serialized and is not yet a distributed scheduler.
 
 Upcoming Tasks:
-- Distributed task-worker scheduling, safe review/integration of task-worktree changes, and expanded PostgreSQL coverage beyond migration/lock smoke; Windows CI verification and release packaging.
+- Keep API run serialization until a separate concurrent-run protocol can safely preserve the database-wide cap, task-lease fencing, bounded execution, and exclusive workspace-mutation gate. Broader integration policy review, Windows CI, and release packaging remain open.
 - The consent/accounting surface that must precede any paid provider call; wiring an authorized model call into the executor.
 - GitHub push/PR execution behind an approval (recorded plans exist; execution does not).
 - Pixel-level browser visual testing once a display-capable environment exists.
@@ -78,24 +80,24 @@ External Dependencies:
 Python/npm dependencies installed (@types/node added for the RTL checker). No provider key exists in this environment and no paid request has ever been made. No Arena session was used.
 
 Tests:
-- Latest local branch verification at 2026-11-13 18:38 UTC: 262 backend passed, one PostgreSQL-only integration smoke skipped locally; focused workspace tests 8 passed; frontend verify 21 tests, TypeScript, production build, RTL source/bundle checks all passed. One upstream Starlette/httpx deprecation warning.
-- PR #12 hosted CI run `43485091743` passed backend, frontend, and PostgreSQL migration/lock jobs for the safe untracked-preview extension.
+- Latest local verification: backend suite 265 passed with one PostgreSQL-only integration smoke skipped at 19:20 UTC; focused workspace/review tests 11 passed. Frontend verify at 19:35 UTC passed 22 tests, TypeScript, production build, and RTL checks. One upstream Starlette/httpx deprecation warning.
+- PR #13 hosted CI run `43493928261` passed backend, frontend, and PostgreSQL migration/lock jobs including the integration UI. PR #12 hosted CI run `43485091743` passed the safe untracked-preview extension.
 - Hosted CI on main merge commit `0f7bab9` passed the same three jobs (run `43482226737`), covering the tracked patch preview and Tasks UI.
 - `npm ci` reported six development-dependency audit findings; `npm audit --omit=dev` reported zero production dependency vulnerabilities. No forced dependency upgrades were applied.
 - Failed: earlier build/test/startup attempts, all fixed; details are preserved in PROGRESS_LOG.txt and TESTING_REPORT.md.
 - Pending: full PostgreSQL application/backup testing, Windows/PowerShell, Docker, Playwright E2E, pixel-level RTL rendering.
 
 Build Status:
-Frontend production build passed (CSS 51.19 kB; JS split into react 181.71 kB, data 87.39 kB, app 237.46 kB — no chunk over 500 kB).
+Frontend production build passed (CSS 51.84 kB; JS split into react 182.46 kB, data 87.39 kB, app 246.94 kB — no chunk over 500 kB).
 
 Operating System:
 Ubuntu/Linux development environment; Windows 11 not available for verification.
 
 Last Successful Build:
-2026-11-13 16:34 UTC — `npm run verify`: TypeScript, 20 Vitest tests, Vite production build, and RTL checker.
+2026-11-13 19:35 UTC — `npm run verify`: TypeScript, 22 Vitest tests, Vite production build, and RTL checker.
 
 Last Successful Test:
-2026-11-13 18:44 UTC — PR #12 CI run `43485091743` passed backend tests, frontend verification, and PostgreSQL migration/lock smoke. Local verification: 262 backend passed, one PostgreSQL-only test skipped; frontend verify passed (21 tests, typecheck, production build, RTL checker).
+2026-11-13 19:38 UTC — PR #13 CI run `43493928261` passed backend tests, frontend verification, and PostgreSQL migration/lock smoke. Local verification: 265 backend tests passed, one PostgreSQL-only skip; frontend verify passed (22 tests, TypeScript, production build, RTL checks).
 
 Remaining Work:
 - Gated by design: live provider execution behind consent/accounting (a task now runs a local command, never a model), GitHub push/PR execution, per-user authorization.

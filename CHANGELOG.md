@@ -5,8 +5,10 @@
 ### Distributed worker scheduling foundation (not yet active)
 
 - Migration `0016_distributed_worker_slots` creates and seeds 20 shared, expiring worker permits; the new slot service supports bounded acquisition, owner-only renewal/release, and expiry takeover.
-- Backend tests cover lease ownership, expiry, configured-cap bounds, and concurrent sessions competing for the same slot rows. The PostgreSQL CI smoke now checks the migration and permit lifecycle as well.
-- This change does **not** enable distributed task scheduling: API run requests still serialize on the existing database lock, and dispatch does not yet acquire permits. Follow-up work must add atomic task claims and coordinate worker leases with exclusive workspace mutations before lifting run serialization. Shared API processes must use a consistent configured concurrency limit.
+- Backend tests cover lease ownership, expiry, configured-cap bounds, and competing sessions. Task claims now use a database compare-and-set; outcome writes first lock and verify the unexpired lease owner, preventing a stale worker from overwriting a new owner. PostgreSQL CI now races both worker-slot acquisition and task claims.
+- The singleton database gate is now shared by worker permit acquisition/renewal and exclusive workspace mutations, including workspace creation. Task claims use conditional compare-and-set; outcome writes fence on the live lease owner, and the local process executor terminates a command on detected lease loss.
+- This change does **not** enable distributed task scheduling: API run requests still serialize on the existing database lock, and dispatch does not yet acquire permits. Follow-up work must add cross-process same-project dispatch exclusion before lifting run serialization. Shared API processes must use a consistent configured concurrency limit.
+- Local verification: 275 backend tests passed, one PostgreSQL-only test skipped; migration `0016` upgrade/downgrade/re-upgrade passed. Hosted CI for the prior permit-foundation revision passed backend, frontend, and PostgreSQL jobs on run `43501291025`; current ownership/gate additions require a fresh CI run.
 
 ### Reviewable task-worktree diffs (read-only)
 

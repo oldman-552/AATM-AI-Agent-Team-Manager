@@ -254,45 +254,51 @@ def create_workspace(
     project = db.get(Project, project_id)
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found.")
-    if _workspace_row(db, project_id) is not None:
-        raise HTTPException(status_code=409, detail="This project already has a workspace.")
-
-    root = default_workspace_root()
+    owner = _acquire_workspace_mutation_lock(db)
     try:
-        paths = create_project_workspace(
-            root,
-            project_id,
-            project.name,
-            Path(payload.local_source) if payload.local_source else None,
-        )
-        branch = payload.branch
-        if branch:
-            branch = create_work_branch(paths, branch)
-    except WorkspaceError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        # Recheck under the shared gate so two processes cannot create the same
+        # workspace directory concurrently.
+        if _workspace_row(db, project_id) is not None:
+            raise HTTPException(status_code=409, detail="This project already has a workspace.")
 
-    row = ProjectWorkspace(
-        project_id=project_id,
-        root_path=str(paths.root),
-        workspace_path=str(paths.project_dir),
-        branch=branch,
-        status="active",
-    )
-    db.add(row)
-    add_event(db, "project", project_id, "project.workspace_created", f"Workspace created for project: {project.name}")
-    db.commit()
-    db.refresh(row)
-    return {
-        "workspace": {
-            "id": row.id,
-            "project_id": row.project_id,
-            "workspace_path": row.workspace_path,
-            "root_path": row.root_path,
-            "branch": row.branch,
-            "status": row.status,
-        },
-        "status": workspace_status(paths),
-    }
+        root = default_workspace_root()
+        try:
+            paths = create_project_workspace(
+                root,
+                project_id,
+                project.name,
+                Path(payload.local_source) if payload.local_source else None,
+            )
+            branch = payload.branch
+            if branch:
+                branch = create_work_branch(paths, branch)
+        except WorkspaceError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+        row = ProjectWorkspace(
+            project_id=project_id,
+            root_path=str(paths.root),
+            workspace_path=str(paths.project_dir),
+            branch=branch,
+            status="active",
+        )
+        db.add(row)
+        add_event(db, "project", project_id, "project.workspace_created", f"Workspace created for project: {project.name}")
+        db.commit()
+        db.refresh(row)
+        return {
+            "workspace": {
+                "id": row.id,
+                "project_id": row.project_id,
+                "workspace_path": row.workspace_path,
+                "root_path": row.root_path,
+                "branch": row.branch,
+                "status": row.status,
+            },
+            "status": workspace_status(paths),
+        }
+    finally:
+        _release_workspace_mutation_lock(db, owner)
 
 
 @router.post("/branches", status_code=201)

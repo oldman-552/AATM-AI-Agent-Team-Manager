@@ -28,12 +28,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Protocol
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.audit import add_event
 from app.cancellation import honour_all as honour_cancellations
-from app.models import Task
+from app.models import Task, TaskTransition
 from app.workflow import dependencies_satisfied, transition_task
 
 LEASE_SECONDS = 120
@@ -62,6 +62,10 @@ class ExecutionCancelled(RuntimeError):
     evidence about the work, so it must not increment ``retry_count`` or be
     reported as a failed attempt.
     """
+
+
+class ExecutionLeaseLost(RuntimeError):
+    """An in-flight execution was stopped after its task lease was lost."""
 
 
 @dataclass(frozen=True)
@@ -142,38 +146,65 @@ def claim_task(
     lease_seconds: int,
     now: datetime | None = None,
 ) -> bool:
-    """Atomically-ish claim a task. Returns False when it is not claimable.
+    """Claim a task with a conditional database update.
 
-    SQLite with a single writer makes this safe locally; the conditional
-    updates below also keep it correct if a second process races us between
-    the read and the write.
+    Readiness and dependency checks are advisory; the final UPDATE is a
+    compare-and-set on ``state='assigned'`` so two processes that selected the
+    same candidate cannot both own it. The transition/audit rows are written in
+    the same transaction as the lease. API run requests remain serialized until
+    shared permit scheduling and workspace-mutation exclusion are wired in.
     """
-    if task.state != "assigned":
-        return False
-    if task.assigned_agent_id is None:
+    if task.state != "assigned" or task.assigned_agent_id is None:
         return False
     satisfied, _blocking = dependencies_satisfied(db, task)
     if not satisfied:
         return False
     current = now or utc_now()
-    expires = current + timedelta(seconds=max(1, lease_seconds))
     candidate = next_attempt_at(task)
     if candidate is not None and candidate > current:
         return False
 
+    expires = current + timedelta(seconds=max(1, lease_seconds))
     attempt = int(task.retry_count or 0) + 1
-    task, created = transition_task(
-        db,
-        task,
-        target_state="running",
-        idempotency_key=_attempt_key(task, attempt),
-        note=f"Claimed by {owner} with a {lease_seconds}s lease.",
+    note = f"Claimed by {owner} with a {lease_seconds}s lease."
+    result = db.execute(
+        update(Task)
+        .where(
+            Task.id == task.id,
+            Task.state == "assigned",
+            Task.assigned_agent_id.is_not(None),
+            or_(Task.next_attempt_at.is_(None), Task.next_attempt_at <= current),
+        )
+        .values(
+            state="running",
+            lease_owner=owner,
+            lease_expires_at=expires,
+            next_attempt_at=None,
+            error=None,
+        )
+        .execution_options(synchronize_session=False)
     )
-    if not created:
+    if result.rowcount != 1:
         return False
+
+    # Keep the caller's already-loaded object coherent without sharing it with
+    # worker threads. All durable writes remain in this control-thread session.
+    task.state = "running"
     task.lease_owner = owner
     task.lease_expires_at = expires
     task.next_attempt_at = None
+    task.error = None
+    db.add(
+        TaskTransition(
+            task_id=task.id,
+            from_state="assigned",
+            to_state="running",
+            idempotency_key=_attempt_key(task, attempt),
+            note=note,
+            created_at=utc_now(),
+        )
+    )
+    add_event(db, "task", task.id, "task.state_changed", f"Task assigned → running: {task.title}")
     db.flush()
     return True
 
@@ -263,6 +294,38 @@ def _schedule_retry(task: Task, config: OrchestratorConfig, current: datetime) -
         return
     delay = config.backoff_base_seconds * (2 ** max(0, attempt - 1))
     task.next_attempt_at = current + timedelta(seconds=delay)
+
+
+def _lock_live_task_lease(
+    db: Session,
+    task: Task,
+    *,
+    owner: str,
+    now: datetime,
+) -> bool:
+    """Take a conditional row lock before recording an executor outcome.
+
+    A worker that has expired or lost its lease may finish its local command,
+    but it must not overwrite the newer owner's workflow state. The no-op
+    owner update locks the matching row until the caller commits its transition.
+    """
+    result = db.execute(
+        update(Task)
+        .where(
+            Task.id == task.id,
+            Task.state == "running",
+            Task.lease_owner == owner,
+            Task.lease_expires_at.is_not(None),
+            Task.lease_expires_at > now,
+        )
+        .values(lease_owner=Task.lease_owner)
+        .execution_options(synchronize_session=False)
+    )
+    if result.rowcount != 1:
+        db.expire(task)
+        return False
+    db.refresh(task)
+    return task.state == "running" and task.lease_owner == owner
 
 
 class Orchestrator:
@@ -426,6 +489,15 @@ class Orchestrator:
         outcomes = [outcomes_by_id[task.id] for task, _attempt in claimed]
 
         for (task, attempt), outcome in zip(claimed, outcomes, strict=True):
+            if not _lock_live_task_lease(
+                db,
+                task,
+                owner=self.config.owner,
+                now=utc_now(),
+            ):
+                report.skipped.append({"task_id": task.id, "reason": "task lease expired or ownership changed before result recording"})
+                continue
+
             if isinstance(outcome, ExecutionCancelled):
                 # Honour the request through the validated workflow rather than
                 # marking a failure; a cancelled task is not a broken one.

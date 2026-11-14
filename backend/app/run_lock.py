@@ -1,17 +1,18 @@
-"""Database-backed singleton lease for orchestrator API runs.
+"""Database-backed gate for orchestrator runs and workspace mutations.
 
-The lock is an atomic conditional UPDATE against a migration-seeded singleton
-row, so separate API processes sharing the same database cannot start runs at
-the same time. The lock expires if a process dies and is renewed by the
-orchestrator while task executors are active.
+The migration-seeded singleton row serializes API run requests (for now) and
+acts as an exclusive workspace-mutation gate. Worker-permit acquisition and
+renewal lock this same row, so a mutation cannot overlap a live permit and a
+new worker batch cannot begin during a mutation. The lease expires if the
+exclusive owner process dies and is renewed by an active orchestrator run.
 """
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import or_, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
-from app.models import OrchestratorRunLock
+from app.models import OrchestratorRunLock, OrchestratorWorkerSlot
 
 LOCK_ID = "global"
 
@@ -22,7 +23,12 @@ def _now(value: datetime | None) -> datetime:
 
 
 def acquire_run_lock(db: Session, owner: str, *, lease_seconds: int, now: datetime | None = None) -> bool:
-    """Acquire the singleton run lock if it is free or expired."""
+    """Acquire the exclusive workspace-mutation gate if it is safe to do so.
+
+    The singleton row also serializes each worker-permit acquisition. Holding
+    its write lock while checking active permits ensures a mutation cannot win
+    a time-of-check/time-of-use race against a new worker batch.
+    """
     current = _now(now)
     try:
         result = db.execute(
@@ -34,6 +40,18 @@ def acquire_run_lock(db: Session, owner: str, *, lease_seconds: int, now: dateti
             .values(owner=owner, expires_at=current + timedelta(seconds=max(1, lease_seconds)))
         )
         acquired = result.rowcount == 1
+        if acquired:
+            active_permits = db.scalar(
+                select(func.count())
+                .select_from(OrchestratorWorkerSlot)
+                .where(
+                    OrchestratorWorkerSlot.owner.is_not(None),
+                    OrchestratorWorkerSlot.expires_at > current,
+                )
+            ) or 0
+            if active_permits:
+                db.rollback()
+                return False
         db.commit()
         return acquired
     except Exception:

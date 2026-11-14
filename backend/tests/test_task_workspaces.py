@@ -12,6 +12,7 @@ from app.models import AuditEvent, ReviewRecord, Task
 from app.run_lock import acquire_run_lock, release_run_lock
 from app.orchestrator import Orchestrator, OrchestratorConfig
 from app.task_workspaces import TASK_DIFF_PREVIEW_BYTES, integrate_approved_task_worktree, prepare_task_worktree
+from app.worker_slots import acquire_worker_slots, release_worker_slots
 from app.workspaces import WorkspaceError, init_local_repository, run_git
 
 
@@ -21,6 +22,23 @@ def client(tmp_path, monkeypatch):
     database_url = f"sqlite:///{(tmp_path / 'task-worktrees.sqlite3').as_posix()}"
     with TestClient(create_app(database_url, allowed_hosts=["testserver"])) as test_client:
         yield test_client
+
+
+def test_workspace_creation_waits_for_worker_permits_to_clear(client: TestClient, tmp_path: Path) -> None:
+    project_id = client.post("/api/v1/projects", json={"name": "Mutation gate"}).json()["id"]
+    with client.app.state.session_factory() as db:
+        assert acquire_worker_slots(db, "active-worker", limit=1, lease_seconds=60) == [1]
+
+    endpoint = f"/api/v1/projects/{project_id}/workspace"
+    blocked = client.post(endpoint, json={})
+    assert blocked.status_code == 409
+    assert "Another orchestrator run or workspace mutation" in blocked.json()["detail"]
+
+    with client.app.state.session_factory() as db:
+        assert release_worker_slots(db, "active-worker") == 1
+
+    created = client.post(endpoint, json={})
+    assert created.status_code == 201, created.text
 
 
 def test_same_project_tasks_run_in_distinct_persisted_worktrees(client: TestClient, tmp_path: Path) -> None:

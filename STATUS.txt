@@ -3,7 +3,7 @@ AATM — LIVE DEVELOPMENT STATUS
 ==================================================
 
 Last Updated:
-2026-11-14 05:39 UTC
+2026-11-14 05:45 UTC
 
 Overall Project Status:
 Testing
@@ -51,7 +51,7 @@ Recently Completed (most recent first):
 - Full-stack regression pass: 19 read endpoints and an end-to-end flow across all slices.
 
 Currently Working On:
-- The last hosted CI for the worker-permit foundation passed all three jobs on run `43501291025`. Current uncommitted-snapshot changes add atomic claims, lease-loss termination, and the permit/mutation gate; API dispatch remains serialized and is not yet a distributed scheduler.
+- Commit `5e091e0` adds atomic claims, lease-loss termination, and the permit/mutation gate; backend, frontend, and PostgreSQL CI all passed on run `43562761810`. API dispatch remains serialized and is not yet a distributed scheduler.
 
 Upcoming Tasks:
 - Add cross-process same-project dispatch exclusion, then wire database permits into API dispatch while preserving exclusive workspace mutation, bounded global concurrency, and main-thread-only task state writes. Broader integration policy review, expanded PostgreSQL coverage, Windows CI, and release packaging remain open.

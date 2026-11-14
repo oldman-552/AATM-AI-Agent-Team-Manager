@@ -2,12 +2,20 @@
 
 ## Unreleased — 2026-11-13
 
-### Distributed worker scheduling foundation (not yet active)
+### Cross-process workspace dispatch exclusion (distributed scheduler still inactive)
+
+- Migration `0017_dispatch_group_leases` adds expiring per-workspace dispatch-group leases. API dispatch acquires a lease before claiming a task, renews held group leases from the orchestrator control thread, and releases them during normal and failure cleanup.
+- The singleton database gate serializes group reservations against exclusive workspace mutations; mutations also refuse while any group lease remains live. This adds cross-process workspace exclusion while preserving globally serialized API run requests.
+- API runs now reserve up to their effective dispatch budget from the 20 database-wide worker permits, use the acquired count as the executor limit, renew them on the orchestrator thread, and release them during cleanup. The response reports requested/acquired permits. API run requests remain serialized by the database lock, so this does **not** enable multiple API processes to schedule runs concurrently.
+- SQLite tests cover lease ownership, expiry, renewal, release, contention, mutation exclusion, orchestrator acquisition/release, and permit acquisition by the run-lock owner. PostgreSQL contention coverage was added; hosted PostgreSQL CI is pending. Local full backend suite: 281 passed, 1 PostgreSQL-only test skipped.
+- This is a shared global cap plus cross-process workspace exclusion, **not** a distributed task scheduler. Task previews remain read-only; there is no automatic worktree merge or modification.
+
+### Distributed worker scheduling foundation (scheduler not active)
 
 - Migration `0016_distributed_worker_slots` creates and seeds 20 shared, expiring worker permits; the new slot service supports bounded acquisition, owner-only renewal/release, and expiry takeover.
 - Backend tests cover lease ownership, expiry, configured-cap bounds, and competing sessions. Task claims now use a database compare-and-set; outcome writes first lock and verify the unexpired lease owner, preventing a stale worker from overwriting a new owner. PostgreSQL CI now races both worker-slot acquisition and task claims.
 - The singleton database gate is now shared by worker permit acquisition/renewal and exclusive workspace mutations, including workspace creation. Task claims use conditional compare-and-set; outcome writes fence on the live lease owner, and the local process executor terminates a command on detected lease loss.
-- This change does **not** enable distributed task scheduling: API run requests still serialize on the existing database lock, and dispatch does not yet acquire permits. Follow-up work must add cross-process same-project dispatch exclusion before lifting run serialization. Shared API processes must use a consistent configured concurrency limit.
+- This foundation originally did **not** enable distributed task scheduling. Follow-on work now wires the permits into API dispatch, but API run requests still serialize on the existing database lock. Cross-process mutable-workspace exclusion is provided by migration `0017_dispatch_group_leases`; that serialization must remain until a separate concurrent-run protocol preserves ownership and mutation fencing. Shared API processes must use a consistent configured concurrency limit.
 - Local verification: 275 backend tests passed, one PostgreSQL-only test skipped; migration `0016` upgrade/downgrade/re-upgrade passed. Hosted CI run `43562761810` passed backend tests, frontend verification, and PostgreSQL migration/lock smoke including the worker-permit and claim-contention checks.
 
 ### Reviewable task-worktree diffs (read-only)

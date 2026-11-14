@@ -110,6 +110,8 @@ class OrchestratorConfig:
     backoff_base_seconds: int = BACKOFF_BASE_SECONDS
     now: datetime | None = None
     heartbeat_callback: Callable[[], None] | None = None
+    dispatch_group_acquire: Callable[[str], bool] | None = None
+    dispatch_group_release: Callable[[str], None] | None = None
 
 
 @dataclass
@@ -370,7 +372,17 @@ class Orchestrator:
         # dispatch nothing when all recommended slots are occupied.
         budget = max(0, self.config.max_concurrency)
         dispatch: list[Task] = []
+        dispatch_groups: dict[str, str] = {}
+        acquired_groups: set[str] = set()
+        failed_claim_groups: set[str] = set()
         claimed_projects: set[str] = set()
+
+        def release_reserved_groups() -> None:
+            if self.config.dispatch_group_release is None:
+                return
+            for group_key in tuple(acquired_groups):
+                self.config.dispatch_group_release(group_key)
+                acquired_groups.discard(group_key)
         for task in self._ready_candidates(db, now):
             if len(dispatch) >= budget:
                 break
@@ -385,6 +397,13 @@ class Orchestrator:
             if workspace_key in claimed_projects:
                 report.skipped.append({"task_id": task.id, "reason": "another task from this project is in the same dispatch batch"})
                 continue
+            if self.config.dispatch_group_acquire is not None:
+                acquired = self.config.dispatch_group_acquire(workspace_key)
+                if not acquired:
+                    report.skipped.append({"task_id": task.id, "reason": "another run owns the mutable workspace dispatch group"})
+                    continue
+                dispatch_groups[task.id] = workspace_key
+                acquired_groups.add(workspace_key)
             claimed_projects.add(workspace_key)
             dispatch.append(task)
 
@@ -397,6 +416,9 @@ class Orchestrator:
                 lease_seconds=self.config.lease_seconds,
                 now=now,
             ):
+                group_key = dispatch_groups.pop(task.id, None)
+                if group_key is not None:
+                    failed_claim_groups.add(group_key)
                 report.skipped.append({"task_id": task.id, "reason": "not claimable"})
                 continue
             report.started.append(task.id)
@@ -404,12 +426,17 @@ class Orchestrator:
 
         if not claimed:
             db.flush()
+            release_reserved_groups()
             return report
 
         # Commit all leases before starting any executor. No database write lock
         # is held during subprocess work, so cancellation and other local requests
         # can proceed. The main Session remains confined to this thread.
         db.commit()
+        if self.config.dispatch_group_release is not None:
+            for group_key in failed_claim_groups:
+                self.config.dispatch_group_release(group_key)
+                acquired_groups.discard(group_key)
         # Worker threads each load their own ORM instance/session. The main
         # session is never shared across threads; workflow/database writes,
         # including lease heartbeats, stay on the orchestrator thread.
@@ -543,6 +570,7 @@ class Orchestrator:
             task.next_attempt_at = None
             report.completed.append(task.id)
         db.flush()
+        release_reserved_groups()
         return report
 
     def _record_failure(

@@ -16,6 +16,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.adaptive_concurrency import concurrency_policy
+from app.worker_slots import (
+    MAX_WORKER_SLOTS,
+    acquire_worker_slots,
+    release_worker_slots,
+    renew_worker_slots,
+)
+from app.dispatch_groups import (
+    acquire_dispatch_group,
+    release_dispatch_group,
+    release_dispatch_groups,
+    renew_dispatch_groups,
+)
 from app.api import get_session
 from app.execution import (
     EXECUTION_FLAG,
@@ -137,10 +149,43 @@ def run_batch(request: Request, db: Session = Depends(get_session)) -> dict[str,
         factory = request.app.state.session_factory
         executor = LocalProcessExecutor(factory, allowed_programs=configured_programs())
         concurrency = concurrency_policy(db, for_run=True)
+        requested_budget = max(0, int(concurrency["effective_dispatch_budget"]))
+        worker_slot_ids = acquire_worker_slots(
+            db,
+            owner,
+            limit=requested_budget,
+            lease_seconds=LEASE_SECONDS,
+            allowed_owner=owner,
+        )
+        if requested_budget > 0 and not worker_slot_ids:
+            raise HTTPException(status_code=409, detail="No database-wide worker permits could be reserved for this run.")
+        concurrency["requested_dispatch_budget"] = requested_budget
+        concurrency["global_worker_slot_capacity"] = MAX_WORKER_SLOTS
+        concurrency["global_worker_slots_acquired"] = len(worker_slot_ids)
+        concurrency["effective_dispatch_budget"] = len(worker_slot_ids)
+        owned_dispatch_groups: set[str] = set()
+
+        def acquire_group(group_key: str) -> bool:
+            acquired = acquire_dispatch_group(db, group_key, owner, lease_seconds=LEASE_SECONDS)
+            if acquired:
+                owned_dispatch_groups.add(group_key)
+            return acquired
+
+        def release_group(group_key: str) -> None:
+            release_dispatch_group(db, group_key, owner)
+            owned_dispatch_groups.discard(group_key)
 
         def renew_run_guard() -> None:
             if not renew_run_lock(db, owner, lease_seconds=LEASE_SECONDS):
                 raise HTTPException(status_code=409, detail="The orchestrator database lock was lost during this run.")
+            renewed_slots = renew_worker_slots(
+                db, owner, lease_seconds=LEASE_SECONDS, allowed_owner=owner
+            )
+            if renewed_slots != len(worker_slot_ids):
+                raise HTTPException(status_code=409, detail="A database-wide worker permit was lost during this run.")
+            renewed_groups = renew_dispatch_groups(db, owner, lease_seconds=LEASE_SECONDS)
+            if renewed_groups != len(owned_dispatch_groups):
+                raise HTTPException(status_code=409, detail="A workspace dispatch-group lease was lost during this run.")
 
         orchestrator = Orchestrator(
             executor=executor,
@@ -148,6 +193,8 @@ def run_batch(request: Request, db: Session = Depends(get_session)) -> dict[str,
                 owner=owner,
                 max_concurrency=int(concurrency["effective_dispatch_budget"]),
                 heartbeat_callback=renew_run_guard,
+                dispatch_group_acquire=acquire_group,
+                dispatch_group_release=release_group,
             ),
         )
         try:
@@ -167,6 +214,8 @@ def run_batch(request: Request, db: Session = Depends(get_session)) -> dict[str,
         try:
             if lock_acquired:
                 db.rollback()
+                release_dispatch_groups(db, owner)
+                release_worker_slots(db, owner)
                 release_run_lock(db, owner)
         finally:
             process_lock.release()

@@ -368,6 +368,16 @@ class OrchestratorWorkerSlot(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
 
 
+class OrchestratorDispatchGroupLease(Base):
+    """Cross-process mutex for tasks sharing one mutable workspace."""
+
+    __tablename__ = "orchestrator_dispatch_group_leases"
+
+    group_key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    owner: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+
 class AgentInstruction(Base):
     """An operator instruction recorded for an agent.
 

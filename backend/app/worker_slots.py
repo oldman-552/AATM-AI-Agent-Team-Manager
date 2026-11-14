@@ -2,15 +2,14 @@
 
 Each permit is one possible active task slot. Callers request at most the
 configured database-wide cap, then retain the returned permits for the complete
-lifetime of their worker batch. The run endpoint still uses the singleton run
-lock, so these permits are not yet wired into API dispatch. Worker-permit
-reservation and renewal share that row as a gate with exclusive workspace
-mutations.
+lifetime of their worker batch. The API run endpoint reserves these permits
+before dispatch and retains them for the batch. Worker-permit reservation and
+renewal share the singleton gate with exclusive workspace mutations.
 """
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.models import OrchestratorRunLock, OrchestratorWorkerSlot
@@ -24,8 +23,12 @@ def _now(value: datetime | None) -> datetime:
     return current if current.tzinfo else current.replace(tzinfo=timezone.utc)
 
 
-def _lock_dispatch_gate(db: Session, current: datetime) -> bool:
-    """Take the shared gate row only while no exclusive mutation holds it."""
+def _lock_dispatch_gate(db: Session, current: datetime, *, allowed_owner: str | None = None) -> bool:
+    """Take the shared gate, optionally for the run already owning it.
+
+    A dispatcher may reserve a group while it owns the global run lock; an
+    unrelated reservation is blocked by an exclusive workspace mutation.
+    """
     result = db.execute(
         update(OrchestratorRunLock)
         .where(
@@ -34,6 +37,16 @@ def _lock_dispatch_gate(db: Session, current: datetime) -> bool:
                 OrchestratorRunLock.owner.is_(None),
                 OrchestratorRunLock.expires_at.is_(None),
                 OrchestratorRunLock.expires_at <= current,
+                *(
+                    [
+                        and_(
+                            OrchestratorRunLock.owner == allowed_owner,
+                            OrchestratorRunLock.expires_at > current,
+                        )
+                    ]
+                    if allowed_owner is not None
+                    else []
+                ),
             ),
         )
         .values(expires_at=OrchestratorRunLock.expires_at)
@@ -48,6 +61,7 @@ def acquire_worker_slots(
     limit: int,
     lease_seconds: int,
     now: datetime | None = None,
+    allowed_owner: str | None = None,
 ) -> list[int]:
     """Lease available slots in ``1..limit`` to this run, atomically per slot.
 
@@ -71,7 +85,7 @@ def acquire_worker_slots(
         # This conditional no-op update holds the shared gate row through the
         # permit writes and commit. A mutation holding the gate makes the CAS
         # fail; a mutation arriving afterward will observe our live permits.
-        if not _lock_dispatch_gate(db, current):
+        if not _lock_dispatch_gate(db, current, allowed_owner=allowed_owner):
             db.rollback()
             return []
 
@@ -103,16 +117,20 @@ def renew_worker_slots(
     *,
     lease_seconds: int,
     now: datetime | None = None,
+    allowed_owner: str | None = None,
 ) -> int:
     """Renew only permits still held by ``owner``; return the count renewed."""
     current = _now(now)
     try:
-        if not _lock_dispatch_gate(db, current):
+        if not _lock_dispatch_gate(db, current, allowed_owner=allowed_owner):
             db.rollback()
             return 0
         result = db.execute(
             update(OrchestratorWorkerSlot)
-            .where(OrchestratorWorkerSlot.owner == owner)
+            .where(
+                OrchestratorWorkerSlot.owner == owner,
+                OrchestratorWorkerSlot.expires_at > current,
+            )
             .values(expires_at=current + timedelta(seconds=max(1, lease_seconds)))
         )
         renewed = int(result.rowcount or 0)

@@ -559,3 +559,30 @@ def test_claim_rejects_unassigned_and_replay_claim(app_client: TestClient) -> No
     with session_of(app_client) as db:
         # A second claim on an already-running task is refused (no double dispatch).
         assert claim_task(db, db.get(Task, assigned_id), owner="w2", lease_seconds=60) is False
+
+
+def test_dispatch_reserves_and_releases_database_group_around_task(app_client: TestClient) -> None:
+    project_id = app_client.post("/api/v1/projects", json={"name": "Leased workspace"}).json()["id"]
+    agent = make_agent(app_client)
+    task_id = make_task(app_client, agent, project_id=project_id)
+    executor = fake_executor()
+    executor.dispatch_group = lambda _task: f"project:{project_id}"  # type: ignore[attr-defined]
+    acquired: list[str] = []
+    released: list[str] = []
+
+    def acquire_group(group: str) -> bool:
+        acquired.append(group)
+        return True
+
+    with session_of(app_client) as db:
+        report = Orchestrator(
+            executor,
+            OrchestratorConfig(
+                dispatch_group_acquire=acquire_group,
+                dispatch_group_release=released.append,
+            ),
+        ).run_once(db)
+        db.commit()
+        assert report.completed == [task_id]
+        assert acquired == [f"project:{project_id}"]
+        assert released == [f"project:{project_id}"]

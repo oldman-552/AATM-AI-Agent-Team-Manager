@@ -1,10 +1,11 @@
 """Database-backed gate for orchestrator runs and workspace mutations.
 
 The migration-seeded singleton row serializes API run requests (for now) and
-acts as an exclusive workspace-mutation gate. Worker-permit acquisition and
-renewal lock this same row, so a mutation cannot overlap a live permit and a
-new worker batch cannot begin during a mutation. The lease expires if the
-exclusive owner process dies and is renewed by an active orchestrator run.
+acts as an exclusive workspace-mutation gate. Worker-permit and dispatch-group
+acquisition/renewal lock this same row, so a mutation cannot overlap a live
+permit or mutable-workspace dispatch group and a new reservation cannot begin
+during a mutation. The lease expires if the exclusive owner process dies and is
+renewed by an active orchestrator run.
 """
 
 from datetime import datetime, timedelta, timezone
@@ -12,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
-from app.models import OrchestratorRunLock, OrchestratorWorkerSlot
+from app.models import OrchestratorDispatchGroupLease, OrchestratorRunLock, OrchestratorWorkerSlot
 
 LOCK_ID = "global"
 
@@ -49,7 +50,15 @@ def acquire_run_lock(db: Session, owner: str, *, lease_seconds: int, now: dateti
                     OrchestratorWorkerSlot.expires_at > current,
                 )
             ) or 0
-            if active_permits:
+            active_groups = db.scalar(
+                select(func.count())
+                .select_from(OrchestratorDispatchGroupLease)
+                .where(
+                    OrchestratorDispatchGroupLease.owner.is_not(None),
+                    OrchestratorDispatchGroupLease.expires_at > current,
+                )
+            ) or 0
+            if active_permits or active_groups:
                 db.rollback()
                 return False
         db.commit()

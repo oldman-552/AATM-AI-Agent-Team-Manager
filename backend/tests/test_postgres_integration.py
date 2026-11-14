@@ -12,6 +12,7 @@ import pytest
 from sqlalchemy import select
 
 from app.db import build_engine, make_session_factory
+from app.dispatch_groups import acquire_dispatch_group, release_dispatch_groups
 from app.migrate import upgrade_database
 from app.models import Agent, OrchestratorRunLock, OrchestratorWorkerSlot, Task, TaskTransition
 from app.orchestrator import claim_task
@@ -68,6 +69,21 @@ def test_postgresql_migrations_and_shared_run_lock() -> None:
             assert acquire_run_lock(second, "postgres-mutation", lease_seconds=30)
             assert acquire_worker_slots(first, "postgres-blocked", limit=1, lease_seconds=30) == []
             assert release_run_lock(second, "postgres-mutation")
+
+            group_key = f"project:postgres-{uuid4()}"
+            group_barrier = Barrier(2)
+
+            def reserve_group(owner: str) -> bool:
+                with factory() as db:
+                    group_barrier.wait(timeout=5)
+                    return acquire_dispatch_group(db, group_key, owner, lease_seconds=30)
+
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                group_results = list(pool.map(reserve_group, ["postgres-group-a", "postgres-group-b"]))
+            assert sorted(group_results) == [False, True]
+            winner = "postgres-group-a" if group_results[0] else "postgres-group-b"
+            assert not acquire_run_lock(second, "postgres-group-mutation", lease_seconds=30)
+            assert release_dispatch_groups(first, winner) == 1
 
             agent_id = str(uuid4())
             task_id = str(uuid4())

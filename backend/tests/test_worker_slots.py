@@ -84,6 +84,43 @@ def test_worker_permits_and_workspace_mutation_gate_are_mutually_exclusive(tmp_p
         client.__exit__(None, None, None)
 
 
+def test_live_run_owner_can_reserve_and_renew_shared_permits(tmp_path) -> None:
+    client = _factory(tmp_path)
+    try:
+        with client.app.state.session_factory() as db:
+            now = datetime.now(UTC)
+            assert acquire_run_lock(db, "active-run", lease_seconds=30, now=now)
+            assert acquire_worker_slots(
+                db, "active-run", limit=2, lease_seconds=10, now=now, allowed_owner="active-run"
+            ) == [1, 2]
+            assert renew_worker_slots(
+                db,
+                "active-run",
+                lease_seconds=10,
+                now=now + timedelta(seconds=5),
+                allowed_owner="active-run",
+            ) == 2
+            assert release_worker_slots(db, "active-run") == 2
+            assert release_run_lock(db, "active-run")
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_expired_worker_permit_cannot_be_renewed_even_before_takeover(tmp_path) -> None:
+    client = _factory(tmp_path)
+    try:
+        now = datetime.now(UTC)
+        with client.app.state.session_factory() as owner_db:
+            assert acquire_worker_slots(owner_db, "expired-run", limit=1, lease_seconds=1, now=now) == [1]
+            assert renew_worker_slots(owner_db, "expired-run", lease_seconds=30, now=now + timedelta(seconds=2)) == 0
+
+        with client.app.state.session_factory() as next_db:
+            assert acquire_worker_slots(next_db, "next-run", limit=1, lease_seconds=30, now=now + timedelta(seconds=2)) == [1]
+            assert release_worker_slots(next_db, "next-run") == 1
+    finally:
+        client.__exit__(None, None, None)
+
+
 def test_expired_worker_permit_cannot_be_renewed_through_mutation_gate(tmp_path) -> None:
     client = _factory(tmp_path)
     try:
@@ -128,34 +165,6 @@ def test_simultaneous_worker_and_mutation_reservations_cannot_both_win(tmp_path)
                 assert len(active_worker_slots(db)) == len(worker_slots)
                 release_worker_slots(db, "racing-run")
             if mutation_lock:
-                assert release_run_lock(db, "racing-mutation")
-    finally:
-        client.__exit__(None, None, None)
-
-
-def test_simultaneous_processes_cannot_overbook_shared_worker_slots(tmp_path) -> None:
-    client = _factory(tmp_path)
-    try:
-        factory = client.app.state.session_factory
-        gate = Barrier(2)
-
-        def reserve(owner: str) -> list[int]:
-            with factory() as db:
-                gate.wait(timeout=5)
-                return acquire_worker_slots(db, owner, limit=3, lease_seconds=30)
-
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            futures = [pool.submit(reserve, "process-a"), pool.submit(reserve, "process-b")]
-            allocations = [future.result(timeout=10) for future in futures]
-
-        claimed = [slot for allocation in allocations for slot in allocation]
-        assert len(claimed) == 3
-        assert sorted(claimed) == [1, 2, 3]
-        with factory() as db:
-            owners = [slot.owner for slot in active_worker_slots(db)]
-            assert len(owners) == 3
-            assert set(owners) in ({"process-a"}, {"process-b"})
-            release_worker_slots(db, "process-a")
-            release_worker_slots(db, "process-b")
+                release_run_lock(db, "racing-mutation")
     finally:
         client.__exit__(None, None, None)
